@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Explainable Learning Path Recommender</title>
+<style>
+  :root{
+    --ground:#F4F6F8; --surface:#fff; --surface-alt:#EAEFF3;
+    --ink:#12161C; --ink-soft:#48525F; --ink-faint:#78838F;
+    --rule:#D7DEE5; --accent:#1F5E7A; --accent-soft:#E1EDF3;
+    --warn:#9E3A2C; --warn-soft:#F7E7E4; --good:#2A6350; --good-soft:#E1EFEA;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#0E1217; --surface:#151A21; --surface-alt:#1C232C;
+    --ink:#E2E7EC; --ink-soft:#A6B1BD; --ink-faint:#737F8C;
+    --rule:#29323C; --accent:#6FB2CF; --accent-soft:#16303B;
+    --warn:#E0897A; --warn-soft:#32201C; --good:#7CC1A6; --good-soft:#162E26;}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
+  button{font-family:inherit;font-size:14px;cursor:pointer;border-radius:4px;
+    border:1px solid var(--rule);background:var(--surface);color:var(--ink);padding:8px 14px}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;width:100%;padding:10px}
+  button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.small{padding:4px 9px;font-size:12px}
+  input,select{width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:4px;
+    background:var(--ground);color:var(--ink);font-family:inherit;font-size:14px}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;
+    color:var(--ink-faint);margin:13px 0 5px;font-weight:650}
+  a{color:var(--accent)}
+
+  /* ---------- auth ---------- */
+  #auth{min-height:100vh;display:grid;place-items:center;padding:24px}
+  .auth-card{max-width:460px;width:100%;background:var(--surface);border:1px solid var(--rule);
+    border-radius:7px;padding:32px 34px}
+  .auth-card h1{font-size:21px;margin:0 0 4px;letter-spacing:-.02em}
+  .auth-card p.sub{color:var(--ink-soft);margin:0 0 20px;font-size:14px}
+  .switcher{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--rule);border-radius:5px;overflow:hidden}
+  .switcher button{flex:1;border:0;border-radius:0;background:var(--ground);padding:9px}
+  .switcher button.on{background:var(--accent);color:#fff}
+  .err{background:var(--warn-soft);color:var(--warn);padding:9px 12px;border-radius:4px;
+    font-size:13px;margin-top:14px}
+  .security{margin-top:20px;padding-top:15px;border-top:1px solid var(--rule);
+    font-size:11.5px;color:var(--ink-faint);line-height:1.5}
+
+  /* ---------- shell ---------- */
+  #app{display:none}
+  header{border-bottom:1px solid var(--rule);background:var(--surface);
+    padding:0 20px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  header .brand{font-weight:650;font-size:15px;padding:14px 14px 14px 0;letter-spacing:-.01em}
+  .tab{padding:14px;border:0;border-bottom:2px solid transparent;background:none;border-radius:0;color:var(--ink-soft)}
+  .tab.on{border-bottom-color:var(--accent);color:var(--ink);font-weight:600}
+  header .right{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink-faint)}
+  .badge{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;
+    padding:3px 7px;border-radius:3px;background:var(--accent-soft);color:var(--accent)}
+  .view{display:none}.view.on{display:block}
+
+  main{display:grid;grid-template-columns:310px 1fr;min-height:calc(100vh - 51px)}
+  aside{border-right:1px solid var(--rule);background:var(--surface);padding:16px;
+    overflow-y:auto;max-height:calc(100vh - 51px)}
+  section.panel{padding:22px 26px;overflow-y:auto;max-height:calc(100vh - 51px)}
+  .full{padding:22px 26px;max-width:1000px;margin:0 auto}
+
+  .learner{padding:9px 10px;border:1px solid var(--rule);border-radius:4px;margin-bottom:5px;cursor:pointer;background:var(--ground)}
+  .learner:hover{border-color:var(--accent)}
+  .learner.on{border-color:var(--accent);background:var(--accent-soft)}
+  .learner .id{font-family:var(--mono);font-size:13px;font-weight:650}
+  .learner .meta{font-size:11px;color:var(--ink-faint)}
+  .learner.new{border-left:3px solid var(--good)}
+  .grouphead{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-faint);
+    margin:16px 0 7px;font-weight:650}
+
+  .card{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);
+    padding:16px 18px;margin-bottom:13px;border-radius:4px}
+  .card h3{margin:0 0 4px;font-size:16px}
+  .rank{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  .prose{margin:9px 0 0;color:var(--ink-soft)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .chip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:3px;background:var(--surface-alt);color:var(--ink-soft)}
+  .chip.gap{background:var(--warn-soft);color:var(--warn)}
+  .chip.ok{background:var(--good-soft);color:var(--good)}
+  .actions{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1px;
+    background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin-bottom:20px}
+  .tile{background:var(--surface);padding:14px 16px}
+  .tile .v{font-family:var(--mono);font-size:21px;font-weight:650;color:var(--accent);letter-spacing:-.02em}
+  .tile .k{font-size:11px;color:var(--ink-faint);margin-top:3px}
+
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;
+    color:var(--ink-faint);border-bottom:1px solid var(--ink-soft);padding:0 12px 7px 0;font-weight:650}
+  td{padding:8px 12px 8px 0;border-bottom:1px solid var(--rule)}
+  td.n,th.n{font-family:var(--mono);text-align:right;padding-right:0;font-variant-numeric:tabular-nums}
+  tr.hl td{background:var(--accent-soft);font-weight:600}
+  .scroll{overflow-x:auto}
+  h2{font-size:19px;margin:26px 0 12px;letter-spacing:-.01em}
+  h2:first-child{margin-top:0}
+  .caption{font-size:12px;color:var(--ink-faint);margin:-6px 0 15px}
+  .callout{background:var(--accent-soft);border-left:3px solid var(--accent);padding:14px 18px;
+    border-radius:0 4px 4px 0;margin-bottom:18px}
+  figure{margin:0 0 20px}figure img{width:100%;border:1px solid var(--rule);border-radius:4px;background:var(--surface)}
+  .empty{color:var(--ink-faint);padding:46px 0;text-align:center}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .legend{font-size:11px;color:var(--ink-faint);font-family:var(--mono);margin:10px 0}
+  .hist{font-family:var(--mono);font-size:11px;color:var(--ink-faint);line-height:1.8}
+  @media(max-width:880px){main{grid-template-columns:1fr}aside{max-height:none;border-right:0;border-bottom:1px solid var(--rule)}}
+</style>
+</head>
+<body>
+
+<!-- ================= auth ================= -->
+<div id="auth">
+  <div class="auth-card">
+    <h1>Explainable Learning Path Recommender</h1>
+    <p class="sub">Knowledge tracing and prerequisite-aware recommendation over the Open
+      University Learning Analytics Dataset.</p>
+
+    <div class="switcher">
+      <button id="tab-login" class="on">Sign in</button>
+      <button id="tab-register">Create account</button>
+    </div>
+
+    <form id="form-login">
+      <label>Username</label><input name="username" autocomplete="username" required />
+      <label>Password</label><input name="password" type="password" autocomplete="current-password" required />
+      <div style="margin-top:18px"><button class="primary" type="submit">Sign in</button></div>
+    </form>
+
+    <form id="form-register" style="display:none">
+      <label>Username</label><input name="username" autocomplete="username" required minlength="3" />
+      <label>Display name</label><input name="display_name" placeholder="how you want to be addressed" />
+      <label>Password</label><input name="password" type="password" autocomplete="new-password" required minlength="8" />
+      <label>I am a</label>
+      <select name="role" id="reg-role">
+        <option value="student">Student — track my own learning</option>
+        <option value="adviser">Academic adviser — view learners</option>
+      </select>
+      <div id="module-wrap"><label>Module I am studying</label>
+        <select name="module" id="reg-module"></select></div>
+      <div style="margin-top:18px"><button class="primary" type="submit">Create account</button></div>
+    </form>
+
+    <div id="auth-err"></div>
+
+    <p class="security"><b>Demonstration system.</b> Passwords are hashed with scrypt and
+      never stored in plain text, and sessions use httpOnly cookies. But this runs over
+      plain HTTP on a single machine, with no rate limiting and no account recovery.
+      <b>Do not reuse a password you use anywhere else.</b> All learner data shown is
+      anonymised and public.</p>
+  </div>
+</div>
+
+<!-- ================= app ================= -->
+<div id="app">
+  <header>
+    <div class="brand">Learning Path Recommender</div>
+    <button class="tab on" data-view="home" id="tab-home">My learning</button>
+    <button class="tab" data-view="results">Results</button>
+    <button class="tab" data-view="about">Method</button>
+    <div class="right">
+      <span id="who"></span><span class="badge" id="rolebadge"></span>
+      <button class="small" id="signout">Sign out</button>
+    </div>
+  </header>
+
+  <div class="view on" id="view-home"></div>
+
+  <div class="view" id="view-results">
+    <div class="full"><div id="results" class="empty">loading…</div></div>
+  </div>
+
+  <div class="view" id="view-about">
+    <div class="full" style="max-width:820px"><div id="about"></div></div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const fmt = n => (n===null||n===undefined||Number.isNaN(n)) ? "—" : (+n).toFixed(4);
+
+async function api(path, opts={}) {
+  const r = await fetch(path, {credentials:"same-origin", ...opts});
+  if(!r.ok){ let m; try{ m=(await r.json()).detail; }catch{ m=r.statusText; } throw new Error(m||"request failed"); }
+  return r.json();
+}
+const post = (p, body) => api(p, {method:"POST", headers:{"content-type":"application/json"},
+  body: body?JSON.stringify(body):undefined});
+
+let me=null, metrics=null, current=null, known=new Set(), planner="greedy";
+
+/* ---------------- auth ---------------- */
+$("#tab-login").onclick = () => {
+  $("#tab-login").classList.add("on"); $("#tab-register").classList.remove("on");
+  $("#form-login").style.display="block"; $("#form-register").style.display="none"; $("#auth-err").innerHTML="";
+};
+$("#tab-register").onclick = () => {
+  $("#tab-register").classList.add("on"); $("#tab-login").classList.remove("on");
+  $("#form-register").style.display="block"; $("#form-login").style.display="none"; $("#auth-err").innerHTML="";
+};
+$("#reg-role").onchange = e => {
+  $("#module-wrap").style.display = e.target.value === "student" ? "block" : "none";
+};
+
+const showErr = m => $("#auth-err").innerHTML = `<div class="err">${m}</div>`;
+
+$("#form-login").onsubmit = async e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  try { me = await post("/api/auth/login", f); enter(); }
+  catch(err){ showErr(err.message); }
+};
+$("#form-register").onsubmit = async e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  if(f.role !== "student") delete f.module;
+  try { me = await post("/api/auth/register", f); enter(); }
+  catch(err){ showErr(err.message); }
+};
+$("#signout").onclick = async () => { await post("/api/auth/logout"); location.reload(); };
+
+async function bootstrap(){
+  const h = await api("/api/health");
+  $("#reg-module").innerHTML = h.modules.map(m=>`<option value="${m}">${m}</option>`).join("");
+  try{
+    const who = await api("/api/auth/me");
+    if(who.signed_in){ me = who; enter(); }
+  }catch{}
+}
+
+function enter(){
+  $("#auth").style.display="none"; $("#app").style.display="block";
+  $("#who").textContent = me.display_name;
+  $("#rolebadge").textContent = me.role;
+  $("#tab-home").textContent = me.role === "adviser" ? "Learners" : "My learning";
+  renderHome();
+}
+
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
+  b.classList.add("on"); $("#view-"+b.dataset.view).classList.add("on");
+  if(b.dataset.view==="results") renderResults();
+  if(b.dataset.view==="about") renderAbout();
+  if(b.dataset.view==="home") renderHome();
+});
+
+/* ---------------- shared pieces ---------------- */
+const colour=(m,t)=> m>=t.mastered ? "var(--good)" : m>=t.prerequisite ? "var(--accent)" : "var(--warn)";
+
+function masteryChart(concepts, thresholds, clickable){
+  const pts = concepts.filter(c=>c.in_scope!==false);
+  if(!pts.length) return "";
+  const maxW=Math.max(...pts.map(c=>c.week),1), W=900,H=270,pad=34;
+  const x=w=>pad+(w/maxW)*(W-2*pad), y=v=>H-pad-v*(H-2*pad), t=thresholds;
+  const dots=pts.map(c=>`<circle cx="${x(c.week).toFixed(1)}" cy="${y(c.mastery).toFixed(1)}"
+    r="${known.has(c.concept)?7:4}" fill="${colour(c.mastery,t)}"
+    ${clickable?'style="cursor:pointer"':''} data-c="${c.concept}">
+    <title>${c.label} — ${c.mastery.toFixed(3)}</title></circle>`).join("");
+  const guide=(v,txt)=>`<line x1="${pad}" y1="${y(v)}" x2="${W-pad}" y2="${y(v)}" stroke="var(--rule)" stroke-dasharray="3 3"/>
+    <text x="${pad}" y="${y(v)-5}" font-size="10" fill="var(--ink-faint)" font-family="monospace">${txt}</text>`;
+  return `<svg id="chart" viewBox="0 0 ${W} ${H}" style="width:100%;height:270px;border:1px solid var(--rule);
+    border-radius:4px;background:var(--surface);margin-bottom:14px">
+    ${guide(t.mastered,`mastered ${t.mastered.toFixed(2)}`)}${guide(t.prerequisite,`ready ${t.prerequisite.toFixed(2)}`)}
+    ${dots}<text x="${W/2}" y="${H-6}" font-size="11" fill="var(--ink-faint)" text-anchor="middle">week of study →</text></svg>`;
+}
+
+function recCards(recs, withActions){
+  if(!recs.length) return '<div class="empty">No eligible concepts right now.</div>';
+  return recs.map((r,i)=>`
+    <div class="card">
+      <div class="rank">STEP ${i+1} · ${r.gaps.length? r.gaps.length+" prerequisite gap(s)" : "ready now"}</div>
+      <h3>${r.label}</h3>
+      <div class="chips">
+        ${r.gaps.map(g=>`<span class="chip gap">gap · ${g.label.split("—")[0].trim()} ${g.mastery.toFixed(2)}</span>`).join("")}
+        ${r.satisfied.slice(0,2).map(s=>`<span class="chip ok">met · ${s.label.split("—")[0].trim()} ${s.mastery.toFixed(2)}</span>`).join("")}
+      </div>
+      <p class="prose">${r.text}</p>
+      ${withActions?`<div class="actions">
+        <button class="small act" data-c="${r.concept}" data-k="study">I studied this</button>
+        <button class="small act" data-c="${r.concept}" data-k="pass">I passed the assessment</button>
+        <button class="small act" data-c="${r.concept}" data-k="fail">I struggled with it</button>
+      </div>`:""}
+    </div>`).join("");
+}
+
+/* ---------------- student home ---------------- */
+async function renderStudent(){
+  $("#view-home").innerHTML = `<div class="full"><div class="empty">computing…</div></div>`;
+  const k=[...known].join(",");
+  const [state, rec] = await Promise.all([
+    api(`/api/me/state?known=${k}`), api(`/api/me/recommend?k=3&planner=${planner}&known=${k}`)]);
+
+  const hist = state.history.length
+    ? state.history.slice().reverse().slice(0,8).map(h=>
+        `day ${h.day.toFixed(0).padStart(3)} · ${h.kind==='assessment'?(h.correct?'passed  ':'struggled'):'studied  '} · concept ${h.concept_id}`).join("<br>")
+    : "nothing recorded yet";
+
+  $("#view-home").innerHTML = `<div class="full">
+    <div class="tiles">
+      <div class="tile"><div class="v">${state.module}</div><div class="k">your module</div></div>
+      <div class="tile"><div class="v">${state.n_events}</div><div class="k">activities recorded</div></div>
+      <div class="tile"><div class="v">${state.n_assessments}</div><div class="k">assessments taken</div></div>
+      <div class="tile"><div class="v">${rec.n_eligible}</div><div class="k">concepts open to you</div></div>
+    </div>
+    ${state.n_events===0?`<div class="callout">You have no recorded activity yet, so these
+      first suggestions come from the cold-start prior rather than from anything personal.
+      Record a couple of activities and the recommendations will start to reflect you.</div>`:""}
+    <h2>Where you are</h2>
+    ${masteryChart(state.concepts, state.thresholds, false)}
+    <h2>What to study next</h2>
+    <div class="legend">planner: ${["greedy","beam","curriculum","weakest"].map(p=>
+      `<button class="small pl${p===planner?" on":""}" data-p="${p}">${p}</button>`).join(" ")}</div>
+    ${recCards(rec.recommendations, true)}
+    <h2>Recent activity</h2>
+    <div class="hist">${hist}</div>
+    ${state.n_events?`<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>`:""}
+  </div>`;
+
+  document.querySelectorAll(".act").forEach(b => b.onclick = async () => {
+    const kind = b.dataset.k === "study" ? "study" : "assessment";
+    const correct = b.dataset.k === "pass" ? true : b.dataset.k === "fail" ? false : null;
+    b.disabled = true; b.textContent = "saving…";
+    await post("/api/me/study", {concept_id:+b.dataset.c, kind, correct});
+    renderStudent();
+  });
+  document.querySelectorAll(".pl").forEach(b => b.onclick = ()=>{ planner=b.dataset.p; renderStudent(); });
+  const u=$("#undo"); if(u) u.onclick = async ()=>{ await post("/api/me/undo"); renderStudent(); };
+}
+
+/* ---------------- adviser home ---------------- */
+async function renderAdviser(){
+  $("#view-home").innerHTML = `
+    <main>
+      <aside>
+        <label for="q">Search learners</label>
+        <input id="q" placeholder="id, name or module" autocomplete="off" />
+        <div id="list" style="margin-top:10px"></div>
+      </aside>
+      <section class="panel"><div id="detail" class="empty">Select a learner.</div></section>
+    </main>`;
+  $("#q").oninput = e => loadList(e.target.value);
+  loadList("");
+  showOverview();
+}
+
+async function showOverview(){
+  const o = await api("/api/adviser/overview");
+  const rows = o.registered.map(r=>`<tr>
+      <td>${r.display_name}</td><td class="n">${r.student_id}</td>
+      <td>${r.module||"—"}</td><td class="n">${r.n_events||0}</td>
+      <td class="n">${r.n_assessments||0}</td>
+      <td class="n">${r.last_active? new Date(r.last_active*1000).toLocaleString() : "never"}</td></tr>`).join("");
+  $("#detail").innerHTML = `
+    <div class="tiles">
+      <div class="tile"><div class="v">${o.stats.n_students}</div><div class="k">registered students</div></div>
+      <div class="tile"><div class="v">${o.stats.n_events}</div><div class="k">activities recorded</div></div>
+      <div class="tile"><div class="v">${o.stats.n_recommendations}</div><div class="k">recommendations served</div></div>
+      <div class="tile"><div class="v">25,101</div><div class="k">dataset learners</div></div>
+    </div>
+    <h2>Registered students</h2>
+    <p class="caption">Learners who created an account on this system. Their activity is live.</p>
+    ${o.registered.length?`<div class="scroll"><table><thead><tr><th>Name</th><th class="n">ID</th>
+      <th>Module</th><th class="n">Activities</th><th class="n">Assessments</th><th class="n">Last active</th>
+      </tr></thead><tbody>${rows}</tbody></table></div>`
+      : '<div class="empty">No students have registered yet.</div>'}
+    <p class="caption" style="margin-top:18px">Select any learner on the left to inspect
+      their mastery and recommended path.</p>`;
+}
+
+async function loadList(q){
+  const d = await api(`/api/students?q=${encodeURIComponent(q)}&limit=25`);
+  const item = r => `<div class="learner${current===r.id_student?" on":""}${r.registered?" new":""}" data-id="${r.id_student}">
+      <div class="id">${r.registered? r.display_name : r.id_student}</div>
+      <div class="meta">${r.registered? `id ${r.id_student} · ` : ""}${r.module} · ${r.n_events} events · ${r.outcome}</div>
+    </div>`;
+  $("#list").innerHTML =
+    (d.registered.length? `<div class="grouphead">Registered students</div>` + d.registered.map(item).join("") : "") +
+    `<div class="grouphead">Dataset learners</div>` + d.dataset.map(item).join("");
+  document.querySelectorAll(".learner").forEach(el=>
+    el.onclick = ()=>{ current=+el.dataset.id; known.clear(); showLearner(); loadList(q); });
+}
+
+async function showLearner(){
+  $("#detail").innerHTML = `<div class="empty">computing…</div>`;
+  const k=[...known].join(",");
+  const [mastery, rec] = await Promise.all([
+    api(`/api/students/${current}/mastery?known=${k}`),
+    api(`/api/recommend?student=${current}&k=3&planner=${planner}&known=${k}`)]);
+
+  $("#detail").innerHTML = `
+    <div class="tiles">
+      <div class="tile"><div class="v">${rec.student}</div><div class="k">${rec.registered?"registered learner":"dataset learner"}</div></div>
+      <div class="tile"><div class="v">${rec.module}</div><div class="k">module</div></div>
+      <div class="tile"><div class="v">${rec.n_eligible}</div><div class="k">eligible concepts</div></div>
+      <div class="tile"><div class="v">${rec.elapsed_ms}<span style="font-size:13px"> ms</span></div><div class="k">response</div></div>
+    </div>
+    <div class="row" style="margin-bottom:10px">
+      ${["greedy","beam","curriculum","weakest"].map(p=>
+        `<button class="small pl${p===planner?" on":""}" data-p="${p}">${p}</button>`).join("")}
+      <span style="flex:1"></span>
+      <button class="small" id="back">← overview</button>
+    </div>
+    <div class="legend">click any point to mark it already known · ${known.size} marked</div>
+    ${masteryChart(mastery.concepts, mastery.thresholds ?? rec.thresholds, true)}
+    ${recCards(rec.recommendations, false)}`;
+
+  document.querySelectorAll(".pl").forEach(b=>b.onclick=()=>{planner=b.dataset.p;showLearner();});
+  $("#back").onclick = ()=>{ current=null; showOverview(); loadList($("#q").value); };
+  document.querySelectorAll("#chart circle").forEach(c=>
+    c.onclick=()=>{ const id=+c.dataset.c; known.has(id)?known.delete(id):known.add(id); showLearner(); });
+}
+
+const renderHome = () => me.role === "adviser" ? renderAdviser() : renderStudent();
+
+/* ---------------- results ---------------- */
+async function renderResults(){
+  if(!metrics){ try{ metrics = await api("/api/metrics"); }catch{ $("#results").innerHTML='<div class="empty">unavailable</div>'; return; } }
+  const t1=metrics.table1, t2=metrics.table2, ex=metrics.explainability, g=metrics.graph_stats;
+  const cold=t1&&t1.cold_concept;
+  const rows1=(t1?.rows||[]).map(r=>`<tr class="${r.model.includes('Proposed (')?'hl':''}">
+    <td>${r.model}</td><td class="n">${r.auc}</td><td class="n">${r.rmse}</td>
+    <td class="n">${r.ece}</td><td class="n">${r.p}</td><td class="n">${r.d}</td></tr>`).join("");
+  const rows2=(t2?.rows||[]).slice().reverse().map(r=>`<tr class="${r.planner.includes('proposed')?'hl':''}">
+    <td>${r.planner}</td><td class="n">${r.ndcg}</td><td class="n">${r.hit_rate}</td>
+    <td class="n">${r.precision}</td><td class="n">${r.prerequisite_violations}</td>
+    <td class="n">${r.coverage}</td></tr>`).join("");
+
+  $("#results").innerHTML = `
+    <h2>Headline results</h2>
+    <div class="tiles">
+      <div class="tile"><div class="v">${t1?.rows?.find(r=>r.model.includes('Proposed ('))?.auc.split(' ')[0] ?? '—'}</div><div class="k">AUC-ROC, 5-fold</div></div>
+      <div class="tile"><div class="v">${cold?'+'+cold.difference.toFixed(4):'—'}</div><div class="k">graph gain, cold concepts</div></div>
+      <div class="tile"><div class="v">${g?.n_concepts ?? '—'}</div><div class="k">concepts</div></div>
+      <div class="tile"><div class="v">0.0000</div><div class="k">prerequisite violations</div></div>
+    </div>
+    ${cold?`<div class="callout"><b>The knowledge graph matters where supervision is absent.</b>
+      Accuracy is measured only at assessment positions, and just ${g.n_concepts_with_assessments}
+      of ${g.n_concepts} concepts carry assessments. Withholding assessments entirely for 27 of
+      those and scoring only them: <b>${cold.proposed.toFixed(4)}</b> with the graph versus
+      <b>${cold.no_graph.toFixed(4)}</b> without — p = ${cold.p_raw.toFixed(4)}, d = ${cold.cohens_d.toFixed(2)}.</div>`:""}
+    <h2>Table I · predictive accuracy</h2>
+    <p class="caption">Mean ± standard deviation over 5-fold cross-validation, folds grouped by
+      student. p-values are paired t-tests against the proposed model, Holm-corrected.</p>
+    <div class="scroll"><table><thead><tr><th>Model</th><th class="n">AUC-ROC</th><th class="n">RMSE</th>
+      <th class="n">ECE</th><th class="n">p</th><th class="n">Cohen's d</th></tr></thead><tbody>${rows1}</tbody></table></div>
+    <h2>Table II · learning path quality</h2>
+    <p class="caption">${t2?.n_learners ?? "—"} held-out successful learners. Ground truth is the
+      concepts each learner actually moved to next — real behaviour, not simulation.</p>
+    <div class="scroll"><table><thead><tr><th>Planner</th><th class="n">NDCG@5</th><th class="n">Hit@5</th>
+      <th class="n">Prec@5</th><th class="n">Prereq viol.</th><th class="n">Coverage</th></tr></thead>
+      <tbody>${rows2}</tbody></table></div>
+    ${ex?`<h2>Explanation quality</h2>
+    <p class="caption">Objective measures. A survey records whether a reader liked an explanation;
+      these record whether it is true of the model.</p>
+    <div class="tiles">
+      <div class="tile"><div class="v">${fmt(ex.fidelity)}</div><div class="k">fidelity</div></div>
+      <div class="tile"><div class="v">${fmt(ex.sufficiency)}</div><div class="k">sufficiency</div></div>
+      <div class="tile"><div class="v">${fmt(ex.stability)}</div><div class="k">stability</div></div>
+    </div>`:""}
+    <h2>Figures</h2>
+    <figure><img src="/static/figures/concept_graph.png" alt="Concept graph" />
+      <p class="caption">${g?.n_prerequisite_edges} prerequisite and ${g?.n_corequisite_edges}
+        corequisite edges, laid out by module and week.</p></figure>
+    <figure><img src="/static/figures/calibration.png" alt="Calibration" />
+      <p class="caption">Calibration across five folds.</p></figure>
+    <figure><img src="/static/figures/cold_start.png" alt="Cold start" />
+      <p class="caption">Accuracy against how much history a learner has.</p></figure>`;
+}
+
+function renderAbout(){
+  const g = metrics?.graph_stats;
+  $("#about").innerHTML = `
+    <h2>How a recommendation is produced</h2>
+    <p><b>1 · Knowledge tracing.</b> A learner's history goes into KG-DKT: a 3-layer graph
+      convolution over the prerequisite graph produces concept embeddings, and a 2-layer
+      transformer with time-aware attention turns the history into a mastery estimate for every
+      concept. Older interactions are discounted by a learned per-head decay.</p>
+    <p><b>2 · Filtering.</b> A concept is eligible only if it is not already mastered and every
+      prerequisite is at or above the readiness threshold — enforced structurally, so an
+      unprepared recommendation is impossible rather than unlikely. Measured at <b>zero
+      violations</b> across 906 evaluated decisions.</p>
+    <p><b>3 · Ranking.</b> Each eligible concept is simulated: what would mastery look like a week
+      from now having studied it, against a week having studied nothing? Scored in log-odds.</p>
+    <p><b>4 · Explanation.</b> Priority backtracking walks the prerequisite ancestry and ranks what
+      is missing by deficit, decayed with graph distance. Counterfactuals are computed by asking
+      the model. Every clause traces to a number — no language model is involved.</p>
+    <h2>Honest limitations</h2>
+    <p>The model predicts <b>successful completion</b>, not knowledge in the abstract: because
+      non-submission counts as failure, much of the signal is engagement. That is the right target
+      for a system meant to intervene, but it is not the same as measuring understanding.</p>
+    <p>OULAD ships no titles for learning materials, so concepts cannot honestly be named by topic.
+      Labels describe position and activity composition instead.</p>
+    <p>Only ${g?.n_concepts_with_assessments ?? 89} of ${g?.n_concepts ?? 237} concepts carry
+      assessments. Mastery for the rest arrives through the prerequisite graph — which is exactly
+      why the cold-concept experiment matters.</p>
+    <p>Registered learners have no demographic record, so their features fall back to the dataset
+      mean. Their first recommendations are a cold-start prior, not personalisation.</p>`;
+}
+
+bootstrap();
+</script>
+</body>
+</html>

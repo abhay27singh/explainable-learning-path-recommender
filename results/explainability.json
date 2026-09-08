@@ -1,0 +1,8 @@
+{
+  "fidelity": 0.5318453052084842,
+  "sufficiency": 0.0020065197719057576,
+  "stability": 0.530952380952381,
+  "n_evaluated": 25,
+  "n_perturbations": 3,
+  "noise": 0.02
+}

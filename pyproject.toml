@@ -1,0 +1,54 @@
+[project]
+name = "elpr"
+version = "0.1.0"
+description = "Explainable AI-Based Personalized Learning Path Recommendation System"
+requires-python = ">=3.11,<3.13"
+
+dependencies = [
+    # numpy<2 is required: torch 2.2.2 (the last Intel-macOS wheel) is built against NumPy 1.x
+    "numpy>=1.26,<2",
+    # storage / ETL — pandas 3.x pairs poorly with the numpy<2 pin above
+    "duckdb>=1.0",
+    "pandas>=2.2,<3",
+    "pyarrow>=15",
+    # mining
+    "mlxtend>=0.23",
+    "scikit-learn>=1.4",
+    "scipy>=1.12",
+    # graph
+    "networkx>=3.2",
+    # model — Intel macOS: PyTorch ships no wheels past 2.2.2 for x86_64 darwin
+    "torch>=2.2,<2.3",
+    # rl
+    "gymnasium>=0.29",
+    # explainability
+    "shap>=0.45",
+    # config / io
+    "pyyaml>=6",
+    # figures
+    "matplotlib>=3.8",
+    # serving
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["elpr*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

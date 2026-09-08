@@ -1,0 +1,35 @@
+# Raw dataset — 487 MB, and freely re-downloadable. scripts/01_prepare_data.py
+# rebuilds everything from it, so committing it would bloat the repository for no gain.
+data/raw/
+
+# Derived data — regenerate with `make stage0` (about 2.5 minutes).
+data/oulad.duckdb
+data/processed/
+
+# Application database: real accounts and passwords. Never commit this.
+data/app.db
+
+# Trained checkpoints — 39 MB. Share separately; see docs/portability.md.
+artifacts/models/
+
+# Environment
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Build artefacts
+elpr_colab_bundle.zip
+trained.zip
+*.log
+
+# OS
+.DS_Store
+
+# Keep: source, SQL, configs, docs, results JSON, figures, the concept graph.
+# Those are what make the work reproducible and reviewable.
+!results/
+!results/figures/
+!artifacts/graph/
+elpr.egg-info/

@@ -1,0 +1,92 @@
+{
+  "sequences": {
+    "n_sequences": 27904,
+    "n_students": 25101,
+    "total_events": 6615173.0,
+    "total_supervised": 242670.0,
+    "mean_events": 237.1,
+    "median_events": 169.0,
+    "max_events": 1649,
+    "mean_supervised": 8.7,
+    "n_over_200": 12215.0
+  },
+  "n_folds": 5,
+  "seed": 42,
+  "fold_distribution": {
+    "Distinction": {
+      "0": 604,
+      "1": 605,
+      "2": 605,
+      "3": 605,
+      "4": 605
+    },
+    "Fail": {
+      "0": 1409,
+      "1": 1409,
+      "2": 1409,
+      "3": 1409,
+      "4": 1408
+    },
+    "Pass": {
+      "0": 2473,
+      "1": 2472,
+      "2": 2472,
+      "3": 2472,
+      "4": 2472
+    },
+    "Withdrawn": {
+      "0": 1095,
+      "1": 1095,
+      "2": 1095,
+      "3": 1095,
+      "4": 1095
+    }
+  },
+  "max_folds_per_student": 1,
+  "learner_profiles": {
+    "k": 3,
+    "silhouette": 0.4183,
+    "silhouette_by_k": {
+      "3": 0.4183,
+      "4": 0.4129,
+      "5": 0.4113,
+      "6": 0.3943
+    },
+    "stability_ari": 0.9902,
+    "centroids": [
+      {
+        "profile": 0,
+        "n_students": 5647,
+        "early_sessions": 0.51,
+        "early_clicks": 1.0,
+        "early_clicks_per_session": 0.83,
+        "early_span": 0.53,
+        "early_mean_gap": 0.38,
+        "early_gap_std": 0.03,
+        "early_active_days": 0.51
+      },
+      {
+        "profile": 1,
+        "n_students": 12233,
+        "early_sessions": 23.7,
+        "early_clicks": 510.3,
+        "early_clicks_per_session": 22.7,
+        "early_span": 39.74,
+        "early_mean_gap": 1.89,
+        "early_gap_std": 1.46,
+        "early_active_days": 23.7
+      },
+      {
+        "profile": 2,
+        "n_students": 14713,
+        "early_sessions": 7.9,
+        "early_clicks": 105.52,
+        "early_clicks_per_session": 15.28,
+        "early_span": 28.18,
+        "early_mean_gap": 5.21,
+        "early_gap_std": 3.37,
+        "early_active_days": 7.9
+      }
+    ]
+  }
+}

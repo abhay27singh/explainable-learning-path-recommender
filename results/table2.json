@@ -1,0 +1,89 @@
+{
+  "fold": 0,
+  "k": 5,
+  "horizon": 25,
+  "n_learners": 400,
+  "rows": [
+    {
+      "planner": "curriculum",
+      "ndcg": 0.0612,
+      "ndcg_std": 0.1544,
+      "hit_rate": 0.1832,
+      "precision": 0.0453,
+      "knowledge_gain": -3.2726,
+      "prerequisite_violations": 0.0,
+      "coverage": 0.4515,
+      "n_decisions": 906
+    },
+    {
+      "planner": "popularity",
+      "ndcg": 0.1069,
+      "ndcg_std": 0.1989,
+      "hit_rate": 0.2936,
+      "precision": 0.0808,
+      "knowledge_gain": 0.6934,
+      "prerequisite_violations": 0.0,
+      "coverage": 0.5105,
+      "n_decisions": 906
+    },
+    {
+      "planner": "random",
+      "ndcg": 0.13,
+      "ndcg_std": 0.2181,
+      "hit_rate": 0.3455,
+      "precision": 0.0863,
+      "knowledge_gain": 0.9169,
+      "prerequisite_violations": 0.0,
+      "coverage": 0.7215,
+      "n_decisions": 906
+    },
+    {
+      "planner": "weakest-first",
+      "ndcg": 0.1344,
+      "ndcg_std": 0.2072,
+      "hit_rate": 0.3642,
+      "precision": 0.0956,
+      "knowledge_gain": -0.5881,
+      "prerequisite_violations": 0.0,
+      "coverage": 0.5148,
+      "n_decisions": 906
+    },
+    {
+      "planner": "greedy (proposed)",
+      "ndcg": 0.1532,
+      "ndcg_std": 0.2381,
+      "hit_rate": 0.3687,
+      "precision": 0.1051,
+      "knowledge_gain": 61.7048,
+      "prerequisite_violations": 0.0,
+      "coverage": 0.7257,
+      "n_decisions": 906
+    }
+  ],
+  "significance": [
+    {
+      "vs": "random",
+      "difference": 0.02322913084075164,
+      "cohens_d": 0.0910397889592824,
+      "p_holm": 0.012518995027366616
+    },
+    {
+      "vs": "curriculum",
+      "difference": 0.09208930382098074,
+      "cohens_d": 0.3598221126369655,
+      "p_holm": 3.475703768523395e-25
+    },
+    {
+      "vs": "popularity",
+      "difference": 0.04635444797648526,
+      "cohens_d": 0.16966908768813768,
+      "p_holm": 1.1973264269661788e-06
+    },
+    {
+      "vs": "weakest-first",
+      "difference": 0.018883693566878034,
+      "cohens_d": 0.07966347189406524,
+      "p_holm": 0.01669299224687271
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "n_students": 28785.0,
+  "n_enrolments": 32593.0,
+  "n_modules": 7.0,
+  "n_presentations": 22.0,
+  "n_vle_sites": 6364.0,
+  "n_vle_sites_with_week": 1121.0,
+  "n_activity_types": 20.0,
+  "n_vle_events": 10655280.0,
+  "n_assessments": 206.0,
+  "n_assessment_events": 173912.0,
+  "vle_events_per_student_mean": 408.66,
+  "vle_events_per_student_median": 270.0,
+  "asm_events_per_student_mean": 7.44,
+  "asm_events_per_student_median": 7.0,
+  "n_scored_assessments": 173739.0,
+  "n_missing_scores": 173.0,
+  "pass_rate_at_40": 0.9564,
+  "outcome_distribution": [
+    {
+      "final_result": "Pass",
+      "n": 12361,
+      "pct": 37.93
+    },
+    {
+      "final_result": "Withdrawn",
+      "n": 10156,
+      "pct": 31.16
+    },
+    {
+      "final_result": "Fail",
+      "n": 7052,
+      "pct": 21.64
+    },
+    {
+      "final_result": "Distinction",
+      "n": 3024,
+      "pct": 9.28
+    }
+  ],
+  "concept_provenance": [
+    {
+      "week_source": "observed",
+      "n_sites": 5147,
+      "pct": 82.12
+    },
+    {
+      "week_source": "metadata",
+      "n_sites": 1121,
+      "pct": 17.88
+    }
+  ],
+  "event_stats": [
+    {
+      "kind": "vle",
+      "n_events": 6417438,
+      "n_students": 26074,
+      "n_concepts": 237,
+      "mean_label": NaN,
+      "n_imputed": 0.0
+    },
+    {
+      "kind": "assessment",
+      "n_events": 242670,
+      "n_students": 25101,
+      "n_concepts": 89,
+      "mean_label": 0.679,
+      "n_imputed": 157.0
+    }
+  ],
+  "n_concepts": 237
+}

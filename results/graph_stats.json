@@ -1,0 +1,23 @@
+{
+  "n_concepts": 237,
+  "n_edges_total": 1026,
+  "n_prerequisite_edges": 724,
+  "n_corequisite_edges": 302,
+  "edges_by_rule": {
+    "corequisite": 302,
+    "prereq_mined": 285,
+    "prereq_assessment": 252,
+    "prereq_sequence": 230
+  },
+  "n_cycles_broken": 0,
+  "edges_removed_for_dag": [],
+  "mining": {
+    "pairs_considered": 17068,
+    "pairs_above_support": 7051,
+    "edges_accepted": 285,
+    "edges_with_lift": 285,
+    "edges_structural": 482
+  },
+  "mean_in_degree": 3.055,
+  "n_concepts_with_assessments": 89
+}
