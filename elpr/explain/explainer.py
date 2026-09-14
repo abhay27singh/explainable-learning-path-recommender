@@ -159,7 +159,7 @@ def render(explanation: Explanation) -> str:
     Deliberately not a language model: every clause is traceable to a number, which is
     what makes the explanation auditable.
     """
-    lines = [f"Recommended: {explanation.label}"]
+    lines = [f"Recommended: {explanation.label}."]
 
     if explanation.gaps:
         worst = explanation.gaps[0]
@@ -173,8 +173,8 @@ def render(explanation: Explanation) -> str:
     elif explanation.satisfied:
         best = explanation.satisfied[0]
         lines.append(
-            f"Every prerequisite is in place — {best.label} sits at {best.mastery:.2f} — "
-            f"so this is ready to study now."
+            f"Every prerequisite is in place. {best.label} sits at "
+            f"{best.mastery:.2f}, so this is ready to study now."
         )
     else:
         lines.append("This concept has no recorded prerequisites, so nothing blocks it.")
@@ -192,7 +192,7 @@ def render(explanation: Explanation) -> str:
     if explanation.beneficiaries:
         names = ", ".join(label for _, label, _ in explanation.beneficiaries[:2])
         lines.append(
-            f"Most of that benefit lands elsewhere — chiefly {names} — because these "
+            f"Most of that benefit lands elsewhere, chiefly {names}, because these "
             f"concepts share prerequisites with it."
         )
 

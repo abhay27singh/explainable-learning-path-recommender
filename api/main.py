@@ -13,10 +13,15 @@ from __future__ import annotations
 
 import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from fastapi import Cookie, FastAPI, HTTPException, Query, Response
 from fastapi.responses import FileResponse
+
+from elpr.modules import module_display_map, subject_area
+from elpr.profile import clean as clean_profile, options as profile_options
+from elpr import course_finder
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -59,9 +64,17 @@ def _require(token: str | None) -> User:
 
 
 def _require_adviser(token: str | None) -> User:
+    """Adviser routes. An admin is a superset of an adviser, so it passes too."""
     user = _require(token)
-    if user.role != "adviser":
+    if user.role not in ("adviser", "admin"):
         raise HTTPException(403, "adviser role required")
+    return user
+
+
+def _require_admin(token: str | None) -> User:
+    user = _require(token)
+    if user.role != "admin":
+        raise HTTPException(403, "admin role required")
     return user
 
 
@@ -74,23 +87,44 @@ def _overrides(value: str | None) -> tuple:
 # ---------------------------------------------------------------- auth
 class Credentials(BaseModel):
     username: str = Field(min_length=3, max_length=40)
-    password: str = Field(min_length=8, max_length=200)
+    # The store enforces the real minimum on registration, with a readable message.
+    password: str = Field(min_length=1, max_length=200)
 
 
 class Registration(Credentials):
     display_name: str = Field(default="", max_length=80)
     role: str = Field(default="student")
     module: str | None = None
+    stage: str | None = None
+
+
+def _studies(s: Service, stage: str | None, module: str | None) -> tuple:
+    """Validate a student's level and course. Only diploma and degree students have a course."""
+    if stage not in course_finder.STAGES:
+        raise HTTPException(400, "choose where you are in your studies")
+    if stage not in course_finder.COURSE_STAGES:
+        return stage, None
+    if module not in s.modules:
+        raise HTTPException(400, "choose the course you are studying")
+    return stage, module
+
+
+def _stage(user: User | None) -> str | None:
+    """Accounts made before levels existed were all on a university course."""
+    if user is None or user.role != "student":
+        return None
+    return user.stage or ("ug" if user.module else None)
 
 
 @app.post("/api/auth/register")
 def register(body: Registration, response: Response) -> dict:
     s = _service()
-    if body.module and body.module not in s.modules:
-        raise HTTPException(400, f"unknown module {body.module}")
+    stage = module = None
+    if body.role == "student":
+        stage, module = _studies(s, body.stage, body.module)
     try:
         user = s.store.register(
-            body.username, body.password, body.display_name, body.role, body.module
+            body.username, body.password, body.display_name, body.role, module, stage
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -124,6 +158,7 @@ def _me(user: User) -> dict:
     return {
         "username": user.username, "display_name": user.display_name,
         "role": user.role, "module": user.module, "student_id": user.student_id,
+        "stage": _stage(user),
     }
 
 
@@ -142,6 +177,8 @@ def health() -> dict:
         "n_concepts": s.graph.n_concepts,
         "n_learners": int(s.sequences.id_student.nunique()),
         "modules": s.modules,
+        "module_names": module_display_map(s.modules),
+        "module_areas": {m: subject_area(m) for m in s.modules},
     }
 
 
@@ -197,6 +234,53 @@ def my_recommendations(
     return payload
 
 
+@app.get("/api/me/path")
+def my_path(steps: int = Query(5, ge=1, le=8), known: str | None = None,
+            elpr_session: str | None = Cookie(None)) -> dict:
+    """The student's course week by week from the first week not yet done.
+
+    A week studied or passed counts as done, so pressing either button moves the path
+    on; "I found it hard" keeps the week in place."""
+    user = _require(elpr_session)
+    s = _service()
+    if user.role != "student":
+        raise HTTPException(400, "advisers have no learning record of their own")
+    if not user.module:
+        raise HTTPException(400, "choose your course first")
+    return s.course_path(user, steps, _overrides(known))
+
+
+@app.get("/api/students/{student}/path")
+def learner_path(student: int, steps: int = Query(5, ge=1, le=8), known: str | None = None,
+                 elpr_session: str | None = Cookie(None)) -> dict:
+    user = _require(elpr_session)
+    s = _service()
+    if user.role not in ("adviser", "admin") and user.student_id != student:
+        raise HTTPException(403, "you may only view your own record")
+    if s.is_registered(student):
+        target = s.store.user_by_student_id(student)
+        if target is None:
+            raise HTTPException(404, "unknown learner")
+        make = lambda ov: s.registered_state(target, ov)
+    else:
+        def make(ov):
+            try:
+                row, state = s.state_for(student, None, 1.0, ov)
+            except KeyError as exc:
+                raise HTTPException(404, str(exc)) from exc
+            return row.code_module, state
+    return s.learning_path(make, steps, _overrides(known))
+
+
+@app.get("/api/me/progress")
+def my_progress(elpr_session: str | None = Cookie(None)) -> dict:
+    """Streak, activity calendar, badges and weekly summary from recorded study events."""
+    user = _require(elpr_session)
+    if user.role != "student":
+        raise HTTPException(400, "only students have a progress record")
+    return _service().progress_for(user)
+
+
 class StudyEvent(BaseModel):
     concept_id: int
     kind: str = Field(default="study")
@@ -223,6 +307,125 @@ def undo(elpr_session: str | None = Cookie(None)) -> dict:
     return {"ok": _service().store.undo_last_event(user.id)}
 
 
+# ---------------------------------------------------------------- course finder
+@app.get("/api/course-finder/options")
+def course_finder_options() -> dict:
+    """Class 12 streams and interest areas. Public: a new student has no account yet."""
+    return course_finder.options()
+
+
+class FinderBody(BaseModel):
+    level: str = "ug"
+    stream: str | None = None
+    subjects: list[str] = Field(default_factory=list)
+    degree: str | None = None
+    interests: list[str] = Field(default_factory=list)
+
+
+@app.post("/api/course-finder")
+def course_finder_suggest(body: FinderBody, elpr_session: str | None = Cookie(None)) -> dict:
+    """Rule-based course suggestions. No personal data is stored.
+
+    A signed-in student is offered only the level after their own: an undergraduate
+    sees postgraduate courses, not diplomas after class 10."""
+    stage = _stage(_current(elpr_session)) if elpr_session else None
+    if stage and body.level not in course_finder.NEXT_LEVELS[stage]:
+        raise HTTPException(400, f"that level is not the next step after {course_finder.STAGES[stage]}")
+    try:
+        return course_finder.recommend(level=body.level, interests=body.interests,
+                                       stream=body.stream, subjects=body.subjects,
+                                       degree=body.degree)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.get("/api/course-finder/explore")
+def course_finder_explore(level: str | None = None) -> dict:
+    """Every course, grouped by level and category, with no eligibility filtering. Public."""
+    try:
+        return course_finder.explore(level)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+# ---------------------------------------------------------------- background form
+@app.get("/api/graph/{module}")
+def course_graph(module: str, elpr_session: str | None = Cookie(None)) -> dict:
+    """Weeks of one course and their prerequisite links. Structure only, no personal data."""
+    _require(elpr_session)
+    try:
+        return _service().module_graph(module)
+    except KeyError:
+        raise HTTPException(404, "unknown course")
+
+
+@app.get("/api/profile/options")
+def profile_form() -> dict:
+    """The background questions and their allowed answers. Contains no personal data."""
+    return {"fields": profile_options()}
+
+
+class ProfileBody(BaseModel):
+    profile: dict = Field(default_factory=dict)
+
+
+@app.get("/api/me/profile")
+def my_profile(elpr_session: str | None = Cookie(None)) -> dict:
+    user = _require(elpr_session)
+    if user.role != "student":
+        raise HTTPException(400, "only students have a learning profile")
+    return {"profile": _service().store.get_profile(user.id), "module": user.module}
+
+
+@app.put("/api/me/profile")
+def update_profile(body: ProfileBody, elpr_session: str | None = Cookie(None)) -> dict:
+    """Save background answers. Anything unrecognised is dropped, never stored."""
+    user = _require(elpr_session)
+    if user.role != "student":
+        raise HTTPException(400, "only students have a learning profile")
+    cleaned = clean_profile(body.profile)
+    _service().store.set_profile(user.id, cleaned)
+    return {"profile": cleaned}
+
+
+class StudiesBody(BaseModel):
+    stage: str
+    module: str | None = None
+
+
+@app.put("/api/me/studies")
+def update_studies(body: StudiesBody, elpr_session: str | None = Cookie(None)) -> dict:
+    """Where the student is now and, for diploma and degree students, their course."""
+    user = _require(elpr_session)
+    s = _service()
+    if user.role != "student":
+        raise HTTPException(400, "only students have studies to set")
+    stage, module = _studies(s, body.stage, body.module)
+    s.store.set_studies(user.id, stage, module)
+    return _me(replace(user, stage=stage, module=module))
+
+
+# ---------------------------------------------------------------- admin
+@app.get("/api/admin/accounts")
+def admin_accounts(elpr_session: str | None = Cookie(None)) -> dict:
+    """Every registered account, with activity. Never returns salts or hashes."""
+    _require_admin(elpr_session)
+    store = _service().store
+    return {"accounts": store.list_accounts(), "stats": store.stats()}
+
+
+@app.delete("/api/admin/accounts/{username}")
+def admin_delete_account(username: str,
+                         elpr_session: str | None = Cookie(None)) -> dict:
+    """Delete an account and its study history. An admin cannot delete itself."""
+    me = _require_admin(elpr_session)
+    if username.strip().lower() == me.username:
+        raise HTTPException(400, "an admin cannot delete its own account")
+    if not _service().store.delete_account(username):
+        raise HTTPException(404, "no such account")
+    return {"deleted": username}
+
+
 # ---------------------------------------------------------------- adviser
 @app.get("/api/students")
 def students(q: str = "", limit: int = Query(40, le=200),
@@ -230,7 +433,7 @@ def students(q: str = "", limit: int = Query(40, le=200),
     _require_adviser(elpr_session)
     s = _service()
     registered = [
-        {"id_student": r["student_id"], "module": r["module"] or "—",
+        {"id_student": r["student_id"], "module": r["module"] or "n/a",
          "presentation": "registered", "n_events": r["n_events"] or 0,
          "n_assessments": r["n_assessments"] or 0,
          "outcome": "in progress", "display_name": r["display_name"],
@@ -249,7 +452,7 @@ def mastery(student: int, module: str | None = None, upto: float = 1.0,
     user = _require(elpr_session)
     s = _service()
     # A student may only look at themselves.
-    if user.role != "adviser" and user.student_id != student:
+    if user.role not in ("adviser", "admin") and user.student_id != student:
         raise HTTPException(403, "you may only view your own record")
 
     if s.is_registered(student):
@@ -284,7 +487,7 @@ def recommend(student: int, k: int = Query(3, le=10), planner: str = "greedy",
               elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
     s = _service()
-    if user.role != "adviser" and user.student_id != student:
+    if user.role not in ("adviser", "admin") and user.student_id != student:
         raise HTTPException(403, "you may only view your own record")
 
     start = time.perf_counter()
@@ -330,10 +533,12 @@ def graph(module: str | None = None, elpr_session: str | None = Cookie(None)) ->
 
 
 @app.get("/api/metrics")
-def metrics() -> dict:
-    """Study results, read live from results/ so the site cannot drift from the paper."""
+def metrics(elpr_session: str | None = Cookie(None)) -> dict:
+    """Study results, read live from results/ so the site cannot drift from the paper.
+    Admin only: the research is kept as validation, not shown to students."""
     import json
 
+    _require_admin(elpr_session)
     out = {}
     for name in ("table1", "table2", "explainability", "graph_stats", "dataset_stats"):
         path = ROOT / "results" / f"{name}.json"

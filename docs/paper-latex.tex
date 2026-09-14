@@ -1,0 +1,515 @@
+% =====================================================================
+%  LaTeX source for tables, equations and the algorithm block
+%  Explainable AI-Based Personalized Learning Path Recommendation System
+%  IEEEtran conference format, two columns
+%
+%  Every number is measured and traceable to results/ in
+%  github.com/abhay27singh/explainable-learning-path-recommender
+% =====================================================================
+%
+%  PREAMBLE — add these if not already present
+%
+%  \usepackage{amsmath,amssymb}
+%  \usepackage{booktabs}          % \toprule \midrule \bottomrule
+%  \usepackage{multirow}
+%  \usepackage{algorithm}
+%  \usepackage{algpseudocode}
+%
+%  PAGE BUDGET. Nine tables will not fit a six-page paper. Include the
+%  three marked ESSENTIAL; add others as space allows, in the order given.
+%
+%    ESSENTIAL   Table I   accuracy
+%    ESSENTIAL   Table III cold-concept   <- the contribution
+%    ESSENTIAL   Table IV  path quality
+%    strong      Table II  ablation (sets up Table III; can be folded into prose)
+%    strong      Table VII explanation quality
+%    if space    Tables V, VI, VIII, IX
+%
+% =====================================================================
+
+
+% ---------------------------------------------------------------------
+% TABLE I — predictive accuracy                             [ESSENTIAL]
+% Six columns: use table* so it spans both columns.
+% ---------------------------------------------------------------------
+\begin{table*}[t]
+\centering
+\caption{Comparative predictive performance. Mean $\pm$ standard deviation over
+five-fold cross-validation with folds grouped by student, so that no learner appears
+in both training and test partitions. $p$-values are paired $t$-tests against the
+proposed model, Holm--Bonferroni corrected across the comparison family; $d$ is
+Cohen's $d$ for paired samples.}
+\label{tab:accuracy}
+\begin{tabular}{lccccc}
+\toprule
+Model & AUC-ROC & RMSE & ECE & $p$ & $d$ \\
+\midrule
+Majority (no-skill)          & $0.5000 \pm 0.0000$ & $0.4669 \pm 0.0004$ & $0.0037$ & $<0.001$ & --- \\
+SAKT \cite{pandey2019sakt}   & $0.9233 \pm 0.0018$ & $0.2992 \pm 0.0017$ & $0.0081$ & $<0.001$ & $26.16$ \\
+DKT \cite{piech2015dkt}      & $0.9435 \pm 0.0017$ & $0.2751 \pm 0.0022$ & $0.0102$ & $0.0009$ & $5.67$ \\
+GNN-based                    & $0.9502 \pm 0.0014$ & $0.2665 \pm 0.0020$ & $0.0064$ & $0.0220$ & $2.25$ \\
+\textbf{Proposed (KG-DKT)}   & $\mathbf{0.9538 \pm 0.0019}$ & $\mathbf{0.2621 \pm 0.0026}$ & $\mathbf{0.0054}$ & --- & --- \\
+\midrule
+Improvement vs.\ GNN-based   & $+0.0036$ & $-0.0044$ & & & \\
+Improvement vs.\ DKT         & $+0.0103$ & $-0.0130$ & & & \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+% ---------------------------------------------------------------------
+% TABLE II — component ablation
+% ---------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Component ablation under the conventional protocol. Neither component
+produces a statistically detectable change in predictive accuracy. Section~V-B
+explains why this measurement cannot observe the knowledge graph.}
+\label{tab:ablation}
+\begin{tabular}{lccc}
+\toprule
+Variant & AUC-ROC & RMSE & $p$ \\
+\midrule
+Proposed (full)              & $0.9538 \pm 0.0019$ & $0.2621 \pm 0.0026$ & --- \\
+\quad w/o knowledge graph    & $0.9539 \pm 0.0021$ & $0.2618 \pm 0.0025$ & $0.77$ \\
+\quad w/o temporal attention & $0.9532 \pm 0.0014$ & $0.2624 \pm 0.0024$ & $0.45$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ---------------------------------------------------------------------
+% TABLE III — cold-concept ablation                         [ESSENTIAL]
+% This is the paper's contribution. Give it prominence.
+% ---------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Cold-concept ablation. All assessments are withheld for 27 of the 89
+assessed concepts and their observed responses are removed from the model input, so
+that they behave as genuinely unassessed concepts; evaluation is restricted to those
+concepts alone. The graph-conditioned model wins on every fold.}
+\label{tab:coldconcept}
+\begin{tabular}{lcc}
+\toprule
+Variant & AUC-ROC & RMSE \\
+\midrule
+Proposed, with knowledge graph & $\mathbf{0.9004 \pm 0.0059}$ & $\mathbf{0.3359 \pm 0.0059}$ \\
+Proposed, without              & $0.8679 \pm 0.0042$ & $0.3611 \pm 0.0113$ \\
+\midrule
+Difference & \multicolumn{2}{c}{$+0.0325$ \quad $p = 0.0003$ \quad $d = 5.06$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ---------------------------------------------------------------------
+% TABLE IV — learning path quality                          [ESSENTIAL]
+% ---------------------------------------------------------------------
+\begin{table*}[t]
+\centering
+\caption{Learning path quality over 906 recommendation decisions from 400 held-out
+learners who passed or achieved distinction. Ground truth is the set of concepts each
+learner actually engaged with next, rather than a simulation. All planners operate
+under the same prerequisite action mask.}
+\label{tab:pathquality}
+\begin{tabular}{lccccc}
+\toprule
+Planner & NDCG@5 & Hit@5 & Prec@5 & Prereq.\ violations & Coverage \\
+\midrule
+Curriculum (syllabus order) & $0.0612 \pm 0.154$ & $0.1832$ & $0.0453$ & $0.0000$ & $0.452$ \\
+Popularity                  & $0.1069 \pm 0.199$ & $0.2936$ & $0.0808$ & $0.0000$ & $0.510$ \\
+Random (legal moves)        & $0.1300 \pm 0.218$ & $0.3455$ & $0.0863$ & $0.0000$ & $0.722$ \\
+Weakest-first               & $0.1344 \pm 0.207$ & $0.3642$ & $0.0956$ & $0.0000$ & $0.515$ \\
+\textbf{Proposed (greedy)}  & $\mathbf{0.1532 \pm 0.238}$ & $\mathbf{0.3687}$ & $\mathbf{0.1051}$ & $\mathbf{0.0000}$ & $\mathbf{0.726}$ \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\begin{tabular}{lccc}
+\multicolumn{4}{c}{\footnotesize Paired comparison of NDCG@5 against the proposed planner (Holm-corrected)}\\
+\toprule
+Comparison & Difference & $p$ & Cohen's $d$ \\
+\midrule
+vs.\ curriculum    & $+0.0921$ & $<0.001$  & $0.36$ (small) \\
+vs.\ popularity    & $+0.0464$ & $<0.001$  & $0.17$ (negligible) \\
+vs.\ random        & $+0.0232$ & $0.0125$  & $0.09$ (negligible) \\
+vs.\ weakest-first & $+0.0189$ & $0.0167$  & $0.08$ (negligible) \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+% ---------------------------------------------------------------------
+% TABLE V — calibration
+% ---------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Calibration of predicted mastery. The temperature is fitted on one half of
+each fold's held-out predictions and evaluated on the other, so the reported error is
+not self-flattering. Mastery values are displayed to learners inside explanations,
+which makes their calibration a correctness requirement rather than a refinement.}
+\label{tab:calibration}
+\begin{tabular}{lc}
+\toprule
+ & Expected calibration error \\
+\midrule
+Before temperature scaling & $0.0084$ \\
+After temperature scaling  & $\mathbf{0.0054}$ \\
+\midrule
+Fitted temperature per fold & \multicolumn{1}{c}{$1.022,\ 1.066,\ 1.068,\ 1.024,\ 1.046$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ---------------------------------------------------------------------
+% TABLE VI — cold-start performance
+% ---------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Predictive accuracy as a function of available interaction history. With no
+history the model falls back to the learner-profile prior obtained by $k$-means
+clustering over first-window behaviour.}
+\label{tab:coldstart}
+\begin{tabular}{lc}
+\toprule
+Prior interactions & AUC-ROC \\
+\midrule
+$0$        & $0.7421 \pm 0.0353$ \\
+$1$--$4$   & $0.9449 \pm 0.0086$ \\
+$5$--$9$   & $0.9559 \pm 0.0062$ \\
+$10$--$19$ & $0.9539 \pm 0.0056$ \\
+$\geq 20$  & $0.9514 \pm 0.0023$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ---------------------------------------------------------------------
+% TABLE VII — explanation quality
+% ---------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Objective explanation quality. A rating scale records whether a reader
+found an explanation agreeable; these measures record whether it is faithful to the
+model. The low sufficiency indicates that generated explanations were accurate but
+incomplete, attributing to the named concept only a small share of the benefit they
+described.}
+\label{tab:explanation}
+\begin{tabular}{lcp{4.1cm}}
+\toprule
+Measure & Value & Definition \\
+\midrule
+Fidelity    & $0.5318$ & Rank correlation between cited prerequisite deficits and measured counterfactual improvement \\
+Sufficiency & $0.0020$ & Share of predicted gain attributable to the concept named \\
+Stability   & $0.5310$ & Jaccard overlap of cited gaps under $\pm 0.02$ mastery perturbation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ---------------------------------------------------------------------
+% TABLE VIII — dataset and derived graph
+% ---------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Dataset and derived concept graph. OULAD contains no concept annotations,
+prerequisite relations or material titles; concepts are defined as (module,
+week-of-study) pairs and edges are derived from course structure and mined from
+learner behaviour.}
+\label{tab:dataset}
+\begin{tabular}{lr}
+\toprule
+Quantity & Value \\
+\midrule
+Distinct students                & $28{,}785$ \\
+Enrolments                       & $32{,}593$ \\
+Clickstream events               & $10{,}655{,}280$ \\
+Assessment records               & $173{,}912$ \\
+Learning materials               & $6{,}364$ \\
+\midrule
+Concepts derived                 & $237$ \\
+\quad prerequisite edges         & $724$ \\
+\quad corequisite edges          & $302$ \\
+\quad cycles requiring removal   & $0$ \\
+\quad concepts with assessments  & $89$ of $237$ \\
+\midrule
+Interaction sequences            & $27{,}904$ \\
+\quad median events per sequence & $169$ \\
+Supervised tokens                & $242{,}670$ \\
+Label balance (success/failure)  & $67.9\% / 32.1\%$ \\
+Placement proxy validation       & $\rho = 0.975$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ---------------------------------------------------------------------
+% TABLE IX — computational cost
+% ---------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Computational cost, measured on the hardware used. Inference runs on CPU;
+training used a single free-tier NVIDIA T4.}
+\label{tab:efficiency}
+\begin{tabular}{lr}
+\toprule
+Quantity & Value \\
+\midrule
+Model parameters                     & $466{,}569$ \\
+\quad transformer encoder            & $85\%$ \\
+\quad graph encoder                  & $6\%$ \\
+End-to-end recommendation latency    & ${\approx}160$\,ms \\
+Cached mastery lookup                & $7$\,ms \\
+Training per configuration           & ${\approx}25$\,min \\
+Full ETL from raw data               & ${\approx}2.5$\,min \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% =====================================================================
+%  EQUATIONS for Section III
+%  The submitted paper contains none. Reviewer 3: "the presentation of
+%  the proposed algorithm is too conceptual, and details of how to
+%  operate the proposed algorithm in practice should be clearly
+%  elaborated."
+% =====================================================================
+
+% --- A. Knowledge-graph concept encoding -----------------------------
+Concept representations are produced by a three-layer graph convolution over the
+symmetrically normalised adjacency of the prerequisite graph,
+%
+\begin{equation}
+\hat{A} = D^{-1/2}\,(A + I)\,D^{-1/2},
+\label{eq:adjacency}
+\end{equation}
+%
+where $A \in \mathbb{R}^{C \times C}$ is the weighted prerequisite adjacency over
+$C = 237$ concepts and $D$ its degree matrix. With $H^{(0)} = E$ a learned embedding
+table,
+%
+\begin{equation}
+H^{(l+1)} = \mathrm{Dropout}\!\left(\mathrm{ReLU}\!\left(\mathrm{LayerNorm}\!\left(
+\hat{A}\,H^{(l)}\,W^{(l)}\right)\right)\right),
+\label{eq:gcn}
+\end{equation}
+%
+for $l = 0,1,2$, giving concept embeddings $Z = H^{(3)} \in \mathbb{R}^{C \times 64}$.
+$Z$ is recomputed at every forward pass, so gradients propagate into the graph
+structure rather than treating it as a fixed input.
+
+% --- B. Interaction embedding ----------------------------------------
+For interaction $t$ with concept $c_t$, response
+$r_t \in \{\textit{correct}, \textit{incorrect}, \textit{unlabelled}\}$ and kind
+$k_t \in \{\textit{context}, \textit{assessment}\}$,
+%
+\begin{equation}
+x_t = W_c Z[c_t] + W_r e(r_t) + W_k e(k_t) + W_f f_t + W_s s,
+\label{eq:embedding}
+\end{equation}
+%
+where $s$ are static learner features and
+$f_t = [\log(1 + \text{clicks}_t),\ \Delta t_{\text{prev}},\
+\Delta t_{\text{concept}},\ \text{day}_t/\text{span}]$ carries the temporal context.
+
+% --- C. Time-aware attention (the forgetting mechanism) ---------------
+Forgetting is modelled as an additive attention bias decaying with elapsed time,
+%
+\begin{equation}
+b^{(h)}_{ij} = -\,\mathrm{softplus}(\gamma_h)\,\log\!\left(1 + \Delta_{ij}\right),
+\label{eq:decay}
+\end{equation}
+%
+where $\Delta_{ij}$ is the number of days between interactions $i$ and $j$ and
+$\gamma_h$ is learned independently for each attention head, allowing one head to
+attend to recent activity while another retains a longer memory. Attention is then
+%
+\begin{equation}
+A^{(h)} = \mathrm{softmax}\!\left(
+\frac{Q^{(h)} {K^{(h)}}^{\!\top}}{\sqrt{d_k}} + b^{(h)} + M\right),
+\label{eq:attention}
+\end{equation}
+%
+with $M$ the combined causal and padding mask. Setting $\gamma_h = 0$ recovers
+ordinary scaled dot-product attention and constitutes the temporal ablation reported
+in Table~\ref{tab:ablation}.
+
+% --- D. Prediction and masked objective -------------------------------
+Writing $h_t$ for the encoder state after interaction $t$, the probability of success
+on the next interaction is
+%
+\begin{equation}
+\hat{y}_t = \sigma\!\left(\mathrm{MLP}\!\left(\left[\,h_{t-1}\,;\,Z[c_t]\,\right]\right)\right),
+\label{eq:prediction}
+\end{equation}
+%
+conditioning on the identity of concept $c_t$ but never on its response, so no label
+information leaks. The objective is binary cross-entropy restricted to assessment
+positions $\mathcal{S}$,
+%
+\begin{equation}
+\mathcal{L} = -\frac{1}{|\mathcal{S}|}\sum_{t \in \mathcal{S}}
+\Big[\,y_t \log \hat{y}_t + (1-y_t)\log(1-\hat{y}_t)\,\Big].
+\label{eq:loss}
+\end{equation}
+%
+Clickstream interactions update the hidden state but contribute no loss term. This is
+what makes a sequence model of length 200 trainable on a dataset in which learners
+average only 8.7 assessments each.
+
+% --- E. Calibration ---------------------------------------------------
+Predicted probabilities are calibrated by temperature scaling, with $T^\star$ fitted
+on held-out predictions,
+%
+\begin{equation}
+T^\star = \operatorname*{arg\,min}_{T} \;
+\mathrm{BCE}\!\left(\sigma(z/T),\, y\right),
+\qquad
+\hat{y} = \sigma\!\left(z / T^\star\right).
+\label{eq:temperature}
+\end{equation}
+
+% --- F. Mastery state -------------------------------------------------
+The mastery vector consumed by the planner evaluates the prediction head against every
+concept,
+%
+\begin{equation}
+m_t[c] = \sigma\!\left(\mathrm{MLP}\!\left(\left[\,h_t\,;\,Z[c]\,\right]\right)\right),
+\qquad c = 1,\dots,C.
+\label{eq:mastery}
+\end{equation}
+
+% --- G. Decision process ----------------------------------------------
+Recommendation is formulated as a Markov decision process. The state concatenates the
+mastery vector, a coverage mask of concepts already recommended, the static learner
+features and the remaining budget,
+%
+\begin{equation}
+s_t = \left[\,m_t \,\|\, o_t \,\|\, s \,\|\, b_t\,\right] \in \mathbb{R}^{2C + 57}.
+\label{eq:state}
+\end{equation}
+%
+An action $a \in \{1,\dots,C\}$ is admissible only if
+%
+\begin{equation}
+m_t[a] < \tau_{\text{mastered}}
+\;\wedge\;
+\forall p \in \mathrm{pre}(a):\, m_t[p] \geq \tau_{\text{ready}}
+\;\wedge\;
+a \in \mathcal{E},
+\label{eq:mask}
+\end{equation}
+%
+with $\mathcal{E}$ the concepts of the learner's enrolled modules. Encoding the
+pedagogical constraint in the admissible set, rather than expecting a learned policy
+to discover it, makes an unprepared recommendation impossible by construction; this is
+verified empirically at zero violations in Table~\ref{tab:pathquality}. The reward
+%
+\begin{equation}
+r_t = \alpha \sum_{c} \max\!\left(0, \Delta m[c]\right)
++ \beta\,\mathbb{1}[\text{prereq.\ met}]
+- \delta\,\mathbb{1}[\text{redundant}]
+- \eta
+\label{eq:reward}
+\end{equation}
+%
+uses $\alpha = 1.0$, $\beta = 0.2$, $\delta = 0.5$, $\eta = 0.05$.
+
+% --- H. Planner scoring ------------------------------------------------
+Candidates are ranked by the predicted improvement in log-odds relative to an equal
+period of no study,
+%
+\begin{equation}
+\mathrm{score}(a) = \sum_{c \in \mathcal{E}}
+\left[\,
+\mathrm{logit}\, m^{(a)}_{t+1}[c] \;-\; \mathrm{logit}\, m^{(\varnothing)}_{t+1}[c]
+\,\right].
+\label{eq:score}
+\end{equation}
+%
+Two choices here are load-bearing. The baseline $m^{(\varnothing)}_{t+1}$ is an equal
+elapsed period without study rather than the present state: studying advances the
+clock, and the decay of \eqref{eq:decay} then attenuates every earlier interaction, so
+measuring against the present moment makes every available action appear harmful.
+Scoring in log-odds rather than probability is necessary because engaged learners
+saturate near $0.98$ on most concepts, where probability differences vanish and the
+ranking degenerates.
+
+% --- I. Priority backtracking ------------------------------------------
+For a recommended concept $c^\star$, each prerequisite ancestor $a$ is scored by its
+shortfall, discounted by distance in the graph,
+%
+\begin{equation}
+\pi(a) = \max\!\left(0,\ \tau_{\text{ready}} - m[a]\right)\cdot \rho^{\,d(a, c^\star) - 1},
+\label{eq:priority}
+\end{equation}
+%
+with decay $\rho = 0.6$ and traversal depth at most four. Ancestors are reported in
+descending $\pi$, so that an unmet prerequisite immediately preceding the
+recommendation outranks an equal shortfall further back.
+
+
+% =====================================================================
+%  ALGORITHM BLOCK
+%  Reviewer 3 asked for operational detail. This supplies it.
+% =====================================================================
+\begin{algorithm}[t]
+\caption{Explained recommendation}
+\label{alg:recommend}
+\begin{algorithmic}[1]
+\Require learner history $h$, graph $G$, trained parameters $\theta$, budget $k$
+\Ensure $k$ recommendations, each with an explanation
+\State $Z \gets \textproc{GCN}(\hat{A})$ \Comment{Eq.~\eqref{eq:gcn}}
+\State $m \gets \textproc{Mastery}(h, Z, \theta)$ \Comment{Eq.~\eqref{eq:mastery}, calibrated}
+\State $\tau \gets \textproc{Percentiles}(m|_{\mathcal{E}})$ \Comment{learner-relative}
+\State $L \gets \{\, a : \textproc{Admissible}(a, m, \tau, G) \,\}$ \Comment{Eq.~\eqref{eq:mask}}
+\If{$L = \varnothing$}
+  \State $L \gets \textproc{Relax}(m, \tau)$ \Comment{report relaxation in the explanation}
+\EndIf
+\State $m^{(\varnothing)} \gets \textproc{Mastery}(\textproc{Idle}(h), Z, \theta)$
+\ForAll{$a \in L$} \Comment{one batched forward pass}
+  \State $m^{(a)} \gets \textproc{Mastery}(h \oplus (a, \text{correct}), Z, \theta)$
+  \State $\mathrm{score}(a) \gets \sum_{c \in \mathcal{E}} \left[\mathrm{logit}\,m^{(a)}[c] - \mathrm{logit}\,m^{(\varnothing)}[c]\right]$
+\EndFor
+\State $A \gets \textproc{TopK}(L, \mathrm{score}, k)$
+\ForAll{$a \in A$}
+  \State $\mathcal{G} \gets \textproc{Backtrack}(G, m, a, \tau)$ \Comment{Eq.~\eqref{eq:priority}}
+  \State $\mathcal{C} \gets \textproc{Counterfactual}(a, \mathcal{G}, \theta)$ \Comment{computed, not asserted}
+  \State $\textproc{Render}(a, \mathcal{G}, \mathcal{C})$
+\EndFor
+\State \Return $A$ with explanations
+\end{algorithmic}
+\end{algorithm}
+
+
+% =====================================================================
+%  BIBLIOGRAPHY ENTRIES referenced above
+% =====================================================================
+%
+% \bibitem{piech2015dkt}
+% C.~Piech, J.~Bassen, J.~Huang, S.~Ganguli, M.~Sahami, L.~Guibas, and
+% J.~Sohl-Dickstein, ``Deep knowledge tracing,'' in \emph{Advances in Neural
+% Information Processing Systems}, vol.~28, 2015, pp.~505--513.
+%
+% \bibitem{pandey2019sakt}
+% S.~Pandey and G.~Karypis, ``A self-attentive model for knowledge tracing,'' in
+% \emph{Proc. 12th Int. Conf. Educational Data Mining (EDM)}, 2019, pp.~384--389.
+%
+% \bibitem{kuzilek2017oulad}
+% J.~Kuzilek, M.~Hlosta, and Z.~Zdrahal, ``Open University Learning Analytics
+% dataset,'' \emph{Scientific Data}, vol.~4, Art. no. 170171, 2017,
+% doi: 10.1038/sdata.2017.171.
+%
+% \bibitem{guo2017calibration}
+% C.~Guo, G.~Pleiss, Y.~Sun, and K.~Q. Weinberger, ``On calibration of modern neural
+% networks,'' in \emph{Proc. 34th Int. Conf. Machine Learning (ICML)}, 2017,
+% pp.~1321--1330.
+%
+% \bibitem{holm1979}
+% S.~Holm, ``A simple sequentially rejective multiple test procedure,''
+% \emph{Scandinavian Journal of Statistics}, vol.~6, no.~2, pp.~65--70, 1979.
+%
+% NOTE. Two citations are required by the methods above and are absent from the
+% current reference list: Guo et al. for temperature scaling, and Holm for the
+% multiple-comparison correction. Pandey & Karypis is required for the SAKT baseline.

@@ -3,184 +3,457 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Explainable Learning Path Recommender</title>
+<title>Learning Path Recommender</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F5E7A'/%3E%3Cpath d='M7 24 L16 16 L25 8' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='7' cy='24' r='3.2' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='white'/%3E%3Ccircle cx='25' cy='8' r='3.2' fill='white'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
 <style>
   :root{
-    --ground:#F4F6F8; --surface:#fff; --surface-alt:#EAEFF3;
-    --ink:#12161C; --ink-soft:#48525F; --ink-faint:#78838F;
-    --rule:#D7DEE5; --accent:#1F5E7A; --accent-soft:#E1EDF3;
-    --warn:#9E3A2C; --warn-soft:#F7E7E4; --good:#2A6350; --good-soft:#E1EFEA;
+    color-scheme:light;
+    --ground:#F6F8FA; --surface:#fff; --surface-alt:#EDF1F5;
+    --ink:#101828; --ink-soft:#475467; --ink-faint:#7A8696;
+    --rule:#E1E6EC; --accent:#1F5E7A; --accent-strong:#174A61; --accent-soft:#E5F0F5;
+    --warn:#9E3A2C; --warn-soft:#F9E9E6; --good:#2A6350; --good-soft:#E3F1EB;
+    --lvl-1:#86b6ef; --lvl-2:#3987e5; --lvl-3:#1c5cab; --viz-bar:#2a78d6;
     --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
-    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+    --header:64px;
   }
-  @media (prefers-color-scheme:dark){:root{
-    --ground:#0E1217; --surface:#151A21; --surface-alt:#1C232C;
-    --ink:#E2E7EC; --ink-soft:#A6B1BD; --ink-faint:#737F8C;
-    --rule:#29323C; --accent:#6FB2CF; --accent-soft:#16303B;
-    --warn:#E0897A; --warn-soft:#32201C; --good:#7CC1A6; --good-soft:#162E26;}}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
-  button{font-family:inherit;font-size:14px;cursor:pointer;border-radius:4px;
-    border:1px solid var(--rule);background:var(--surface);color:var(--ink);padding:8px 14px}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;
+    -webkit-font-smoothing:antialiased}
+  button{font-family:inherit;font-size:14px;cursor:pointer;border-radius:8px;border:1px solid var(--rule);
+    background:var(--surface);color:var(--ink);padding:8px 14px;transition:border-color .15s,background .15s,color .15s,box-shadow .15s}
   button:hover{border-color:var(--accent)}
-  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;width:100%;padding:10px}
+  button:disabled{opacity:.6;cursor:default}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;width:100%;padding:11px;font-weight:600}
+  button.primary:hover{background:var(--accent-strong);border-color:var(--accent-strong)}
   button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  button.small{padding:4px 9px;font-size:12px}
-  input,select{width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:4px;
-    background:var(--ground);color:var(--ink);font-family:inherit;font-size:14px}
-  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;
-    color:var(--ink-faint);margin:13px 0 5px;font-weight:650}
+  button.small{padding:5px 11px;font-size:13px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:8px;font-weight:600;font-size:15px;
+    text-decoration:none;border:1px solid var(--rule);background:var(--surface);color:var(--ink);cursor:pointer;
+    transition:background .15s,border-color .15s,box-shadow .15s}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;width:auto;padding:11px 20px}
+  .btn.primary:hover{background:var(--accent-strong)}
+  .btn.ghost{border-color:transparent;background:transparent}
+  .btn.ghost:hover{background:var(--surface-alt)}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);
+    color:var(--ink);font-family:inherit;font-size:14px;transition:border-color .15s,box-shadow .15s}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  label{display:block;font-size:12px;color:var(--ink-soft);margin:14px 0 6px;font-weight:600}
   a{color:var(--accent)}
+  h1,h2,h3{letter-spacing:-.015em;line-height:1.25}
+  .muted{color:var(--ink-soft)}
+  .err{background:var(--warn-soft);color:var(--warn);padding:10px 12px;border-radius:8px;font-size:13px;margin-top:14px}
+
+  /* ---------- site header ---------- */
+  header.site{position:sticky;top:0;z-index:40;height:var(--header);background:rgba(255,255,255,.96);
+    border-bottom:1px solid var(--rule);backdrop-filter:saturate(1.2) blur(6px)}
+  header.site .in{max-width:1180px;margin:0 auto;height:100%;padding:0 22px;display:flex;align-items:center;gap:22px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--ink);text-decoration:none;white-space:nowrap}
+  .brand svg{width:28px;height:28px;flex:none}
+  nav.links{display:flex;gap:2px;flex-wrap:wrap}
+  nav.links button{border:0;background:none;color:var(--ink-soft);padding:8px 12px;font-weight:500}
+  nav.links button:hover{background:var(--surface-alt);color:var(--ink)}
+  nav.links button.on{color:var(--accent);background:var(--accent-soft)}
+  header.site .right{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:13px;color:var(--ink-soft)}
+  .badge{font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:6px;
+    background:var(--accent-soft);color:var(--accent);font-weight:600}
+  body:not(.signed-in) .auth-only{display:none!important}
+  body.signed-in .guest-only{display:none!important}
+  @media(max-width:860px){header.site{height:auto}header.site .in{flex-wrap:wrap;padding:10px 16px;gap:10px}
+    header.site .right{margin-left:0}}
+
+  .view{display:none}.view.on{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @media (prefers-reduced-motion:reduce){.view.on{animation:none}html{scroll-behavior:auto}}
+  .page{max-width:1000px;margin:0 auto;padding:28px 22px 40px}
+  .full{padding:24px 26px;max-width:1000px;margin:0 auto}
+
+  /* ---------- home ---------- */
+  .hero{max-width:1180px;margin:0 auto;padding:84px 22px 64px;text-align:center}
+  .hero .eyebrow{display:inline-block;font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-soft);
+    padding:5px 12px;border-radius:6px;margin-bottom:18px}
+  .hero h1{font-size:clamp(34px,5vw,54px);margin:0 auto 16px;max-width:820px;font-weight:700;letter-spacing:-.03em}
+  .hero p.lead{font-size:18px;color:var(--ink-soft);max-width:640px;margin:0 auto 30px}
+  .hero .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .facts{max-width:980px;margin:48px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .fact{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);text-align:left}
+  .fact b{display:block;font-size:24px;letter-spacing:-.02em}
+  .fact span{font-size:13px;color:var(--ink-soft)}
+  .band{padding:72px 22px;border-top:1px solid var(--rule)}
+  .band.alt{background:var(--surface)}
+  .band .in{max-width:1080px;margin:0 auto}
+  .band h2{font-size:32px;text-align:center;margin:0 0 10px}
+  .band p.sub{text-align:center;color:var(--ink-soft);max-width:620px;margin:0 auto 40px}
+  .steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .step3{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+  .band.alt .step3{background:var(--ground)}
+  .step3 .n{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;
+    font-weight:700;margin-bottom:14px}
+  .step3 h3{margin:0 0 6px;font-size:18px}
+  .step3 p{margin:0;color:var(--ink-soft);font-size:14px}
+  .features{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .feature{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+  .feature .ic{width:40px;height:40px;border-radius:9px;background:var(--accent-soft);display:grid;place-items:center;margin-bottom:14px}
+  .feature .ic svg{width:22px;height:22px;stroke:var(--accent)}
+  .feature h3{margin:0 0 6px;font-size:18px}
+  .feature p{margin:0 0 14px;color:var(--ink-soft);font-size:14px}
+  .research{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:center}
+  .research h2{text-align:left}
+  .research p{color:var(--ink-soft)}
+  .research ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+  .research li{background:var(--ground);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;font-size:14px}
+  .research li b{color:var(--ink)}
+  @media(max-width:860px){.facts,.steps3,.features,.research{grid-template-columns:1fr}.hero{padding:56px 18px 44px}}
+
+  footer.site{background:#101828;color:#C7CED9;margin-top:0}
+  footer.site .in{max-width:1180px;margin:0 auto;padding:36px 22px;display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between}
+  footer.site .brand{color:#fff}
+  footer.site p{margin:8px 0 0;font-size:13px;max-width:380px}
+  footer.site .cols{display:flex;gap:40px;flex-wrap:wrap}
+  footer.site h4{margin:0 0 10px;font-size:13px;color:#fff}
+  footer.site a{display:block;color:#C7CED9;text-decoration:none;font-size:14px;margin:6px 0;cursor:pointer}
+  footer.site a:hover{color:#fff}
 
   /* ---------- auth ---------- */
-  #auth{min-height:100vh;display:grid;place-items:center;padding:24px}
-  .auth-card{max-width:460px;width:100%;background:var(--surface);border:1px solid var(--rule);
-    border-radius:7px;padding:32px 34px}
-  .auth-card h1{font-size:21px;margin:0 0 4px;letter-spacing:-.02em}
-  .auth-card p.sub{color:var(--ink-soft);margin:0 0 20px;font-size:14px}
-  .switcher{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--rule);border-radius:5px;overflow:hidden}
-  .switcher button{flex:1;border:0;border-radius:0;background:var(--ground);padding:9px}
-  .switcher button.on{background:var(--accent);color:#fff}
-  .err{background:var(--warn-soft);color:var(--warn);padding:9px 12px;border-radius:4px;
-    font-size:13px;margin-top:14px}
-  .security{margin-top:20px;padding-top:15px;border-top:1px solid var(--rule);
-    font-size:11.5px;color:var(--ink-faint);line-height:1.5}
+  .auth-wrap{min-height:calc(100vh - var(--header));display:grid;place-items:center;padding:40px 18px}
+  .auth-card{max-width:440px;width:100%;background:var(--surface);border:1px solid var(--rule);border-radius:14px;
+    padding:34px 32px;box-shadow:0 12px 32px rgba(16,24,40,.08)}
+  .auth-card h1{font-size:24px;margin:0 0 6px}
+  .auth-card p.sub{color:var(--ink-soft);margin:0 0 8px;font-size:14px}
+  .auth-card .alt{margin-top:18px;font-size:14px;color:var(--ink-soft);text-align:center}
+  .auth-card .alt a{cursor:pointer;font-weight:600}
+  .security{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);font-size:12px;color:var(--ink-faint)}
+  .security a{color:var(--ink-soft);margin-left:8px;cursor:pointer}
 
-  /* ---------- shell ---------- */
-  #app{display:none}
-  header{border-bottom:1px solid var(--rule);background:var(--surface);
-    padding:0 20px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-  header .brand{font-weight:650;font-size:15px;padding:14px 14px 14px 0;letter-spacing:-.01em}
-  .tab{padding:14px;border:0;border-bottom:2px solid transparent;background:none;border-radius:0;color:var(--ink-soft)}
-  .tab.on{border-bottom-color:var(--accent);color:var(--ink);font-weight:600}
-  header .right{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink-faint)}
-  .badge{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;
-    padding:3px 7px;border-radius:3px;background:var(--accent-soft);color:var(--accent)}
-  .view{display:none}.view.on{display:block}
+  /* ---------- dashboard ---------- */
+  .dash-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .dash-head h1{margin:0;font-size:28px}
+  .dash-head p{margin:4px 0 0}
+  .seg{display:inline-flex;background:var(--surface-alt);border-radius:9px;padding:3px;gap:2px}
+  .seg button{border:0;background:none;padding:7px 14px;border-radius:7px;color:var(--ink-soft);font-weight:500}
+  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .block{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:20px 22px;
+    box-shadow:var(--shadow);margin-bottom:18px}
+  .block > h3{margin:0 0 4px;font-size:17px}
+  .block > .muted.small{font-size:13px;margin:0 0 14px}
+  .next{background:var(--surface);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:var(--radius);
+    padding:22px 24px;box-shadow:var(--shadow);margin-bottom:18px}
+  .next .eyebrow{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+  .next h2{margin:6px 0 6px;font-size:24px}
+  .next .meta{color:var(--ink-soft);margin:0 0 12px}
+  .pill-lvl{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--surface-alt);color:var(--ink-soft)}
+  ol.path{list-style:none;margin:0;padding:0;position:relative}
+  ol.path li{position:relative;padding-left:52px;margin:0 0 6px}
+  ol.path li:before{content:"";position:absolute;left:17px;top:38px;bottom:-10px;width:2px;background:var(--rule)}
+  ol.path li:last-child:before{display:none}
+  .path-step{width:100%;text-align:left;display:block;border:1px solid var(--rule);border-radius:10px;padding:12px 14px;background:var(--surface)}
+  .path-step:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .path-step[aria-expanded="true"]{border-color:var(--accent)}
+  .path-num{position:absolute;left:0;top:8px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+    font-weight:700;font-size:14px;background:var(--surface-alt);color:var(--ink-soft);border:2px solid var(--surface)}
+  li.now .path-num{background:var(--accent);color:#fff}
+  .path-step .t{font-weight:600}
+  .path-step .s{font-size:13px;color:var(--ink-soft)}
+  .path-detail{margin:8px 0 12px;padding:12px 14px;background:var(--ground);border-radius:8px;font-size:14px;color:var(--ink-soft)}
+  .strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(18px,1fr);gap:3px;margin:6px 0 10px}
+  .strip span{height:30px;border-radius:5px;display:block}
+  .strip span.known{outline:2px solid var(--ink);outline-offset:-2px}
+  .strip .hit[data-concept]{cursor:pointer}
 
-  main{display:grid;grid-template-columns:310px 1fr;min-height:calc(100vh - 51px)}
-  aside{border-right:1px solid var(--rule);background:var(--surface);padding:16px;
-    overflow-y:auto;max-height:calc(100vh - 51px)}
-  section.panel{padding:22px 26px;overflow-y:auto;max-height:calc(100vh - 51px)}
-  .full{padding:22px 26px;max-width:1000px;margin:0 auto}
-
-  .learner{padding:9px 10px;border:1px solid var(--rule);border-radius:4px;margin-bottom:5px;cursor:pointer;background:var(--ground)}
+  /* ---------- shared, charts, finder, admin ---------- */
+  main.split{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - var(--header))}
+  main.split aside{border-right:1px solid var(--rule);background:var(--surface);padding:18px;overflow-y:auto;max-height:calc(100vh - var(--header));position:sticky;top:var(--header)}
+  main.split section.panel{padding:24px 28px;min-width:0}
+  @media(max-width:860px){main.split{grid-template-columns:1fr}main.split aside{max-height:none;position:static;border-right:0;border-bottom:1px solid var(--rule)}}
+  .learner{padding:10px 12px;border:1px solid var(--rule);border-radius:8px;margin-bottom:6px;cursor:pointer;background:var(--surface);transition:border-color .15s,background .15s}
   .learner:hover{border-color:var(--accent)}
   .learner.on{border-color:var(--accent);background:var(--accent-soft)}
-  .learner .id{font-family:var(--mono);font-size:13px;font-weight:650}
-  .learner .meta{font-size:11px;color:var(--ink-faint)}
+  .learner .id{font-family:var(--mono);font-size:13px;font-weight:600}
+  .learner .meta{font-size:12px;color:var(--ink-faint)}
   .learner.new{border-left:3px solid var(--good)}
-  .grouphead{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-faint);
-    margin:16px 0 7px;font-weight:650}
-
-  .card{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);
-    padding:16px 18px;margin-bottom:13px;border-radius:4px}
+  .grouphead{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin:16px 0 8px;font-weight:600}
+  .card{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:16px 18px;margin-bottom:12px;border-radius:var(--radius);box-shadow:var(--shadow)}
   .card h3{margin:0 0 4px;font-size:16px}
-  .rank{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  .rank{font-size:12px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em}
   .prose{margin:9px 0 0;color:var(--ink-soft)}
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
-  .chip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:3px;background:var(--surface-alt);color:var(--ink-soft)}
-  .chip.gap{background:var(--warn-soft);color:var(--warn)}
-  .chip.ok{background:var(--good-soft);color:var(--good)}
-  .actions{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
-
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1px;
-    background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin-bottom:20px}
-  .tile{background:var(--surface);padding:14px 16px}
-  .tile .v{font-family:var(--mono);font-size:21px;font-weight:650;color:var(--accent);letter-spacing:-.02em}
-  .tile .k{font-size:11px;color:var(--ink-faint);margin-top:3px}
-
+  .actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .viz{margin:0 0 16px;padding:16px 18px;border:1px solid var(--rule);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+  .viz h3{margin:0 0 2px;font-size:15px}
+  .viz .sub{margin:0 0 10px;font-size:13px;color:var(--ink-faint)}
+  .viz-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:880px){.viz-row{grid-template-columns:1fr}}
+  .viz-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink-soft);margin:0 0 10px}
+  .viz-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+  .lvl-bar{display:flex;gap:2px;height:24px;margin:4px 0 12px}
+  .lvl-bar span{display:block;height:100%}
+  .lvl-bar span:first-child{border-radius:4px 0 0 4px}
+  .lvl-bar span:last-child{border-radius:0 4px 4px 0}
+  .lvl-bar span:only-child{border-radius:4px}
+  .part-row{display:grid;grid-template-columns:minmax(120px,max-content) 1fr 42px;align-items:center;gap:10px;min-height:28px;font-size:12px;color:var(--ink-soft)}
+  .part-fill{height:16px;background:var(--viz-bar);border-radius:0 4px 4px 0;min-width:2px}
+  .part-row .val{color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+  details.viz-table{margin-top:10px}
+  details.viz-table summary,details.working summary{cursor:pointer;font-size:13px;color:var(--ink-faint)}
+  details.viz-table table{margin-top:8px;font-size:12px}
+  details.working{margin-top:12px}
+  .study-links a{margin-left:9px;font-size:12px;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+  .study-links a:hover{border-bottom-color:var(--accent)}
+  .badges{display:flex;flex-wrap:wrap;gap:6px}
+  .badge-chip{font-size:12px;padding:4px 9px;border:1px solid var(--rule);border-radius:6px;color:var(--ink-faint)}
+  .badge-chip.earned{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+  .skel{background:var(--surface-alt);border-radius:8px}
+  #toast{position:fixed;right:18px;bottom:18px;z-index:60;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;
+    font-size:14px;opacity:0;transform:translateY(6px);transition:opacity .15s ease,transform .15s ease;pointer-events:none}
+  #toast.show{opacity:1;transform:none}
+  .chipset{display:flex;flex-direction:column;gap:6px}
+  .chipset label.pick{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink);padding:8px 11px;
+    border:1px solid var(--rule);border-radius:8px;cursor:pointer;margin:0;font-weight:500;transition:border-color .15s,background .15s}
+  .chipset label.pick input{width:auto;margin:0}
+  .chipset label.pick:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+  #viz-tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);border:1px solid var(--rule);
+    border-radius:8px;padding:8px 11px;font-size:12px;box-shadow:0 6px 18px rgba(16,24,40,.12);max-width:260px}
+  #viz-tip .tv{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+  #viz-tip .tl{display:block;color:var(--ink-soft)}
+  .lift{filter:brightness(1.15)}
+  rect.hit:focus{outline:none;stroke:var(--accent);stroke-width:2}
+  .hit:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .fixed{padding:10px 12px;border:1px dashed var(--rule);border-radius:8px;color:var(--ink-soft);font-size:14px}
+  ul.plain{margin:8px 0 0;padding-left:18px;color:var(--ink-soft)}
+  ul.plain li{margin:3px 0}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .tile{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .v{font-size:24px;font-weight:700;color:var(--accent);letter-spacing:-.02em}
+  .tile .k{font-size:12px;color:var(--ink-faint);margin-top:2px}
+  .tile .v.text{font-size:16px;font-weight:600;line-height:1.3;color:var(--ink)}
   table{border-collapse:collapse;width:100%;font-size:14px}
-  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;
-    color:var(--ink-faint);border-bottom:1px solid var(--ink-soft);padding:0 12px 7px 0;font-weight:650}
-  td{padding:8px 12px 8px 0;border-bottom:1px solid var(--rule)}
-  td.n,th.n{font-family:var(--mono);text-align:right;padding-right:0;font-variant-numeric:tabular-nums}
+  th{text-align:left;font-size:12px;color:var(--ink-faint);border-bottom:1px solid var(--rule);padding:0 12px 8px 0;font-weight:600}
+  td{padding:9px 12px 9px 0;border-bottom:1px solid var(--rule)}
+  td.n,th.n{text-align:right;padding-right:0;font-variant-numeric:tabular-nums}
+  .admin-table td.n,.admin-table th.n{padding-right:28px}
   tr.hl td{background:var(--accent-soft);font-weight:600}
   .scroll{overflow-x:auto}
-  h2{font-size:19px;margin:26px 0 12px;letter-spacing:-.01em}
+  h2{font-size:20px;margin:28px 0 12px}
   h2:first-child{margin-top:0}
-  .caption{font-size:12px;color:var(--ink-faint);margin:-6px 0 15px}
-  .callout{background:var(--accent-soft);border-left:3px solid var(--accent);padding:14px 18px;
-    border-radius:0 4px 4px 0;margin-bottom:18px}
-  figure{margin:0 0 20px}figure img{width:100%;border:1px solid var(--rule);border-radius:4px;background:var(--surface)}
+  .caption{font-size:13px;color:var(--ink-faint);margin:-6px 0 15px}
+  .admin-table + .caption{margin-top:14px}
+  .callout{background:var(--accent-soft);border-left:3px solid var(--accent);padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:18px}
+  figure{margin:0 0 20px}figure img{width:100%;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
   .empty{color:var(--ink-faint);padding:46px 0;text-align:center}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .legend{font-size:11px;color:var(--ink-faint);font-family:var(--mono);margin:10px 0}
-  .hist{font-family:var(--mono);font-size:11px;color:var(--ink-faint);line-height:1.8}
-  @media(max-width:880px){main{grid-template-columns:1fr}aside{max-height:none;border-right:0;border-bottom:1px solid var(--rule)}}
+  .legal h2{margin:0 0 4px;font-size:26px}
+  .legal h3{margin:22px 0 6px;font-size:16px}
+  .legal p{margin:0 0 10px;color:var(--ink-soft);max-width:68ch}
 </style>
 </head>
 <body>
 
-<!-- ================= auth ================= -->
-<div id="auth">
-  <div class="auth-card">
-    <h1>Explainable Learning Path Recommender</h1>
-    <p class="sub">Knowledge tracing and prerequisite-aware recommendation over the Open
-      University Learning Analytics Dataset.</p>
-
-    <div class="switcher">
-      <button id="tab-login" class="on">Sign in</button>
-      <button id="tab-register">Create account</button>
-    </div>
-
-    <form id="form-login">
-      <label>Username</label><input name="username" autocomplete="username" required />
-      <label>Password</label><input name="password" type="password" autocomplete="current-password" required />
-      <div style="margin-top:18px"><button class="primary" type="submit">Sign in</button></div>
-    </form>
-
-    <form id="form-register" style="display:none">
-      <label>Username</label><input name="username" autocomplete="username" required minlength="3" />
-      <label>Display name</label><input name="display_name" placeholder="how you want to be addressed" />
-      <label>Password</label><input name="password" type="password" autocomplete="new-password" required minlength="8" />
-      <label>I am a</label>
-      <select name="role" id="reg-role">
-        <option value="student">Student — track my own learning</option>
-        <option value="adviser">Academic adviser — view learners</option>
-      </select>
-      <div id="module-wrap"><label>Module I am studying</label>
-        <select name="module" id="reg-module"></select></div>
-      <div style="margin-top:18px"><button class="primary" type="submit">Create account</button></div>
-    </form>
-
-    <div id="auth-err"></div>
-
-    <p class="security"><b>Demonstration system.</b> Passwords are hashed with scrypt and
-      never stored in plain text, and sessions use httpOnly cookies. But this runs over
-      plain HTTP on a single machine, with no rate limiting and no account recovery.
-      <b>Do not reuse a password you use anywhere else.</b> All learner data shown is
-      anonymised and public.</p>
-  </div>
-</div>
-
-<!-- ================= app ================= -->
-<div id="app">
-  <header>
-    <div class="brand">Learning Path Recommender</div>
-    <button class="tab on" data-view="home" id="tab-home">My learning</button>
-    <button class="tab" data-view="results">Results</button>
-    <button class="tab" data-view="about">Method</button>
+<header class="site">
+  <div class="in">
+    <a class="brand" data-go="home" href="#/home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1F5E7A"/><path d="M7 24 L16 16 L25 8" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="7" cy="24" r="3.2" fill="#fff"/><circle cx="16" cy="16" r="3.2" fill="#fff"/><circle cx="25" cy="8" r="3.2" fill="#fff"/></svg>
+      Learning Path Recommender
+    </a>
+    <nav class="links" aria-label="Main">
+      <button data-go="home" class="guest-only">Home</button>
+      <button data-go="dashboard" class="auth-only" id="nav-dashboard">My learning</button>
+      <button data-go="finder">Course Finder</button>
+      <button data-go="research" id="nav-research" style="display:none">Research</button>
+      <button data-go="admin" id="nav-admin" style="display:none">Admin</button>
+    </nav>
     <div class="right">
-      <span id="who"></span><span class="badge" id="rolebadge"></span>
-      <button class="small" id="signout">Sign out</button>
+      <a class="btn ghost guest-only" data-go="login" href="#/login">Sign in</a>
+      <a class="btn primary guest-only" data-go="signup" href="#/signup">Get started</a>
+      <span class="auth-only" id="who"></span><span class="badge auth-only" id="rolebadge"></span>
+      <button class="small auth-only" id="signout">Sign out</button>
     </div>
-  </header>
-
-  <div class="view on" id="view-home"></div>
-
-  <div class="view" id="view-results">
-    <div class="full"><div id="results" class="empty">loading…</div></div>
   </div>
+</header>
 
-  <div class="view" id="view-about">
-    <div class="full" style="max-width:820px"><div id="about"></div></div>
+<!-- ================= home ================= -->
+<div class="view" id="view-home">
+  <section class="hero">
+    <span class="eyebrow">Explainable learning paths</span>
+    <h1>Know exactly what to study next</h1>
+    <p class="lead">It tracks what you have learned, checks what each topic needs first, and tells you your next step in plain words.</p>
+    <div class="cta">
+      <a class="btn primary" data-go="signup" href="#/signup">Get started</a>
+      <a class="btn" data-go="finder" href="#/finder">Find a course</a>
+    </div>
+    <div class="facts">
+      <div class="fact"><b>5 levels</b><span>class 10, class 12, diploma, undergraduate and postgraduate</span></div>
+      <div class="fact"><b>43</b><span>diploma, undergraduate and postgraduate courses to explore</span></div>
+      <div class="fact"><b>Week 1</b><span>is where every course path starts, one week at a time</span></div>
+    </div>
+  </section>
+
+  <section class="band alt" id="how">
+    <div class="in">
+      <h2>How it works</h2>
+      <p class="sub">Three steps. No test to sit, no long setup.</p>
+      <div class="steps3">
+        <div class="step3"><div class="n">1</div><h3>Tell us where you are</h3><p>Class 10, class 12, diploma, undergraduate or postgraduate, and your course if you are on one.</p></div>
+        <div class="step3"><div class="n">2</div><h3>Get your next step</h3><p>On a course, you get it week by week from Week 1. At school, you get courses that fit your subjects.</p></div>
+        <div class="step3"><div class="n">3</div><h3>Mark what you finish</h3><p>Press "I studied this" or "I passed the test" and your path moves on to the next week.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="in">
+      <h2>What you get</h2>
+      <p class="sub">Built for students first, with a separate view for academic advisers.</p>
+      <div class="features">
+        <div class="feature">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M6 17V9a4 4 0 0 1 4-4h6"/></svg></div>
+          <h3>A week-by-week path</h3><p>Your course in order, starting at Week 1. Tap any week to see what it builds on and what it opens up.</p>
+          <a class="btn small" data-go="signup" href="#/signup">Start my path</a>
+        </div>
+        <div class="feature">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+          <h3>Course Finder</h3><p>Finishing class 10, class 12 or a degree? Match your subjects and interests to courses, with free NPTEL and SWAYAM study links.</p>
+          <a class="btn small" data-go="finder" href="#/finder">Find a course</a>
+        </div>
+        <div class="feature">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/></svg></div>
+          <h3>Weekly progress</h3><p>A short summary of your week, your study streak and an activity calendar, all from what you actually recorded.</p>
+        </div>
+        <div class="feature">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 11a3 3 0 1 0 0-6M21 20a5 5 0 0 0-4-4.9"/></svg></div>
+          <h3>For advisers</h3><p>See any learner's path, mark weeks they already know, and compare planning strategies side by side.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ================= sign in ================= -->
+<div class="view" id="view-login">
+  <div class="auth-wrap"><div class="auth-card">
+    <h1>Welcome back</h1>
+    <p class="sub">Sign in to see your learning path.</p>
+    <form id="form-login">
+      <label for="li-user">Username</label><input id="li-user" name="username" autocomplete="username" required />
+      <label for="li-pass">Password</label><input id="li-pass" name="password" type="password" autocomplete="current-password" required />
+      <div style="margin-top:20px"><button class="primary" type="submit">Sign in</button></div>
+    </form>
+    <div class="auth-err"></div>
+    <p class="alt">New here? <a data-go="signup">Create an account</a></p>
+    <p class="security">Research demonstration. Do not reuse a password from anywhere else.
+      <a data-go="privacy">Privacy</a><a data-go="terms">Terms</a></p>
+  </div></div>
+</div>
+
+<!-- ================= sign up ================= -->
+<div class="view" id="view-signup">
+  <div class="auth-wrap"><div class="auth-card">
+    <h1>Create your account</h1>
+    <p class="sub">It takes under a minute.</p>
+    <form id="form-register">
+      <label for="su-user">Username</label><input id="su-user" name="username" autocomplete="username" required minlength="3" />
+      <label for="su-name">Your name</label><input id="su-name" name="display_name" placeholder="How you want to be addressed" />
+      <label for="su-pass">Password</label><input id="su-pass" name="password" type="password" autocomplete="new-password" required minlength="4" />
+      <label for="reg-role">I am a</label>
+      <select name="role" id="reg-role">
+        <option value="student">Student</option>
+        <option value="adviser">Academic adviser</option>
+      </select>
+      <div id="stage-wrap"><label for="reg-stage">Where are you in your studies?</label>
+        <select name="stage" id="reg-stage"></select></div>
+      <div id="module-wrap"><label for="reg-module">Course I am studying</label>
+        <select name="module" id="reg-module"></select>
+        <p class="caption" style="margin:6px 0 0">Course names are illustrative. The university kept the real titles private.</p></div>
+      <div style="margin-top:20px"><button class="primary" type="submit">Create account</button></div>
+    </form>
+    <div class="auth-err"></div>
+    <p class="alt">Already have an account? <a data-go="login">Sign in</a></p>
+    <p class="security">Research demonstration. Do not reuse a password from anywhere else.
+      <a data-go="privacy">Privacy</a><a data-go="terms">Terms</a></p>
+  </div></div>
+</div>
+
+<!-- ================= app views ================= -->
+<div class="view" id="view-dashboard"></div>
+
+<div class="view" id="view-finder">
+  <main class="split">
+    <aside id="finder-form-wrap"><div class="empty">loading</div></aside>
+    <section class="panel"><div id="finder-results"></div></section>
+  </main>
+</div>
+
+<div class="view" id="view-research">
+  <div class="page"><div id="results" class="empty">loading</div><div id="about" style="margin-top:34px"></div></div>
+</div>
+
+<div class="view" id="view-admin">
+  <div class="page"><div id="admin" class="empty">loading</div></div>
+</div>
+
+<div class="view" id="view-privacy">
+  <div class="page legal">
+    <h2>Privacy policy</h2>
+    <p class="caption">Last updated 13 September 2026. This is a university research demonstration, not a commercial service.</p>
+    <h3>What this system stores about you</h3>
+    <p>If you create an account, the system stores the username you choose, a password hash produced with scrypt, the role you select, any background details you choose to give, and the record of weeks you mark as studied, passed, failed, or already known. It stores nothing else. There is no email address, no analytics, no advertising identifier, and no third-party tracking of any kind.</p>
+    <h3>What it does not store</h3>
+    <p>Your password is never written to disk in readable form. Nothing you do here is sent to any external service. No data leaves the machine this application runs on.</p>
+    <h3>Security limitations you should know before registering</h3>
+    <p>This deployment is demonstration grade. It has no TLS, so if it is served over a network rather than locally, traffic including your password travels in plain text. It has no rate limiting on sign-in attempts and no account recovery. For these reasons you should choose a password you do not use anywhere else.</p>
+    <h3>Research data</h3>
+    <p>The 25,101 learner records shown to advisers come from the Open University Learning Analytics Dataset, which is published under CC-BY 4.0 and contains no personally identifying information. Those learners are represented by anonymised numeric identifiers assigned by the dataset authors. No attempt is made, and none should be made, to re-identify them.</p>
+    <h3>Deleting your data</h3>
+    <p>Ask the project maintainer to remove your account and study history. Because the store is a single local database file, deletion is immediate and complete.</p>
+    <h3>Automated decisions</h3>
+    <p>Recommendations produced here are advisory. They carry no weight in any assessment, grade, or progression decision, and they are not used for any purpose beyond showing you what the model predicts.</p>
   </div>
 </div>
+
+<div class="view" id="view-terms">
+  <div class="page legal">
+    <h2>Terms and conditions</h2>
+    <p class="caption">Last updated 13 September 2026.</p>
+    <h3>What this is</h3>
+    <p>An academic prototype accompanying the paper <i>Explainable AI-Based Personalized Learning Path Recommendation System for University Students</i>. It demonstrates and reproduces the results reported in that paper. It is not a commercial product.</p>
+    <h3>Use of the system</h3>
+    <p>You may create an account to explore the recommender. Do not attempt to re-identify any learner in the research dataset, do not upload personal data about other people, and do not use the system to make decisions affecting anyone's education or employment.</p>
+    <h3>Accuracy of recommendations</h3>
+    <p>The model predicts the probability of successful completion, which is driven substantially by engagement rather than by understanding. Recommendations are estimates from historical data at one institution and may be wrong for any given learner. They are not academic advice and are no substitute for a human adviser. The Course Finder is rule-based and describes common eligibility patterns that vary by institution.</p>
+    <h3>Availability and warranty</h3>
+    <p>The system is provided as is, without warranty of any kind. It may be taken offline, reset, or changed at any time, and stored accounts and study history may be cleared without notice.</p>
+    <h3>Licensing and attribution</h3>
+    <p>The source code is released publicly for inspection and reproduction. The Open University Learning Analytics Dataset is used under CC-BY 4.0 and is attributed to Kuzilek, Hlosta and Zdrahal (2017). If you build on this work, cite the paper and the dataset.</p>
+    <h3>Contact</h3>
+    <p>Department of Computer Science, Chandigarh University, Mohali, India.</p>
+  </div>
+</div>
+
+<footer class="site">
+  <div class="in">
+    <div>
+      <a class="brand" data-go="home">Learning Path Recommender</a>
+      <p>A research project from the Department of Computer Science, Chandigarh University.</p>
+    </div>
+    <div class="cols">
+      <div><h4>Product</h4><a data-go="finder">Course Finder</a><a data-go="signup" class="guest-only">Get started</a><a data-go="dashboard" class="auth-only">My learning</a></div>
+      <div><h4>Legal</h4><a data-go="privacy">Privacy</a><a data-go="terms">Terms</a></div>
+    </div>
+  </div>
+</footer>
 
 <script>
 const $ = s => document.querySelector(s);
-const fmt = n => (n===null||n===undefined||Number.isNaN(n)) ? "—" : (+n).toFixed(4);
+window.MODULE_NAMES = {};
+const modName = code => code ? (window.MODULE_NAMES[code] || code) : "n/a";
+const fmt = n => (n===null||n===undefined||Number.isNaN(n)) ? "n/a" : (+n).toFixed(4);
+const esc = v => String(v).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
 
 async function api(path, opts={}) {
   const r = await fetch(path, {credentials:"same-origin", ...opts});
@@ -191,153 +464,718 @@ const post = (p, body) => api(p, {method:"POST", headers:{"content-type":"applic
   body: body?JSON.stringify(body):undefined});
 
 let me=null, metrics=null, current=null, known=new Set(), planner="greedy";
+let studentTab="path", learnerTab="path";
+
+/* ---------------- routing ---------------- */
+const PUBLIC = new Set(["home","login","signup","finder","privacy","terms"]);
+function nav(name){
+  if(location.hash === "#/" + name) show(name); else location.hash = "/" + name;
+}
+function route(){ show(location.hash.replace(/^#\/?/, "") || (me ? "dashboard" : "home")); }
+window.addEventListener("hashchange", route);
+
+function show(name){
+  if(!document.getElementById("view-" + name)) name = me ? "dashboard" : "home";
+  if(!PUBLIC.has(name) && !me) name = "login";
+  if((name === "admin" || name === "research") && (!me || me.role !== "admin")) name = "dashboard";
+  if(me && (name === "login" || name === "signup" || name === "home")) name = "dashboard";
+  if(location.hash !== "#/" + name) history.replaceState(null, "", "#/" + name);
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "view-" + name));
+  document.querySelectorAll("nav.links button").forEach(b => b.classList.toggle("on", b.dataset.go === name));
+  if(name === "dashboard") renderHome();
+  if(name === "research") renderResults().then(renderAbout);
+  if(name === "admin") renderAdmin();
+  if(name === "finder") renderFinder();
+  hideTip();
+  window.scrollTo(0, 0);
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-go]");
+  if(!a) return;
+  e.preventDefault();
+  nav(a.dataset.go);
+});
 
 /* ---------------- auth ---------------- */
-$("#tab-login").onclick = () => {
-  $("#tab-login").classList.add("on"); $("#tab-register").classList.remove("on");
-  $("#form-login").style.display="block"; $("#form-register").style.display="none"; $("#auth-err").innerHTML="";
-};
-$("#tab-register").onclick = () => {
-  $("#tab-register").classList.add("on"); $("#tab-login").classList.remove("on");
-  $("#form-register").style.display="block"; $("#form-login").style.display="none"; $("#auth-err").innerHTML="";
-};
-$("#reg-role").onchange = e => {
-  $("#module-wrap").style.display = e.target.value === "student" ? "block" : "none";
-};
-
-const showErr = m => $("#auth-err").innerHTML = `<div class="err">${m}</div>`;
+const stageLabel = v => ((finderOptions && finderOptions.stages) || []).find(s => s.value === v)?.label || "";
+const courseStage = v => !!((finderOptions && finderOptions.stages) || []).find(s => s.value === v)?.has_course;
+function syncSignup(){
+  const student = $("#reg-role").value === "student";
+  $("#stage-wrap").style.display = student ? "block" : "none";
+  $("#module-wrap").style.display = student && courseStage($("#reg-stage").value) ? "block" : "none";
+}
+$("#reg-role").onchange = syncSignup;
+$("#reg-stage").onchange = syncSignup;
+const showErr = (form, m) => { form.closest(".auth-card").querySelector(".auth-err").innerHTML = `<div class="err">${esc(m)}</div>`; };
 
 $("#form-login").onsubmit = async e => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target));
-  try { me = await post("/api/auth/login", f); enter(); }
-  catch(err){ showErr(err.message); }
+  try { me = await post("/api/auth/login", f); enter(); nav("dashboard"); }
+  catch(err){ showErr(e.target, err.message); }
 };
 $("#form-register").onsubmit = async e => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target));
-  if(f.role !== "student") delete f.module;
-  try { me = await post("/api/auth/register", f); enter(); }
-  catch(err){ showErr(err.message); }
+  if(f.role !== "student"){ delete f.module; delete f.stage; }
+  else if(!courseStage(f.stage)) delete f.module;
+  try { me = await post("/api/auth/register", f); enter(); nav("dashboard"); toast("Welcome, your account is ready"); }
+  catch(err){ showErr(e.target, err.message); }
 };
-$("#signout").onclick = async () => { await post("/api/auth/logout"); location.reload(); };
+$("#signout").onclick = async () => {
+  await post("/api/auth/logout");
+  me = null; known.clear(); current = null;
+  document.body.classList.remove("signed-in");
+  $("#nav-admin").style.display = "none";
+  $("#nav-research").style.display = "none";
+  nav("home");
+};
 
 async function bootstrap(){
-  const h = await api("/api/health");
-  $("#reg-module").innerHTML = h.modules.map(m=>`<option value="${m}">${m}</option>`).join("");
+  try{
+    const h = await api("/api/health");
+    window.MODULE_NAMES = h.module_names || {};
+    window.MODULE_AREAS = h.module_areas || {};
+    window.MODULES = h.modules;
+    $("#reg-module").innerHTML = h.modules.map(m=>`<option value="${m}">${modName(m)}</option>`).join("");
+  }catch{}
+  try{
+    finderOptions = await api("/api/course-finder/options");
+    $("#reg-stage").innerHTML = finderOptions.stages.map(s =>
+      `<option value="${esc(s.value)}"${s.value === "ug" ? " selected" : ""}>${esc(s.label)}</option>`).join("");
+  }catch{}
+  syncSignup();
   try{
     const who = await api("/api/auth/me");
     if(who.signed_in){ me = who; enter(); }
   }catch{}
+  route();
 }
 
 function enter(){
-  $("#auth").style.display="none"; $("#app").style.display="block";
+  document.body.classList.add("signed-in");
   $("#who").textContent = me.display_name;
   $("#rolebadge").textContent = me.role;
-  $("#tab-home").textContent = me.role === "adviser" ? "Learners" : "My learning";
-  renderHome();
+  $("#nav-dashboard").textContent = me.role === "student" ? "My learning" : "Learners";
+  $("#nav-admin").style.display = me.role === "admin" ? "" : "none";
+  $("#nav-research").style.display = me.role === "admin" ? "" : "none";
 }
 
-document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
-  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
-  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
-  b.classList.add("on"); $("#view-"+b.dataset.view).classList.add("on");
-  if(b.dataset.view==="results") renderResults();
-  if(b.dataset.view==="about") renderAbout();
-  if(b.dataset.view==="home") renderHome();
-});
+/* ---------------- feedback ---------------- */
+function toast(msg){
+  let el = document.getElementById("toast");
+  if(!el){
+    el = document.createElement("div"); el.id = "toast";
+    el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite");
+    document.body.appendChild(el);
+  }
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(el._hide); el._hide = setTimeout(() => el.classList.remove("show"), 2400);
+}
+function skeleton(){
+  const tile = '<div class="tile"><div class="skel" style="height:22px;width:40%"></div><div class="skel" style="height:10px;width:70%;margin-top:9px"></div></div>';
+  return `<div aria-busy="true" aria-label="Loading"><div class="tiles">${tile.repeat(3)}</div>
+    <div class="skel" style="height:150px;margin:18px 0"></div><div class="skel" style="height:220px"></div></div>`;
+}
 
-/* ---------------- shared pieces ---------------- */
-const colour=(m,t)=> m>=t.mastered ? "var(--good)" : m>=t.prerequisite ? "var(--accent)" : "var(--warn)";
+/* ---------------- course finder (rule-based, not the ML model) ---------------- */
+let finderOptions = null, finderTimer = null, finderSeq = 0, exploreCache = null;
+const linkRow = l => l && l.nptel ? `<span class="study-links"><a href="${esc(l.nptel)}" target="_blank" rel="noopener">NPTEL</a><a href="${esc(l.swayam)}" target="_blank" rel="noopener">SWAYAM</a></span>` : "";
+const yearList = years => years.map(y => `<p class="prose" style="margin:10px 0 2px"><b>${esc(y.year)}</b></p>
+  <ul class="plain" style="margin-top:2px">${y.subjects.map(x => `<li>${esc(x.name)}${linkRow(x.links)}</li>`).join("")}</ul>`).join("");
+const signupCta = () => me ? "" : `<button class="small" data-go="signup">Create an account to track your learning</button>`;
 
-function masteryChart(concepts, thresholds, clickable){
-  const pts = concepts.filter(c=>c.in_scope!==false);
+async function renderFinder(){
+  const wrap = $("#finder-form-wrap");
+  if(!finderOptions){
+    try{
+      const r = await fetch("/api/course-finder/options");
+      if(!r.ok) throw new Error(r.status);
+      finderOptions = await r.json();
+    }catch(e){ wrap.innerHTML = `<div class="err">Could not load the Course Finder.</div>`; return; }
+  }
+  const o = finderOptions;
+  // a signed-in student sees only the level after their own
+  const stage = me && me.role === "student" ? me.stage : null;
+  const levels = stage ? o.levels.filter(l => (o.next_levels[stage] || []).includes(l.value)) : o.levels;
+  const results = $("#finder-results");
+  if(wrap.dataset.stage !== String(stage)){
+    wrap.dataset.stage = String(stage);
+    wrap.innerHTML = "";
+    results.dataset.filled = "";
+  }
+  if(!levels.length){
+    if(!wrap.innerHTML){
+      wrap.innerHTML = `<h2 style="margin:0 0 4px">Find a course</h2>
+        <p class="caption" style="margin:0 0 12px">You are at ${esc(stageLabel(stage))} level, so there is no higher level to suggest. You can still explore every course.</p>
+        <button class="small" type="button" id="finder-explore" style="width:100%">Explore all courses</button>`;
+      $("#finder-explore").onclick = () => showExplore("all");
+    }
+    if(!results.dataset.filled) showExplore("all");
+    return;
+  }
+  const preferred = levels.some(l => l.value === "ug") ? "ug" : levels[0].value;
+  if(!$("#finder-form")){
+    wrap.innerHTML = `<form id="finder-form">
+      <h2 style="margin:0 0 4px">Find a course</h2>
+      <p class="caption" style="margin:0 0 6px">${stage ? `Courses for after ${esc(stageLabel(stage))}.` : "Pick your level,"} Choose your background and what you enjoy. Results update as you choose.</p>
+      <label for="finder-level">I am looking for</label>
+      <select id="finder-level" name="level">${levels.map(x =>
+        `<option value="${esc(x.value)}"${x.value === preferred ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>
+      <div id="finder-background"></div>
+      <label>What you enjoy</label>
+      <div class="chipset">${o.interests.map(x =>
+        `<label class="pick"><input type="checkbox" name="interest" value="${esc(x.value)}">${esc(x.label)}</label>`).join("")}</div>
+      <div style="margin-top:18px"><button class="primary" type="submit">Find courses</button></div>
+      <div style="margin-top:8px"><button class="small" type="button" id="finder-explore" style="width:100%">Explore all courses</button></div>
+      <div id="finder-msg" class="caption" style="margin:8px 0 0"></div>
+    </form>`;
+    const f = $("#finder-form");
+    const field = n => f.querySelector(`[name="${n}"]`);
+    const subjects = () => {
+      const st = o.streams.find(x => x.value === field("stream").value);
+      $("#finder-subjects").innerHTML = `<label>Your class 12 subjects</label>
+        <div class="chipset">${st.core.map(x => `<label class="pick"><input type="checkbox" checked disabled>${esc(x)}</label>`).join("")}
+          ${st.optional.map(x => `<label class="pick"><input type="checkbox" name="subject" value="${esc(x)}">${esc(x)}
+            <span class="caption" style="margin:0 0 0 auto">optional</span></label>`).join("")}</div>
+        <p class="caption" style="margin:6px 0 0">${esc(o.subjects_note)}</p>`;
+    };
+    const background = () => {
+      const level = o.levels.find(l => l.value === f.level.value);
+      const box = $("#finder-background");
+      if(level.input === "stream"){
+        box.innerHTML = `<label for="finder-stream">Class 12 stream</label>
+          <select id="finder-stream" name="stream">${o.streams.map(x =>
+            `<option value="${esc(x.value)}">${esc(x.label)}</option>`).join("")}</select>
+          <div id="finder-subjects"></div>`;
+        subjects();
+      }else if(level.input === "degree"){
+        box.innerHTML = `<label for="finder-degree">Your bachelor's degree</label>
+          <select id="finder-degree" name="degree">${o.degrees.map(x =>
+            `<option value="${esc(x.value)}">${esc(x.label)}</option>`).join("")}</select>`;
+      }else{
+        box.innerHTML = `<p class="caption" style="margin:12px 0 0">No stream needed. These diplomas usually need a class 10 pass.</p>`;
+      }
+    };
+    const gather = () => ({
+      level: f.level.value,
+      stream: field("stream") ? field("stream").value : null,
+      degree: field("degree") ? field("degree").value : null,
+      subjects: [...f.querySelectorAll('input[name="subject"]:checked')].map(x => x.value),
+      interests: [...f.querySelectorAll('input[name="interest"]:checked')].map(x => x.value),
+    });
+    const find = async () => {
+      const body = gather(), msg = $("#finder-msg");
+      if(!body.interests.length){ msg.textContent = "Pick at least one interest to see courses."; return; }
+      msg.textContent = "";
+      const seq = ++finderSeq;
+      const res = await fetch("/api/course-finder", {method:"POST",
+        headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+      const out = await res.json().catch(() => ({}));
+      if(seq !== finderSeq) return;
+      if(!res.ok){ msg.textContent = out.detail || "Something went wrong. Try again."; return; }
+      showFinderResults(out);
+    };
+    background();
+    f.addEventListener("change", e => {
+      if(e.target.name === "level") background();
+      if(e.target.name === "stream") subjects();
+      clearTimeout(finderTimer);
+      finderTimer = setTimeout(find, 250);
+    });
+    f.onsubmit = e => { e.preventDefault(); find(); };
+    $("#finder-explore").onclick = () => showExplore("all");
+  }
+  if(!results.dataset.filled){
+    results.innerHTML = `<h2>Course Finder</h2>
+      <div class="callout"><b>${esc(o.method)}.</b> Suggestions come from readable rules that match your
+        level, your class 12 subjects or degree, and your interests to common courses in India. ${esc(o.note)}</div>
+      <p class="caption" style="margin:0">Choose at least one interest to see courses, or explore everything.</p>
+      <div style="margin-top:12px"><button class="small" id="finder-explore-intro">Explore all courses</button></div>`;
+    $("#finder-explore-intro").onclick = () => showExplore("all");
+  }
+}
+
+function showFinderResults(out){
+  const el = $("#finder-results");
+  el.dataset.filled = "1";
+  const background = out.stream_label ? `${out.stream_label}: ${out.subjects.join(", ")}` : out.degree_label || "Class 10 pass";
+  const card = (c, i) => `<div class="card">
+    <div class="rank">Option ${i + 1} · ${esc(c.fit)}</div>
+    <h3>${esc(c.name)}</h3>
+    <p class="prose">${esc(c.reason)}</p>
+    <ul class="plain"><li>Duration: ${esc(c.duration)}</li><li>Usually needs: ${esc(c.eligibility)}</li><li>Subjects based on: ${esc(c.framework)}</li></ul>
+    <details class="working"><summary>What you will study, with free study links</summary>${yearList(c.years)}</details>
+  </div>`;
+  el.innerHTML = `<h2>${esc(out.level_label)}: courses for you</h2>
+    <p class="caption" style="margin:0 0 12px">${esc(background)} · interested in ${esc(out.interests.join(", "))}</p>
+    <div class="callout"><b>${esc(out.method)}.</b> ${esc(out.note)} Study links search NPTEL and SWAYAM, India's free course platforms.</div>
+    ${out.courses.length ? out.courses.map(card).join("")
+      : `<div class="empty">No course at this level matches those interests for your background. Try another interest, or explore all courses.</div>`}
+    ${out.also_consider.length ? `<h2>Also consider</h2>
+      <p class="caption" style="margin:0 0 10px">These match your interests but usually need a different background.</p>
+      ${out.also_consider.map(c => `<div class="card" style="border-left-color:var(--rule)">
+        <h3>${esc(c.name)}</h3><p class="prose">${esc(c.reason)}</p>
+        <ul class="plain"><li>Usually needs: ${esc(c.needs)}</li></ul></div>`).join("")}` : ""}
+    <p class="caption" style="margin:18px 0 0">Subjects are grouped by year because each institution sets its own semester and weekly schedule.</p>
+    <div class="row" style="margin-top:14px"><button class="small" id="finder-explore-2">Explore all courses</button>${signupCta()}</div>`;
+  $("#finder-explore-2").onclick = () => showExplore(out.level);
+}
+
+async function showExplore(level){
+  const el = $("#finder-results");
+  el.dataset.filled = "1";
+  if(!exploreCache){
+    el.innerHTML = skeleton();
+    try{
+      const r = await fetch("/api/course-finder/explore");
+      if(!r.ok) throw new Error(r.status);
+      exploreCache = await r.json();
+    }catch(e){ el.innerHTML = `<div class="err">Could not load the course list.</div>`; return; }
+  }
+  const x = exploreCache;
+  el.innerHTML = `<h2>Explore all courses</h2>
+    <p class="caption" style="margin:0 0 12px">All ${x.count} courses, whatever your background. Open any course to see its subjects and free study links, even outside your own field.</p>
+    <div class="callout"><b>${esc(x.method)}.</b> ${esc(x.note)}</div>
+    <div class="row" style="margin:0 0 12px">${[["all", "All levels"], ...x.levels.map(l => [l.level, l.label])].map(([v, lab]) =>
+      `<button class="small ex-level${v === level ? " on" : ""}" data-l="${esc(v)}">${esc(lab)}</button>`).join("")}</div>
+    <input id="ex-filter" placeholder="Filter by course or subject, for example economics or data structures" autocomplete="off" style="margin-bottom:14px" />
+    <div id="ex-list"></div>
+    <div style="margin-top:14px">${signupCta()}</div>`;
+  const draw = () => {
+    const q = $("#ex-filter").value.trim().toLowerCase();
+    let shown = 0;
+    const html = x.levels.filter(l => level === "all" || l.level === level).map(l => {
+      const cats = l.categories.map(cat => {
+        const cs = cat.courses.filter(c => !q || c.name.toLowerCase().includes(q) || c.category.toLowerCase().includes(q)
+          || c.years.some(y => y.subjects.some(sb => sb.name.toLowerCase().includes(q))));
+        shown += cs.length;
+        return cs.length ? `<h3 style="margin:16px 0 8px">${esc(cat.category)}</h3>${cs.map(c => `<div class="card" style="border-left-color:var(--rule)">
+            <h3>${esc(c.name)}</h3>
+            <ul class="plain"><li>Duration: ${esc(c.duration)}</li><li>Usually needs: ${esc(c.eligibility)}</li></ul>
+            <details class="working"><summary>What you will study, with free study links</summary>${yearList(c.years)}</details>
+          </div>`).join("")}` : "";
+      }).join("");
+      return cats ? `<h2>${esc(l.label)}</h2>${cats}` : "";
+    }).join("");
+    $("#ex-list").innerHTML = shown ? html : `<div class="empty">No course or subject matches that filter.</div>`;
+  };
+  el.querySelectorAll(".ex-level").forEach(b => b.onclick = () => showExplore(b.dataset.l));
+  $("#ex-filter").oninput = draw;
+  draw();
+}
+
+/* ---------------- charts ---------------- */
+const LEVELS = ["Needs work", "Getting there", "Strong"];
+const LEVEL_VAR = {"Needs work":"var(--lvl-1)", "Getting there":"var(--lvl-2)", "Strong":"var(--lvl-3)"};
+const LEVEL = (m, t) => m >= t.mastered ? "Strong" : m >= t.prerequisite ? "Getting there" : "Needs work";
+const shortLabel = l => (l || "").split("(")[0].trim();
+const weekOf = l => shortLabel(l).split("· ").pop();
+const pct = v => Math.round(v * 100);
+// The dataset counts a course's first week as week 0; people count it as Week 1.
+// Applied once to each API response, to every week number and every "Week N" in text.
+function humanize(o){
+  if(typeof o === "string") return o.replace(/\b([Ww]eek) (\d+)\b/g, (_, w, n) => `${w} ${+n + 1}`);
+  if(Array.isArray(o)) return o.map(humanize);
+  if(o && typeof o === "object"){
+    const out = {};
+    for(const [k, v] of Object.entries(o)) out[k] = k === "week" && typeof v === "number" ? v + 1 : humanize(v);
+    return out;
+  }
+  return o;
+}
+
+function vizTable(head, rows){
+  return `<details class="viz-table"><summary>View as table</summary><div class="scroll"><table>
+    <thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${r.map(v => `<td>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table></div></details>`;
+}
+function vizTip(){
+  let el = document.getElementById("viz-tip");
+  if(!el){ el = document.createElement("div"); el.id = "viz-tip"; el.setAttribute("role","tooltip"); el.hidden = true; document.body.appendChild(el); }
+  return el;
+}
+function showTip(value, lines, x, y){
+  const el = vizTip(); el.replaceChildren();
+  const v = document.createElement("span"); v.className = "tv"; v.textContent = value; el.appendChild(v);
+  lines.forEach(l => { const s = document.createElement("span"); s.className = "tl"; s.textContent = l; el.appendChild(s); });
+  el.hidden = false;
+  el.style.left = Math.max(8, Math.min(x + 14, innerWidth - el.offsetWidth - 8)) + "px";
+  el.style.top = Math.max(8, y - el.offsetHeight - 12) + "px";
+}
+function hideTip(){ const el = document.getElementById("viz-tip"); if(el) el.hidden = true; }
+function bindViz(root, onToggleKnown){
+  hideTip();
+  root.querySelectorAll("[data-tip]").forEach(n => {
+    const tip = () => JSON.parse(n.dataset.tip);
+    const bar = () => n.dataset.bar ? root.querySelector(`[data-bar-id="${n.dataset.bar}"]`) : null;
+    n.addEventListener("pointerenter", () => bar()?.classList.add("lift"));
+    n.addEventListener("pointermove", e => { const d = tip(); showTip(d.v, d.l, e.clientX, e.clientY); });
+    n.addEventListener("pointerleave", () => { hideTip(); bar()?.classList.remove("lift"); });
+    n.addEventListener("focus", () => { const d = tip(), r = n.getBoundingClientRect(); showTip(d.v, d.l, r.left + r.width / 2, r.top); bar()?.classList.add("lift"); });
+    n.addEventListener("blur", () => { hideTip(); bar()?.classList.remove("lift"); });
+    if(onToggleKnown && n.dataset.concept){
+      const go = () => { hideTip(); onToggleKnown(+n.dataset.concept); };
+      n.addEventListener("click", go);
+      n.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); go(); } });
+    }
+  });
+}
+
+function levelChart(concepts, t, forStudent){
+  const pts = concepts.filter(c => c.in_scope !== false), n = pts.length;
+  if(!n) return "";
+  const counts = Object.fromEntries(LEVELS.map(l => [l, 0]));
+  pts.forEach(c => counts[LEVEL(c.mastery, t)]++);
+  const segs = LEVELS.filter(l => counts[l]).map(l => {
+    const tip = {v:`${counts[l]} of ${n} weeks`, l:[l, `${pct(counts[l] / n)}% of the course`]};
+    return `<span class="hit" tabindex="0" role="img" aria-label="${l}: ${counts[l]} weeks" style="flex:${counts[l]};background:${LEVEL_VAR[l]}" data-tip="${esc(JSON.stringify(tip))}"></span>`;
+  }).join("");
+  return `<figure class="viz"><h3>Overall</h3>
+    <p class="sub">How ${forStudent ? "your" : "this learner's"} ${n} weeks split across the three levels.</p>
+    <div class="lvl-bar">${segs}</div>
+    <div class="viz-legend">${LEVELS.slice().reverse().map(l => `<span><i style="background:${LEVEL_VAR[l]}"></i>${l}: ${counts[l]}</span>`).join("")}</div>
+    ${vizTable(["Level", "Weeks", "Share"], LEVELS.slice().reverse().map(l => [l, counts[l], pct(counts[l] / n) + "%"]))}
+  </figure>`;
+}
+function partChart(concepts, forStudent){
+  const pts = concepts.filter(c => c.in_scope !== false).slice().sort((a, b) => a.week - b.week);
   if(!pts.length) return "";
-  const maxW=Math.max(...pts.map(c=>c.week),1), W=900,H=270,pad=34;
-  const x=w=>pad+(w/maxW)*(W-2*pad), y=v=>H-pad-v*(H-2*pad), t=thresholds;
-  const dots=pts.map(c=>`<circle cx="${x(c.week).toFixed(1)}" cy="${y(c.mastery).toFixed(1)}"
-    r="${known.has(c.concept)?7:4}" fill="${colour(c.mastery,t)}"
-    ${clickable?'style="cursor:pointer"':''} data-c="${c.concept}">
-    <title>${c.label} — ${c.mastery.toFixed(3)}</title></circle>`).join("");
-  const guide=(v,txt)=>`<line x1="${pad}" y1="${y(v)}" x2="${W-pad}" y2="${y(v)}" stroke="var(--rule)" stroke-dasharray="3 3"/>
-    <text x="${pad}" y="${y(v)-5}" font-size="10" fill="var(--ink-faint)" font-family="monospace">${txt}</text>`;
-  return `<svg id="chart" viewBox="0 0 ${W} ${H}" style="width:100%;height:270px;border:1px solid var(--rule);
-    border-radius:4px;background:var(--surface);margin-bottom:14px">
-    ${guide(t.mastered,`mastered ${t.mastered.toFixed(2)}`)}${guide(t.prerequisite,`ready ${t.prerequisite.toFixed(2)}`)}
-    ${dots}<text x="${W/2}" y="${H-6}" font-size="11" fill="var(--ink-faint)" text-anchor="middle">week of study →</text></svg>`;
+  const size = Math.ceil(pts.length / 4), names = ["Start", "Early", "Later", "End"];
+  const rows = [0, 1, 2, 3].map(i => pts.slice(i * size, (i + 1) * size)).filter(g => g.length).map((g, i) => ({
+    name: names[i], from: g[0].week, to: g[g.length - 1].week, n: g.length, avg: g.reduce((s, c) => s + c.mastery, 0) / g.length}));
+  const bars = rows.map(r => {
+    const tip = {v:`${pct(r.avg)}% average`, l:[`${r.name}: weeks ${r.from} to ${r.to}`, `${r.n} weeks`]};
+    return `<div class="part-row hit" tabindex="0" role="img" aria-label="${r.name}, weeks ${r.from} to ${r.to}: ${pct(r.avg)}% average" data-tip="${esc(JSON.stringify(tip))}">
+      <span>${r.name} <span style="color:var(--ink-faint)">(weeks ${r.from} to ${r.to})</span></span>
+      <div><div class="part-fill" style="width:${Math.max(pct(r.avg), 1)}%"></div></div>
+      <span class="val">${pct(r.avg)}%</span></div>`;
+  }).join("");
+  return `<figure class="viz"><h3>By part of the course</h3>
+    <p class="sub">Average chance of ${forStudent ? "you" : "them"} doing well in each quarter of the course.</p>
+    ${bars}
+    ${vizTable(["Part", "Weeks", "Average chance of doing well"], rows.map(r => [r.name, `${r.from} to ${r.to}`, pct(r.avg) + "%"]))}
+  </figure>`;
+}
+function weekChart(concepts, t, forStudent){
+  const pts = concepts.filter(c => c.in_scope !== false).slice().sort((a, b) => a.week - b.week);
+  if(!pts.length) return "";
+  const W = 900, H = 250, padL = 46, padR = 12, padT = 16, padB = 38;
+  const plotW = W - padL - padR, plotH = H - padT - padB, band = plotW / pts.length, bw = Math.min(16, band * 0.6);
+  const yv = v => padT + (1 - v) * plotH, base = padT + plotH;
+  const grid = [0, 0.5, 1].map(v => `<line x1="${padL}" x2="${W - padR}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)" stroke-width="1"/>
+    <text x="${padL - 8}" y="${yv(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink-faint)">${v * 100}%</text>`).join("");
+  const every = Math.max(1, Math.ceil(pts.length / 9));
+  const ticks = pts.map((c, i) => i % every ? "" : `<text x="${padL + band * i + band / 2}" y="${base + 16}" text-anchor="middle" font-size="11" fill="var(--ink-faint)">${c.week}</text>`).join("");
+  const bars = pts.map((c, i) => {
+    const lvl = LEVEL(c.mastery, t);
+    const x = padL + band * i + (band - bw) / 2, top = yv(c.mastery), h = Math.max(base - top, 1), r = Math.min(4, h, bw / 2);
+    const d = `M${x},${base} V${top + r} Q${x},${top} ${x + r},${top} H${x + bw - r} Q${x + bw},${top} ${x + bw},${top + r} V${base} Z`;
+    const tip = {v:`${pct(c.mastery)}% chance of doing well`, l:[`Week ${c.week}`, lvl]};
+    return `<path d="${d}" fill="${LEVEL_VAR[lvl]}" data-bar-id="w${i}"/>
+      <rect class="hit" x="${padL + band * i}" y="${padT}" width="${band}" height="${plotH}" fill="transparent" tabindex="0" role="img"
+        aria-label="Week ${c.week}: ${pct(c.mastery)} percent, ${lvl}" data-bar="w${i}" data-tip="${esc(JSON.stringify(tip))}"/>`;
+  }).join("");
+  return `<figure class="viz"><h3>Week by week</h3>
+    <p class="sub">Chance of doing well in each week. Levels compare each week with ${forStudent ? "your own" : "this learner's own"} other weeks, so a high chance can still be "Getting there".</p>
+    <div class="viz-legend">${LEVELS.slice().reverse().map(l => `<span><i style="background:${LEVEL_VAR[l]}"></i>${l}</span>`).join("")}</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="group" aria-label="Chance of doing well, by week">
+      ${grid}${bars}${ticks}
+      <text x="${padL + plotW / 2}" y="${H - 4}" text-anchor="middle" font-size="11" fill="var(--ink-faint)">Week of the course</text>
+    </svg>
+    ${vizTable(["Week", "Chance of doing well", "Level"], pts.map(c => [c.week, pct(c.mastery) + "%", LEVEL(c.mastery, t)]))}
+  </figure>`;
 }
 
-function recCards(recs, withActions){
-  if(!recs.length) return '<div class="empty">No eligible concepts right now.</div>';
-  return recs.map((r,i)=>`
-    <div class="card">
-      <div class="rank">STEP ${i+1} · ${r.gaps.length? r.gaps.length+" prerequisite gap(s)" : "ready now"}</div>
-      <h3>${r.label}</h3>
-      <div class="chips">
-        ${r.gaps.map(g=>`<span class="chip gap">gap · ${g.label.split("—")[0].trim()} ${g.mastery.toFixed(2)}</span>`).join("")}
-        ${r.satisfied.slice(0,2).map(s=>`<span class="chip ok">met · ${s.label.split("—")[0].trim()} ${s.mastery.toFixed(2)}</span>`).join("")}
-      </div>
-      <p class="prose">${r.text}</p>
-      ${withActions?`<div class="actions">
-        <button class="small act" data-c="${r.concept}" data-k="study">I studied this</button>
-        <button class="small act" data-c="${r.concept}" data-k="pass">I passed the assessment</button>
-        <button class="small act" data-c="${r.concept}" data-k="fail">I struggled with it</button>
-      </div>`:""}
-    </div>`).join("");
+/* ---------------- progress: streak, calendar, weekly summary ---------------- */
+function activityCalendar(cal){
+  if(!cal || !cal.length) return "";
+  const shade = n => n === 0 ? "var(--surface-alt)" : n === 1 ? "var(--lvl-1)" : n <= 3 ? "var(--lvl-2)" : "var(--lvl-3)";
+  const size = 16, pitch = 19, padL = 34, padT = 20;
+  const cols = Math.ceil(cal.length / 7), W = padL + cols * pitch, H = padT + 7 * pitch;
+  const dfmt = d => new Date(d + "T00:00:00").toLocaleDateString(undefined, {day: "numeric", month: "short"});
+  let lastMonth = "";
+  const months = cal.filter((_, i) => i % 7 === 0).map((d, col) => {
+    const m = new Date(d.date + "T00:00:00").toLocaleDateString(undefined, {month: "short"});
+    if(m === lastMonth) return "";
+    lastMonth = m;
+    return `<text x="${padL + col * pitch}" y="${padT - 7}" font-size="11" fill="var(--ink-faint)">${m}</text>`;
+  }).join("");
+  const dayNames = ["Mon", "", "Wed", "", "Fri", "", ""].map((n, r) => n ? `<text x="0" y="${padT + r * pitch + 12}" font-size="10" fill="var(--ink-faint)">${n}</text>` : "").join("");
+  const cells = cal.map((d, i) => {
+    const x = padL + Math.floor(i / 7) * pitch, y = padT + d.weekday * pitch;
+    const tip = {v: `${d.count} ${d.count === 1 ? "activity" : "activities"}`, l: [dfmt(d.date)]};
+    return `<rect class="hit" x="${x}" y="${y}" width="${size}" height="${size}" rx="3" fill="${shade(d.count)}" tabindex="0" role="img" aria-label="${dfmt(d.date)}: ${d.count}" data-tip="${esc(JSON.stringify(tip))}"/>`;
+  }).join("");
+  const rows = cal.filter(d => d.count).map(d => [dfmt(d.date), d.count]);
+  return `<figure class="viz"><h3>Activity calendar</h3>
+    <p class="sub">Days you recorded study in the last 12 weeks.</p>
+    <div class="scroll"><svg viewBox="0 0 ${W} ${H}" style="width:${W}px;max-width:100%;height:auto;display:block" role="group" aria-label="Activity calendar">${months}${dayNames}${cells}</svg></div>
+    <div class="viz-legend" style="margin-top:8px"><span>Less</span>${[0, 1, 2, 4].map(n => `<i style="background:${shade(n)};margin:0 2px"></i>`).join("")}<span>More</span></div>
+    ${vizTable(["Date", "Activities"], rows.length ? rows : [["No activity yet", ""]])}
+  </figure>`;
 }
-
-/* ---------------- student home ---------------- */
-async function renderStudent(){
-  $("#view-home").innerHTML = `<div class="full"><div class="empty">computing…</div></div>`;
-  const k=[...known].join(",");
-  const [state, rec] = await Promise.all([
-    api(`/api/me/state?known=${k}`), api(`/api/me/recommend?k=3&planner=${planner}&known=${k}`)]);
-
-  const hist = state.history.length
-    ? state.history.slice().reverse().slice(0,8).map(h=>
-        `day ${h.day.toFixed(0).padStart(3)} · ${h.kind==='assessment'?(h.correct?'passed  ':'struggled'):'studied  '} · concept ${h.concept_id}`).join("<br>")
-    : "nothing recorded yet";
-
-  $("#view-home").innerHTML = `<div class="full">
-    <div class="tiles">
-      <div class="tile"><div class="v">${state.module}</div><div class="k">your module</div></div>
-      <div class="tile"><div class="v">${state.n_events}</div><div class="k">activities recorded</div></div>
-      <div class="tile"><div class="v">${state.n_assessments}</div><div class="k">assessments taken</div></div>
-      <div class="tile"><div class="v">${rec.n_eligible}</div><div class="k">concepts open to you</div></div>
+function progressBlock(p){
+  if(!p) return "";
+  const s = p.streak, w = p.week;
+  const up = w.moved_up.length > 5 ? `${w.moved_up.slice(0, 5).join(", ")} and ${w.moved_up.length - 5} more` : w.moved_up.join(", ");
+  return `<div class="viz-row">
+      <figure class="viz"><h3>This week</h3><p class="sub">From the activities you recorded in the last 7 days.</p>
+        <ul class="plain">${w.summary.map(l => `<li>${esc(l)}</li>`).join("")}</ul>
+        ${up ? `<p class="caption" style="margin:10px 0 0">Improved: ${esc(up)}</p>` : ""}
+      </figure>
+      <figure class="viz"><h3>Streak</h3><p class="sub">A day counts when you record at least one activity.</p>
+        <div class="tiles" style="margin:0 0 12px">
+          <div class="tile"><div class="v">${s.current}</div><div class="k">${s.current === 1 ? "day" : "days"} in a row</div></div>
+          <div class="tile"><div class="v">${s.longest}</div><div class="k">longest run</div></div>
+        </div>
+        <div class="badges">${p.badges.map(b => `<span class="badge-chip${b.earned ? " earned" : ""}" title="${esc(b.rule)}">${esc(b.name)}${b.earned ? "" : ": not yet"}</span>`).join("")}</div>
+      </figure>
     </div>
-    ${state.n_events===0?`<div class="callout">You have no recorded activity yet, so these
-      first suggestions come from the cold-start prior rather than from anything personal.
-      Record a couple of activities and the recommendations will start to reflect you.</div>`:""}
-    <h2>Where you are</h2>
-    ${masteryChart(state.concepts, state.thresholds, false)}
-    <h2>What to study next</h2>
-    <div class="legend">planner: ${["greedy","beam","curriculum","weakest"].map(p=>
-      `<button class="small pl${p===planner?" on":""}" data-p="${p}">${p}</button>`).join(" ")}</div>
-    ${recCards(rec.recommendations, true)}
-    <h2>Recent activity</h2>
-    <div class="hist">${hist}</div>
-    ${state.n_events?`<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>`:""}
+    ${activityCalendar(p.calendar)}`;
+}
+
+/* ---------------- the step-by-step path ---------------- */
+function reasonsFor(r, t, forStudent, earlier = new Set()){
+  r = {...r, unlocks: r.unlocks.filter(u => !earlier.has(u.concept))};
+  const lines = [];
+  if(!r.gaps.length && r.satisfied.length)
+    lines.push(`It builds on ${r.satisfied.slice(0, 2).map(x => weekOf(x.label)).join(" and ")}, which ${forStudent ? "you" : "they"} already have.`);
+  if(r.gaps.length)
+    lines.push(`Revise ${r.gaps.slice(0, 2).map(g => weekOf(g.label)).join(" and ")} first.`);
+  if(r.unlocks.length)
+    lines.push(`Finishing it opens up ${r.unlocks.slice(0, 2).map(u => weekOf(u.label)).join(" and ")}.`);
+  if(!lines.length) lines.push("Nothing earlier blocks it.");
+  return lines;
+}
+function nextStepCard(r, t, forStudent){
+  if(!r) return `<div class="next"><div class="eyebrow">Next step</div><h2>${forStudent ? "You have marked every week as done" : "Nothing to recommend right now"}</h2></div>`;
+  const ready = !r.gaps.length;
+  return `<div class="next">
+    <div class="eyebrow">${forStudent ? "Your next step" : "Their next step"}</div>
+    <h2>${esc(shortLabel(r.label))}</h2>
+    <p class="meta"><span class="pill-lvl">Level now: ${LEVEL(r.mastery, t)}</span> · ${ready ? "Ready to start" : "Revise earlier weeks first"}</p>
+    <ul class="plain">${reasonsFor(r, t, forStudent).map(l => `<li>${esc(l)}</li>`).join("")}</ul>
+    ${forStudent ? `<div class="actions">
+      <button class="act" data-c="${r.concept}" data-k="study">I studied this</button>
+      <button class="act" data-c="${r.concept}" data-k="pass">I passed the test</button>
+      <button class="act" data-c="${r.concept}" data-k="fail">I found it hard</button>
+    </div>` : ""}
+    <details class="working"><summary>Show the model's working</summary><p class="prose">${esc(r.text)}</p></details>
+  </div>`;
+}
+function pathList(steps, t, forStudent){
+  if(!steps.length) return "";
+  const items = steps.map((r, i) => `<li class="${i === 0 ? "now" : ""}">
+      <span class="path-num" aria-hidden="true">${i + 1}</span>
+      <button class="path-step" aria-expanded="false" data-i="${i}">
+        <div class="t">${esc(weekOf(r.label))}${i === 0 ? ` <span class="pill-lvl">Now</span>` : ""}</div>
+        <div class="s">${i === 0 ? `${!r.gaps.length ? "Ready now" : "Revise earlier weeks first"} · level now ${LEVEL(r.mastery, t).toLowerCase()}` : "Once the steps above are done"}</div>
+      </button>
+      <div class="path-detail" hidden>
+        <ul class="plain" style="margin:0">${reasonsFor(r, t, forStudent, new Set(steps.slice(0, i).map(x => x.concept))).map(l => `<li>${esc(l)}</li>`).join("")}</ul>
+        <p style="margin:8px 0 0">${i + 1 < steps.length ? `After this: <b>${esc(weekOf(steps[i + 1].label))}</b>.` : "This is the last step shown."}</p>
+      </div>
+    </li>`).join("");
+  return `<div class="block"><h3>${forStudent ? "Your path" : "Their path"}</h3>
+    <p class="muted small">Tap a step to see why it comes next. Each step after the first assumes the ones before it are finished.</p>
+    <ol class="path">${items}</ol></div>`;
+}
+function bindPath(root){
+  root.querySelectorAll(".path-step").forEach(b => b.onclick = () => {
+    const open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", String(!open));
+    b.parentElement.querySelector(".path-detail").hidden = open;
+  });
+}
+function courseStrip(concepts, t, forStudent, clickable){
+  const pts = concepts.filter(c => c.in_scope !== false).slice().sort((a, b) => a.week - b.week);
+  if(!pts.length) return "";
+  const cells = pts.map(c => {
+    const l = LEVEL(c.mastery, t), isKnown = known.has(c.concept);
+    const tip = {v: `Week ${c.week}`, l: [l, ...(isKnown ? ["Marked as already known"] : []), ...(clickable ? [isKnown ? "Click to unmark" : "Click if they already know it"] : [])]};
+    return `<span class="hit${isKnown ? " known" : ""}" tabindex="0" role="${clickable ? "button" : "img"}" aria-label="Week ${c.week}: ${l}"
+      style="background:${LEVEL_VAR[l]}" data-tip="${esc(JSON.stringify(tip))}" ${clickable ? `data-concept="${c.concept}"` : ""}></span>`;
+  }).join("");
+  const counts = Object.fromEntries(LEVELS.map(l => [l, 0]));
+  pts.forEach(c => counts[LEVEL(c.mastery, t)]++);
+  return `<div class="block"><h3>The course at a glance</h3>
+    <p class="muted small">Each block is one week, from the first to the last.${clickable ? " Click a week the learner already knows and the path updates." : ""}</p>
+    <div class="strip">${cells}</div>
+    <div class="viz-legend">${LEVELS.slice().reverse().map(l => `<span><i style="background:${LEVEL_VAR[l]}"></i>${l}: ${counts[l]}</span>`).join("")}
+      ${known.size ? `<span>${known.size} marked as known</span>` : ""}</div>
+    ${vizTable(["Week", "Level"], pts.map(c => [c.week, LEVEL(c.mastery, t)]))}
+  </div>`;
+}
+const segButtons = (tabs, active, cls) => `<div class="seg" role="tablist">${tabs.map(([v, lab]) =>
+  `<button role="tab" class="${cls}${v === active ? " on" : ""}" data-t="${v}" aria-selected="${v === active}">${lab}</button>`).join("")}</div>`;
+function bindTabs(root, cls, onPick){
+  root.querySelectorAll("." + cls).forEach(b => b.onclick = () => {
+    root.querySelectorAll("." + cls).forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-selected", String(x === b)); });
+    root.querySelectorAll("[data-tabpanel]").forEach(p => p.hidden = p.dataset.tabpanel !== b.dataset.t);
+    onPick(b.dataset.t);
+  });
+}
+
+/* ---------------- student dashboard ---------------- */
+function profileForm(fields, profile, module){
+  const control = f => {
+    const cur = profile[f.field];
+    const opts = f.type === "choice" ? f.options.map(o => ({value:o.value, label:o.label}))
+      : Array.from({length: Math.floor((f.max - f.min) / f.step) + 1}, (_, i) => { const v = f.min + i * f.step; return {value:v, label:String(v)}; });
+    return `<select name="${f.field}"><option value="">Not answered</option>${
+      opts.map(o => `<option value="${o.value}"${String(cur) === String(o.value) ? " selected" : ""}>${o.label}</option>`).join("")}</select>`;
+  };
+  return `<form id="profile-form" class="block">
+    <h3>Your details</h3>
+    <p class="muted small">The model was trained on these. Leave any blank and it uses the average student instead.</p>
+    <div class="viz-row" style="gap:0 16px">${fields.map(f => `<div><label>${f.label}</label>${control(f)}</div>`).join("")}</div>
+    <div style="margin-top:18px;max-width:320px"><button class="primary" type="submit">Save and update my path</button></div>
+    <div id="profile-msg" class="caption" style="margin:8px 0 0"></div>
+  </form>`;
+}
+
+function studiesForm(){
+  const stages = (finderOptions && finderOptions.stages) || [];
+  return `<form id="studies-form" class="block">
+    <h3>Your studies</h3>
+    <p class="muted small">Your level decides what the Course Finder suggests next. Your course decides your weekly path.</p>
+    <div class="viz-row" style="gap:0 16px">
+      <div><label for="st-stage">Where you are now</label><select id="st-stage" name="stage">${stages.map(s =>
+        `<option value="${esc(s.value)}"${s.value === me.stage ? " selected" : ""}>${esc(s.label)}</option>`).join("")}</select></div>
+      <div id="st-module-wrap"><label for="st-module">Course</label><select id="st-module" name="module">${(window.MODULES || []).map(m =>
+        `<option value="${esc(m)}"${m === me.module ? " selected" : ""}>${esc(modName(m))}</option>`).join("")}</select></div>
+    </div>
+    <div style="margin-top:18px;max-width:320px"><button class="primary" type="submit">Save my studies</button></div>
+    <div id="studies-msg" class="caption" style="margin:8px 0 0"></div>
+  </form>`;
+}
+function bindStudies(){
+  const f = $("#studies-form");
+  if(!f) return;
+  const stage = f.querySelector('[name="stage"]'), module = f.querySelector('[name="module"]');
+  const sync = () => { $("#st-module-wrap").style.display = courseStage(stage.value) ? "block" : "none"; };
+  stage.onchange = sync;
+  sync();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const body = {stage: stage.value, module: courseStage(stage.value) ? module.value : null};
+    try{
+      me = {...me, ...(await api("/api/me/studies", {method:"PUT", headers:{"content-type":"application/json"}, body: JSON.stringify(body)}))};
+    }catch(err){ $("#studies-msg").textContent = err.message; return; }
+    enter();
+    known.clear();
+    toast("Your studies were saved");
+    studentTab = "path";
+    renderStudent();
+  };
+}
+function renderSchoolStudent(root){
+  const o = finderOptions || {next_levels:{}, levels:[]};
+  const next = (o.next_levels[me.stage] || []).map(l => (o.levels.find(x => x.value === l) || {}).label).filter(Boolean);
+  root.innerHTML = `<div class="page">
+    <div class="dash-head"><div><h1>Hi ${esc(me.display_name)}</h1>
+      <p class="muted">${esc(stageLabel(me.stage) || "Student")}</p></div></div>
+    <div class="next">
+      <div class="eyebrow">Your next step</div>
+      <h2>Choose your next course</h2>
+      ${next.length ? `<p class="meta">After ${esc(stageLabel(me.stage))} you can look at: ${esc(next.join(" or "))}.</p>` : ""}
+      <p class="prose">The Course Finder matches your subjects and what you enjoy to courses you usually qualify for. Your week-by-week path starts once you join a diploma or degree course: update your studies below when you do.</p>
+      <div class="actions"><button class="primary" style="width:auto;padding:10px 18px" data-go="finder">Open the Course Finder</button></div>
+    </div>
+    ${studiesForm()}
+  </div>`;
+  bindStudies();
+}
+
+async function renderStudent(){
+  const root = $("#view-dashboard");
+  if(!me.module) return renderSchoolStudent(root);
+  root.innerHTML = `<div class="page">${skeleton()}</div>`;
+  const k = [...known].join(",");
+  let state, path, form, mine, progress;
+  try{
+    [state, path, form, mine, progress] = await Promise.all([
+      api(`/api/me/state?known=${k}`).then(humanize),
+      api(`/api/me/path?steps=5&known=${k}`).then(humanize),
+      api("/api/profile/options"),
+      api("/api/me/profile"),
+      api("/api/me/progress").then(humanize).catch(() => null)]);
+  }catch(e){
+    root.innerHTML = `<div class="page"><div class="err">Could not load your learning plan: ${esc(e.message || e)}</div></div>`;
+    return;
+  }
+  const t = state.thresholds;
+  const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
+  const hist = state.history.length
+    ? state.history.slice().reverse().slice(0, 8).map(h =>
+        `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}</li>`).join("")
+    : "<li>Nothing recorded yet.</li>";
+  const tabs = [["path", "My path"], ["progress", "Progress"], ["details", "My details"]];
+
+  root.innerHTML = `<div class="page">
+    <div class="dash-head">
+      <div><h1>Hi ${esc(me.display_name)}</h1>
+        <p class="muted">${[stageLabel(me.stage), modName(state.module)].filter(Boolean).map(esc).join(" · ")} · ${path.n_done} of ${path.n_weeks} weeks done</p></div>
+      ${segButtons(tabs, studentTab, "stab")}
+    </div>
+
+    <div data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
+      ${state.n_events === 0 ? `<div class="callout">Welcome. Your path follows your course week by week, starting at Week 1. Press "I studied this" or "I passed the test" and it moves on to the next week.</div>` : ""}
+      ${nextStepCard(path.steps[0], t, true)}
+      ${pathList(path.steps, t, true)}
+      ${courseStrip(state.concepts, t, true, false)}
+    </div>
+
+    <div data-tabpanel="progress" ${studentTab === "progress" ? "" : "hidden"}>
+      ${progressBlock(progress)}
+      <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
+      ${weekChart(state.concepts, t, true)}
+      <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
+        ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
+    </div>
+
+    <div data-tabpanel="details" ${studentTab === "details" ? "" : "hidden"}>
+      ${studiesForm()}
+      ${profileForm(form.fields, mine.profile || {}, mine.module)}
+    </div>
   </div>`;
 
-  document.querySelectorAll(".act").forEach(b => b.onclick = async () => {
+  bindTabs(root, "stab", v => { studentTab = v; hideTip(); });
+  bindViz(root, null);
+  bindPath(root);
+  bindStudies();
+  $("#profile-form").onsubmit = async e => {
+    e.preventDefault();
+    const profile = {};
+    new FormData(e.target).forEach((v, key) => { if(v !== "") profile[key] = v; });
+    const msg = $("#profile-msg"); msg.textContent = "Saving";
+    const res = await fetch("/api/me/profile", {method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({profile})});
+    if(!res.ok){ msg.textContent = "Could not save. Try again."; return; }
+    toast("Your details were saved");
+    studentTab = "path";
+    renderStudent();
+  };
+  root.querySelectorAll(".act").forEach(b => b.onclick = async () => {
     const kind = b.dataset.k === "study" ? "study" : "assessment";
     const correct = b.dataset.k === "pass" ? true : b.dataset.k === "fail" ? false : null;
-    b.disabled = true; b.textContent = "saving…";
+    root.querySelectorAll(".act").forEach(x => x.disabled = true);
+    b.textContent = "Saving";
     await post("/api/me/study", {concept_id:+b.dataset.c, kind, correct});
+    toast(kind === "study" ? "Marked as studied" : correct ? "Test marked as passed" : "Marked as hard");
     renderStudent();
   });
-  document.querySelectorAll(".pl").forEach(b => b.onclick = ()=>{ planner=b.dataset.p; renderStudent(); });
-  const u=$("#undo"); if(u) u.onclick = async ()=>{ await post("/api/me/undo"); renderStudent(); };
+  const u = $("#undo"); if(u) u.onclick = async () => { await post("/api/me/undo"); toast("Last activity undone"); renderStudent(); };
 }
 
-/* ---------------- adviser home ---------------- */
+/* ---------------- adviser dashboard ---------------- */
 async function renderAdviser(){
-  $("#view-home").innerHTML = `
-    <main>
+  $("#view-dashboard").innerHTML = `
+    <main class="split">
       <aside>
-        <label for="q">Search learners</label>
-        <input id="q" placeholder="id, name or module" autocomplete="off" />
+        <label for="q" style="margin-top:0">Search learners</label>
+        <input id="q" placeholder="id, name or course" autocomplete="off" />
         <div id="list" style="margin-top:10px"></div>
       </aside>
       <section class="panel"><div id="detail" class="empty">Select a learner.</div></section>
@@ -350,75 +1188,141 @@ async function renderAdviser(){
 async function showOverview(){
   const o = await api("/api/adviser/overview");
   const rows = o.registered.map(r=>`<tr>
-      <td>${r.display_name}</td><td class="n">${r.student_id}</td>
-      <td>${r.module||"—"}</td><td class="n">${r.n_events||0}</td>
+      <td>${esc(r.display_name)}</td><td class="n">${r.student_id}</td>
+      <td>${esc(modName(r.module))}</td><td class="n">${r.n_events||0}</td>
       <td class="n">${r.n_assessments||0}</td>
       <td class="n">${r.last_active? new Date(r.last_active*1000).toLocaleString() : "never"}</td></tr>`).join("");
+  $("#detail").classList.remove("empty");
   $("#detail").innerHTML = `
+    <h2 style="margin-top:0">Overview</h2>
     <div class="tiles">
       <div class="tile"><div class="v">${o.stats.n_students}</div><div class="k">registered students</div></div>
       <div class="tile"><div class="v">${o.stats.n_events}</div><div class="k">activities recorded</div></div>
-      <div class="tile"><div class="v">${o.stats.n_recommendations}</div><div class="k">recommendations served</div></div>
       <div class="tile"><div class="v">25,101</div><div class="k">dataset learners</div></div>
     </div>
-    <h2>Registered students</h2>
-    <p class="caption">Learners who created an account on this system. Their activity is live.</p>
-    ${o.registered.length?`<div class="scroll"><table><thead><tr><th>Name</th><th class="n">ID</th>
-      <th>Module</th><th class="n">Activities</th><th class="n">Assessments</th><th class="n">Last active</th>
-      </tr></thead><tbody>${rows}</tbody></table></div>`
-      : '<div class="empty">No students have registered yet.</div>'}
-    <p class="caption" style="margin-top:18px">Select any learner on the left to inspect
-      their mastery and recommended path.</p>`;
+    <div class="block"><h3>Registered students</h3>
+      <p class="muted small">Learners who created an account. Their activity is live.</p>
+      ${o.registered.length?`<div class="scroll"><table><thead><tr><th>Name</th><th class="n">ID</th>
+        <th>Course</th><th class="n">Activities</th><th class="n">Tests</th><th class="n">Last active</th>
+        </tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">No students have registered yet.</div>'}
+    </div>
+    <p class="caption" style="margin-top:6px">Select any learner on the left to see their path.</p>`;
 }
 
 async function loadList(q){
   const d = await api(`/api/students?q=${encodeURIComponent(q)}&limit=25`);
   const item = r => `<div class="learner${current===r.id_student?" on":""}${r.registered?" new":""}" data-id="${r.id_student}">
-      <div class="id">${r.registered? r.display_name : r.id_student}</div>
-      <div class="meta">${r.registered? `id ${r.id_student} · ` : ""}${r.module} · ${r.n_events} events · ${r.outcome}</div>
+      <div class="id">${r.registered? esc(r.display_name) : r.id_student}</div>
+      <div class="meta">${r.registered? `id ${r.id_student} · ` : ""}${esc(modName(r.module))} · ${r.n_events} events · ${esc(r.outcome)}</div>
     </div>`;
   $("#list").innerHTML =
     (d.registered.length? `<div class="grouphead">Registered students</div>` + d.registered.map(item).join("") : "") +
     `<div class="grouphead">Dataset learners</div>` + d.dataset.map(item).join("");
   document.querySelectorAll(".learner").forEach(el=>
-    el.onclick = ()=>{ current=+el.dataset.id; known.clear(); showLearner(); loadList(q); });
+    el.onclick = ()=>{ current=+el.dataset.id; known.clear(); learnerTab="path"; showLearner(); loadList(q); });
+}
+
+function planCards(recs, t){
+  if(!recs.length) return '<div class="empty">Nothing to recommend right now.</div>';
+  return recs.map((r, i) => `<div class="card">
+      <div class="rank">Option ${i+1} · ${!r.gaps.length ? "ready now" : "revise earlier weeks first"}</div>
+      <h3>${esc(shortLabel(r.label))}</h3>
+      <p class="prose">Level now: <b>${LEVEL(r.mastery, t)}</b></p>
+      <ul class="plain">${reasonsFor(r, t, false).map(l => `<li>${esc(l)}</li>`).join("")}</ul>
+      <details class="working"><summary>Show the model's working</summary><p class="prose">${esc(r.text)}</p></details>
+    </div>`).join("");
 }
 
 async function showLearner(){
-  $("#detail").innerHTML = `<div class="empty">computing…</div>`;
+  const detail = $("#detail");
+  detail.classList.remove("empty");
+  detail.innerHTML = skeleton();
   const k=[...known].join(",");
-  const [mastery, rec] = await Promise.all([
-    api(`/api/students/${current}/mastery?known=${k}`),
-    api(`/api/recommend?student=${current}&k=3&planner=${planner}&known=${k}`)]);
+  let mastery, path, rec;
+  try{
+    [mastery, path, rec] = await Promise.all([
+      api(`/api/students/${current}/mastery?known=${k}`).then(humanize),
+      api(`/api/students/${current}/path?steps=5&known=${k}`).then(humanize),
+      api(`/api/recommend?student=${current}&k=3&planner=${planner}&known=${k}`).then(humanize)]);
+  }catch(e){
+    detail.innerHTML = `<div class="err">Could not load this learner: ${esc(e.message || e)}</div>`;
+    return;
+  }
+  const t = mastery.thresholds ?? rec.thresholds;
+  const PLANS = {greedy:"Best next step", beam:"Plan a few steps ahead", curriculum:"Follow the course order", weakest:"Fix the weakest week first"};
+  const tabs = [["path", "Path"], ["progress", "Progress"], ["compare", "Compare plans"]];
 
-  $("#detail").innerHTML = `
-    <div class="tiles">
-      <div class="tile"><div class="v">${rec.student}</div><div class="k">${rec.registered?"registered learner":"dataset learner"}</div></div>
-      <div class="tile"><div class="v">${rec.module}</div><div class="k">module</div></div>
-      <div class="tile"><div class="v">${rec.n_eligible}</div><div class="k">eligible concepts</div></div>
-      <div class="tile"><div class="v">${rec.elapsed_ms}<span style="font-size:13px"> ms</span></div><div class="k">response</div></div>
+  detail.innerHTML = `
+    <div class="dash-head">
+      <div><h1 style="font-size:24px">${rec.registered ? "Registered student" : "Learner"} ${rec.student}</h1>
+        <p class="muted">${esc(modName(rec.module))}</p></div>
+      <div class="row">${segButtons(tabs, learnerTab, "ltab")}<button class="small" id="back">Back to overview</button></div>
     </div>
-    <div class="row" style="margin-bottom:10px">
-      ${["greedy","beam","curriculum","weakest"].map(p=>
-        `<button class="small pl${p===planner?" on":""}" data-p="${p}">${p}</button>`).join("")}
-      <span style="flex:1"></span>
-      <button class="small" id="back">← overview</button>
+    <div data-tabpanel="path" ${learnerTab === "path" ? "" : "hidden"}>
+      ${nextStepCard(path.steps[0], t, false)}
+      ${pathList(path.steps, t, false)}
+      ${courseStrip(mastery.concepts, t, false, true)}
     </div>
-    <div class="legend">click any point to mark it already known · ${known.size} marked</div>
-    ${masteryChart(mastery.concepts, mastery.thresholds ?? rec.thresholds, true)}
-    ${recCards(rec.recommendations, false)}`;
+    <div data-tabpanel="progress" ${learnerTab === "progress" ? "" : "hidden"}>
+      <div class="viz-row">${levelChart(mastery.concepts, t, false)}${partChart(mastery.concepts, false)}</div>
+      ${weekChart(mastery.concepts, t, false)}
+    </div>
+    <div data-tabpanel="compare" ${learnerTab === "compare" ? "" : "hidden"}>
+      <div class="block"><h3>Compare planning strategies</h3>
+        <p class="muted small">The path uses "Best next step". Try the others to see how the top three choices change.</p>
+        <div class="row">${Object.entries(PLANS).map(([p, label]) => `<button class="small pl${p === planner ? " on" : ""}" data-p="${p}">${label}</button>`).join("")}</div>
+      </div>
+      ${planCards(rec.recommendations, t)}
+    </div>`;
 
-  document.querySelectorAll(".pl").forEach(b=>b.onclick=()=>{planner=b.dataset.p;showLearner();});
-  $("#back").onclick = ()=>{ current=null; showOverview(); loadList($("#q").value); };
-  document.querySelectorAll("#chart circle").forEach(c=>
-    c.onclick=()=>{ const id=+c.dataset.c; known.has(id)?known.delete(id):known.add(id); showLearner(); });
+  bindTabs(detail, "ltab", v => { learnerTab = v; hideTip(); });
+  detail.querySelectorAll(".pl").forEach(b => b.onclick = () => { planner = b.dataset.p; learnerTab = "compare"; showLearner(); });
+  $("#back").onclick = () => { current = null; showOverview(); loadList($("#q").value); };
+  bindViz(detail, id => { known.has(id) ? known.delete(id) : known.add(id); learnerTab = "path"; showLearner(); });
+  bindPath(detail);
 }
 
-const renderHome = () => me.role === "adviser" ? renderAdviser() : renderStudent();
+const renderHome = () => me.role === "student" ? renderStudent() : renderAdviser();
 
-/* ---------------- results ---------------- */
+/* ---------------- admin ---------------- */
+async function renderAdmin(){
+  const el = $("#admin");
+  try{
+    const d = await api("/api/admin/accounts");
+    el.classList.remove("empty");
+    const s = d.stats;
+    const when = t => t ? new Date(t*1000).toISOString().slice(0,16).replace("T"," ") : "never";
+    el.innerHTML = `
+      <h2 style="margin:0 0 14px">Accounts</h2>
+      <div class="tiles">
+        <div class="tile"><div class="v">${s.n_users}</div><div class="k">accounts</div></div>
+        <div class="tile"><div class="v">${s.n_students}</div><div class="k">students</div></div>
+        <div class="tile"><div class="v">${s.n_advisers}</div><div class="k">advisers</div></div>
+        <div class="tile"><div class="v">${s.n_events}</div><div class="k">study events</div></div>
+      </div>
+      <div class="block"><table class="admin-table"><thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Level</th><th>Course</th>
+        <th class="n">Events</th><th>Last active</th><th></th></tr></thead><tbody>
+        ${d.accounts.map(a=>`<tr>
+          <td><code>${esc(a.username)}</code></td><td>${esc(a.display_name)}</td>
+          <td>${esc(a.role)}</td><td>${esc(stageLabel(a.stage) || (a.role === "student" && a.module ? "Undergraduate" : ""))}</td><td>${esc(modName(a.module))}</td>
+          <td class="n">${a.n_events}</td><td>${when(a.last_active)}</td>
+          <td>${a.username===me.username ? "" : `<button class="small del" data-u="${esc(a.username)}">Delete</button>`}</td>
+        </tr>`).join("")}
+      </tbody></table>
+      <p class="caption">Deleting an account also removes its study history. This cannot be undone. Passwords are never shown here and are not recoverable: reset one with <code>python scripts/08_admin.py passwd USERNAME</code>.</p></div>`;
+    el.querySelectorAll(".del").forEach(b => b.onclick = async () => {
+      if(!confirm(`Delete "${b.dataset.u}" and all of their study history?`)) return;
+      await api("/api/admin/accounts/"+encodeURIComponent(b.dataset.u), {method:"DELETE"});
+      toast(`Deleted ${b.dataset.u}`);
+      renderAdmin();
+    });
+  }catch(e){ el.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+/* ---------------- research: results and method ---------------- */
 async function renderResults(){
   if(!metrics){ try{ metrics = await api("/api/metrics"); }catch{ $("#results").innerHTML='<div class="empty">unavailable</div>'; return; } }
+  $("#results").classList.remove("empty");
   const t1=metrics.table1, t2=metrics.table2, ex=metrics.explainability, g=metrics.graph_stats;
   const cold=t1&&t1.cold_concept;
   const rows1=(t1?.rows||[]).map(r=>`<tr class="${r.model.includes('Proposed (')?'hl':''}">
@@ -428,77 +1332,63 @@ async function renderResults(){
     <td>${r.planner}</td><td class="n">${r.ndcg}</td><td class="n">${r.hit_rate}</td>
     <td class="n">${r.precision}</td><td class="n">${r.prerequisite_violations}</td>
     <td class="n">${r.coverage}</td></tr>`).join("");
-
   $("#results").innerHTML = `
-    <h2>Headline results</h2>
+    <h1 style="font-size:30px;margin:0 0 6px">Research results</h1>
+    <p class="muted" style="margin:0 0 22px">Every number below comes from the study behind this site and is regenerated from the raw data.</p>
     <div class="tiles">
-      <div class="tile"><div class="v">${t1?.rows?.find(r=>r.model.includes('Proposed ('))?.auc.split(' ')[0] ?? '—'}</div><div class="k">AUC-ROC, 5-fold</div></div>
-      <div class="tile"><div class="v">${cold?'+'+cold.difference.toFixed(4):'—'}</div><div class="k">graph gain, cold concepts</div></div>
-      <div class="tile"><div class="v">${g?.n_concepts ?? '—'}</div><div class="k">concepts</div></div>
+      <div class="tile"><div class="v">${t1?.rows?.find(r=>r.model.includes('Proposed ('))?.auc.split(' ')[0] ?? 'n/a'}</div><div class="k">AUC-ROC, 5-fold</div></div>
+      <div class="tile"><div class="v">${cold?'+'+cold.difference.toFixed(4):'n/a'}</div><div class="k">graph gain, cold concepts</div></div>
+      <div class="tile"><div class="v">${g?.n_concepts ?? 'n/a'}</div><div class="k">concepts</div></div>
       <div class="tile"><div class="v">0.0000</div><div class="k">prerequisite violations</div></div>
     </div>
     ${cold?`<div class="callout"><b>The knowledge graph matters where supervision is absent.</b>
-      Accuracy is measured only at assessment positions, and just ${g.n_concepts_with_assessments}
-      of ${g.n_concepts} concepts carry assessments. Withholding assessments entirely for 27 of
-      those and scoring only them: <b>${cold.proposed.toFixed(4)}</b> with the graph versus
-      <b>${cold.no_graph.toFixed(4)}</b> without — p = ${cold.p_raw.toFixed(4)}, d = ${cold.cohens_d.toFixed(2)}.</div>`:""}
-    <h2>Table I · predictive accuracy</h2>
-    <p class="caption">Mean ± standard deviation over 5-fold cross-validation, folds grouped by
-      student. p-values are paired t-tests against the proposed model, Holm-corrected.</p>
-    <div class="scroll"><table><thead><tr><th>Model</th><th class="n">AUC-ROC</th><th class="n">RMSE</th>
-      <th class="n">ECE</th><th class="n">p</th><th class="n">Cohen's d</th></tr></thead><tbody>${rows1}</tbody></table></div>
-    <h2>Table II · learning path quality</h2>
-    <p class="caption">${t2?.n_learners ?? "—"} held-out successful learners. Ground truth is the
-      concepts each learner actually moved to next — real behaviour, not simulation.</p>
-    <div class="scroll"><table><thead><tr><th>Planner</th><th class="n">NDCG@5</th><th class="n">Hit@5</th>
-      <th class="n">Prec@5</th><th class="n">Prereq viol.</th><th class="n">Coverage</th></tr></thead>
-      <tbody>${rows2}</tbody></table></div>
-    ${ex?`<h2>Explanation quality</h2>
-    <p class="caption">Objective measures. A survey records whether a reader liked an explanation;
-      these record whether it is true of the model.</p>
-    <div class="tiles">
-      <div class="tile"><div class="v">${fmt(ex.fidelity)}</div><div class="k">fidelity</div></div>
-      <div class="tile"><div class="v">${fmt(ex.sufficiency)}</div><div class="k">sufficiency</div></div>
-      <div class="tile"><div class="v">${fmt(ex.stability)}</div><div class="k">stability</div></div>
-    </div>`:""}
+      Accuracy is measured only at assessment positions, and just ${g.n_concepts_with_assessments} of ${g.n_concepts} concepts carry assessments.
+      Withholding assessments entirely for 27 of those and scoring only them: <b>${cold.proposed.toFixed(4)}</b> with the graph versus
+      <b>${cold.no_graph.toFixed(4)}</b> without. p = ${cold.p_raw.toFixed(4)}, d = ${cold.cohens_d.toFixed(2)}.</div>`:""}
+    <div class="block"><h3>Table I · predictive accuracy</h3>
+      <p class="muted small">Mean ± standard deviation over 5-fold cross-validation, folds grouped by student. p-values are paired t-tests against the proposed model, Holm-corrected.</p>
+      <div class="scroll"><table><thead><tr><th>Model</th><th class="n">AUC-ROC</th><th class="n">RMSE</th>
+        <th class="n">ECE</th><th class="n">p</th><th class="n">Cohen's d</th></tr></thead><tbody>${rows1}</tbody></table></div></div>
+    <div class="block"><h3>Table II · learning path quality</h3>
+      <p class="muted small">${t2?.n_learners ?? "n/a"} held-out successful learners. Ground truth is the concepts each learner actually moved to next: real behaviour, not simulation.</p>
+      <div class="scroll"><table><thead><tr><th>Planner</th><th class="n">NDCG@5</th><th class="n">Hit@5</th>
+        <th class="n">Prec@5</th><th class="n">Prereq viol.</th><th class="n">Coverage</th></tr></thead><tbody>${rows2}</tbody></table></div></div>
+    ${ex?`<div class="block"><h3>Explanation quality</h3>
+      <p class="muted small">Objective measures. A survey records whether a reader liked an explanation; these record whether it is true of the model.</p>
+      <div class="tiles" style="margin:0">
+        <div class="tile"><div class="v">${fmt(ex.fidelity)}</div><div class="k">fidelity</div></div>
+        <div class="tile"><div class="v">${fmt(ex.sufficiency)}</div><div class="k">sufficiency</div></div>
+        <div class="tile"><div class="v">${fmt(ex.stability)}</div><div class="k">stability</div></div>
+      </div></div>`:""}
     <h2>Figures</h2>
-    <figure><img src="/static/figures/concept_graph.png" alt="Concept graph" />
-      <p class="caption">${g?.n_prerequisite_edges} prerequisite and ${g?.n_corequisite_edges}
-        corequisite edges, laid out by module and week.</p></figure>
-    <figure><img src="/static/figures/calibration.png" alt="Calibration" />
-      <p class="caption">Calibration across five folds.</p></figure>
-    <figure><img src="/static/figures/cold_start.png" alt="Cold start" />
-      <p class="caption">Accuracy against how much history a learner has.</p></figure>`;
+    <figure><img src="/static/figures/concept_graph.png" alt="Concept graph" loading="lazy" />
+      <p class="caption">${g?.n_prerequisite_edges} prerequisite and ${g?.n_corequisite_edges} corequisite edges, laid out by module and week.</p></figure>
+    <figure><img src="/static/figures/calibration.png" alt="Calibration" loading="lazy" /><p class="caption">Calibration across five folds.</p></figure>
+    <figure><img src="/static/figures/cold_start.png" alt="Cold start" loading="lazy" /><p class="caption">Accuracy against how much history a learner has.</p></figure>`;
 }
 
 function renderAbout(){
   const g = metrics?.graph_stats;
   $("#about").innerHTML = `
     <h2>How a recommendation is produced</h2>
-    <p><b>1 · Knowledge tracing.</b> A learner's history goes into KG-DKT: a 3-layer graph
-      convolution over the prerequisite graph produces concept embeddings, and a 2-layer
-      transformer with time-aware attention turns the history into a mastery estimate for every
-      concept. Older interactions are discounted by a learned per-head decay.</p>
-    <p><b>2 · Filtering.</b> A concept is eligible only if it is not already mastered and every
-      prerequisite is at or above the readiness threshold — enforced structurally, so an
-      unprepared recommendation is impossible rather than unlikely. Measured at <b>zero
-      violations</b> across 906 evaluated decisions.</p>
-    <p><b>3 · Ranking.</b> Each eligible concept is simulated: what would mastery look like a week
-      from now having studied it, against a week having studied nothing? Scored in log-odds.</p>
-    <p><b>4 · Explanation.</b> Priority backtracking walks the prerequisite ancestry and ranks what
-      is missing by deficit, decayed with graph distance. Counterfactuals are computed by asking
-      the model. Every clause traces to a number — no language model is involved.</p>
+    <div class="block">
+    <p><b>1 · Knowledge tracing.</b> A learner's history goes into KG-DKT: a 3-layer graph convolution over the prerequisite graph produces concept embeddings, and a 2-layer transformer with time-aware attention turns the history into a mastery estimate for every concept. Older interactions are discounted by a learned per-head decay.</p>
+    <p><b>2 · Filtering.</b> A concept is eligible only if it is not already mastered and every prerequisite is at or above the readiness threshold, enforced structurally, so an unprepared recommendation is impossible rather than unlikely. Measured at <b>zero violations</b> across 906 evaluated decisions.</p>
+    <p><b>3 · Ranking.</b> Each eligible concept is simulated: what would mastery look like having studied it, against the same time having studied nothing? Scored in log-odds.</p>
+    <p><b>4 · Explanation.</b> Priority backtracking walks the prerequisite ancestry and ranks what is missing by deficit, decayed with graph distance. Counterfactuals are computed by asking the model. Every clause traces to a number, and no language model is involved.</p>
+    <p style="margin-bottom:0"><b>5 · The path.</b> The step-by-step path repeats the ranking with each earlier step marked as known, so each later step is what the model would recommend once the ones before it are finished.</p>
+    </div>
     <h2>Honest limitations</h2>
-    <p>The model predicts <b>successful completion</b>, not knowledge in the abstract: because
-      non-submission counts as failure, much of the signal is engagement. That is the right target
-      for a system meant to intervene, but it is not the same as measuring understanding.</p>
-    <p>OULAD ships no titles for learning materials, so concepts cannot honestly be named by topic.
-      Labels describe position and activity composition instead.</p>
-    <p>Only ${g?.n_concepts_with_assessments ?? 89} of ${g?.n_concepts ?? 237} concepts carry
-      assessments. Mastery for the rest arrives through the prerequisite graph — which is exactly
-      why the cold-concept experiment matters.</p>
-    <p>Registered learners have no demographic record, so their features fall back to the dataset
-      mean. Their first recommendations are a cold-start prior, not personalisation.</p>`;
+    <div class="block">
+    <p>The model predicts <b>successful completion</b>, not knowledge in the abstract: because non-submission counts as failure, much of the signal is engagement. That is the right target for a system meant to intervene, but it is not the same as measuring understanding.</p>
+    <p>OULAD ships no titles for learning materials, so concepts cannot honestly be named by topic. The same is true of the courses themselves: the Open University published only each course's subject area, so the course names shown in this app are illustrative, chosen to fit that area.</p>
+    <div class="scroll"><table><thead><tr><th>Shown as</th><th>Published subject area</th><th>Dataset code</th></tr></thead><tbody>
+      ${Object.keys(window.MODULE_NAMES).sort().map(c => `<tr><td>${window.MODULE_NAMES[c]}</td><td>${(window.MODULE_AREAS || {})[c] || ""}</td><td><code>${c}</code></td></tr>`).join("")}
+    </tbody></table></div>
+    <p>Only ${g?.n_concepts_with_assessments ?? 89} of ${g?.n_concepts ?? 237} concepts carry assessments. Mastery for the rest arrives through the prerequisite graph, which is exactly why the cold-concept experiment matters.</p>
+    <p>Registered students can give background details such as age band and education. Those answers reach the model; anything left blank uses the dataset average.</p>
+    <p style="margin-bottom:0">The Course Finder is separate from the model above. It is rule-based: it matches a student's level, class 12 subjects or degree, and interests to common diploma, undergraduate and postgraduate courses using rules anyone can read in <code>elpr/course_finder.py</code>. No data about Indian students was used or collected.</p>
+    </div>`;
 }
 
 bootstrap();

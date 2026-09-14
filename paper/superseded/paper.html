@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Explainable AI-Based Personalized Learning Path Recommendation System</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Explainable AI-Based Personalized Learning Path
+Recommendation System</h1>
+</header>
+<h1
+id="explainable-ai-based-personalized-learning-path-recommendation-system-for-university-students">Explainable
+AI-Based Personalized Learning Path Recommendation System for University
+Students</h1>
+<p><strong>Abhay Pratap Singh</strong>, <strong>Akshay Guleria</strong>,
+<strong>Uday Chaturvedi</strong>, <strong>Gursimar Makkar</strong>,
+<strong>Shikha Kamal</strong></p>
+<p><em>Department of Computer Science, Chandigarh University, Mohali,
+India</em></p>
+<p><code>23BCS11784@cuchd.in</code> · <code>23BCS10517@cuchd.in</code> ·
+<code>23BCS10807@cuchd.in</code> · <code>23BCS11455@cuchd.in</code> ·
+<code>shikha.e12552@cumail.in</code></p>
+<hr />
+<h2 id="abstract">Abstract</h2>
+<p>Digital learning platforms in higher education generate large volumes
+of interaction data that could support personalised learning-path
+recommendation, but existing educational recommenders offer little
+transparency and are rarely evaluated in a way that establishes which of
+their components actually contribute. This paper presents an explainable
+learning-path recommendation framework combining
+knowledge-graph-conditioned knowledge tracing, prerequisite-constrained
+planning, and priority-backtracking explanation, evaluated on the Open
+University Learning Analytics Dataset (OULAD). The knowledge tracing
+model attains AUC-ROC 0.9538 ± 0.0019 and expected calibration error
+0.0054 under five-fold cross-validation with folds grouped by student,
+significantly exceeding Deep Knowledge Tracing (0.9435 ± 0.0017,
+<em>p</em> = 0.0009) and a graph-based baseline (0.9502 ± 0.0014,
+<em>p</em> = 0.022) after Holm correction. A central finding concerns
+evaluation rather than architecture. Removing knowledge-graph
+propagation changes predictive accuracy by −0.0001 (<em>p</em> = 0.77),
+which would ordinarily be read as the graph contributing nothing. That
+reading is an artefact of the measurement: accuracy is computed only at
+assessment positions, and only 89 of 237 concepts carry assessments.
+Under a cold-concept protocol that withholds all assessments for a
+subset of concepts and scores only those, the same graph improves
+accuracy by +0.0325 (<em>p</em> = 0.0003, Cohen’s <em>d</em> = 5.06),
+winning on every fold. Knowledge-graph propagation therefore contributes
+nothing where direct supervision is plentiful and substantially where it
+is absent, and conventional ablation cannot distinguish the two cases.
+Planning is evaluated against the concepts learners actually studied
+next, with zero prerequisite violations across 906 recommendation
+decisions, and explanation quality is assessed by objective fidelity,
+sufficiency and stability rather than by subjective rating. All code,
+data transformations and results are released publicly.</p>
+<p><strong>Index Terms</strong> — Explainable AI, knowledge tracing,
+knowledge graphs, learning path recommendation, educational data mining,
+ablation methodology.</p>
+<hr />
+<h2 id="i.-introduction">I. Introduction</h2>
+<p>The rapid digitisation of higher education has created unprecedented
+opportunities for data-driven personalisation, yet the one-size-fits-all
+curriculum remains common in most universities [1]. Students choosing
+between electives, or working through a compressed degree programme,
+rarely receive guidance matched to their prior experience, pace of study
+and intended direction. In cumulative subjects a gap in a foundational
+concept can produce persistent difficulty for the remainder of a
+programme.</p>
+<p>Adaptive recommender systems are intended to address this, but two
+limitations recur. First, many systems operate as black boxes, offering
+no account of why a particular activity was suggested [12]. Students and
+academic advisers need that account in order to judge whether a
+suggestion fits their situation; without it, even well-founded
+recommendations are disregarded. Second, personalisation work has
+concentrated on adaptive feedback delivery rather than on modelling how
+a learner’s knowledge evolves and constructing coherent sequences over
+it.</p>
+<p>A third limitation is less often discussed and motivates the present
+work. Systems of this kind are routinely assembled from several
+components — a sequence model, a structural prior such as a knowledge
+graph, a planner — and each component is justified by an ablation
+showing that removing it degrades accuracy. We show that this evaluation
+can be systematically uninformative. When a structural prior exists
+precisely to support items for which direct supervision is scarce, and
+accuracy is measured only where supervision is abundant, the ablation
+measures the component in the one regime where it cannot matter.</p>
+<p>This paper makes the following contributions.</p>
+<ol type="1">
+<li><p>A knowledge-graph-conditioned knowledge tracing model with a
+learned per-head temporal decay, attaining AUC-ROC 0.9538 ± 0.0019 and
+expected calibration error 0.0054 on OULAD under student-grouped
+five-fold cross-validation.</p></li>
+<li><p><strong>Evidence that conventional ablation cannot detect the
+contribution of a knowledge graph, together with a cold-concept protocol
+that can.</strong> Prerequisite propagation changes standard accuracy by
+−0.0001 (<em>p</em> = 0.77) yet improves accuracy on concepts lacking
+direct supervision by +0.0325 (<em>p</em> = 0.0003, <em>d</em> =
+5.06).</p></li>
+<li><p>A prerequisite-constrained planner whose pedagogical guarantee is
+enforced structurally rather than learned, verified at zero violations
+across 906 recommendation decisions evaluated against observed learner
+behaviour.</p></li>
+<li><p>Three objective measures of explanation quality — fidelity,
+sufficiency and stability — in place of subjective rating. One of these
+revealed that generated explanations accounted for only 0.2% of the
+predicted benefit they described, a defect no rating scale would
+surface.</p></li>
+<li><p>A reproducible pipeline from raw data to every reported figure,
+together with a deployed service, released publicly.</p></li>
+</ol>
+<p>The remainder of the paper is organised as follows. Section II
+reviews related work; Section III specifies the framework; Section IV
+details the implementation; Section V reports results; Section VI
+concludes.</p>
+<hr />
+<h2 id="ii.-related-work">II. Related Work</h2>
+<p>Educational recommender systems have progressed from undifferentiated
+delivery towards adaptive personalisation. Early systems relied on
+content-based and collaborative filtering, which suffer from cold-start
+difficulties, data sparsity and limited scalability [1], [2]. Hybrid
+models combining several recommendation strategies improved accuracy and
+robustness, but concentrated on predicting learner preference rather
+than modelling knowledge acquisition or optimising sequential
+pathways.</p>
+<p>Deep Knowledge Tracing (DKT) [5] models a learner’s latent knowledge
+state over time using recurrent networks. Unlike Bayesian Knowledge
+Tracing [4], which relies on static per-skill parameters, DKT learns
+temporal dependencies directly from interaction data. Subsequent work
+introduced memory structures [6] and attention [8], [7], the latter
+allowing a model to attend directly to any earlier interaction rather
+than propagating information through a recurrent chain [9].</p>
+<p>Reinforcement learning has been applied to learning-path
+recommendation by formalising the problem as a Markov decision process
+and optimising for long-term learning gain rather than immediate
+engagement. Knowledge graphs offer a complementary route to structured
+and explainable recommendation by modelling concepts, course units and
+their dependencies explicitly [1]. Graph neural networks have proven
+effective for the relational structure such graphs induce.</p>
+<p>Several gaps remain. Explainability is frequently added after the
+fact rather than treated as a design requirement, and where it is
+evaluated at all, evaluation is usually by participant rating — which
+measures whether readers found an explanation agreeable, not whether it
+is faithful to the model producing it. Temporal dynamics, particularly
+forgetting, are often omitted, which compromises the pedagogical
+validity of suggested trajectories. Most relevant to this paper, the
+contribution of structural priors is customarily established by an
+ablation on aggregate predictive accuracy, without examining whether
+that metric is capable of observing the component in question. We return
+to this point in Section V.</p>
+<hr />
+<h2 id="iii.-methodology">III. Methodology</h2>
+<h3 id="a.-overview">A. Overview</h3>
+<p>The framework has three components: a knowledge tracing model that
+estimates a learner’s mastery over every concept, a planner that selects
+the next concept subject to prerequisite constraints, and an explanation
+module that justifies the selection by reference to the prerequisite
+graph. Explanation is post-hoc: it operates on a decision already taken.
+What distinguishes it from a generic attribution method is that it is
+grounded in graph structure and in counterfactuals the model can be
+queried for directly, and that its quality is measured objectively
+rather than surveyed.</p>
+<h3 id="b.-concept-graph-construction">B. Concept Graph
+Construction</h3>
+<p>OULAD contains no concept annotations, prerequisite relations, or
+titles for learning materials. A concept graph is therefore derived
+rather than read off. A concept is defined as a (module, week-of-study)
+pair: the set of material a module presents in a given week. Week
+placement uses the <code>week_from</code> field where present (17.6% of
+materials) and otherwise the median day on which learners accessed the
+material. On the 1,121 materials carrying both signals the two agree at
+Spearman ρ = 0.975, which we report as validation of the substitute.</p>
+<p>Edges arise from three rules. Sequence edges connect consecutive
+weeks within a module. Assessment-coverage edges connect the four
+preceding weeks to the week an assessment falls in. Mined edges are
+admitted where learner behaviour shows both consistent ordering and a
+measurable effect: for concepts <em>a</em>, <em>b</em> within a
+module,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">c</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mrow><mo stretchy="true" form="prefix">|</mo><mo stretchy="false" form="prefix">{</mo><mi>u</mi><mo>:</mo><msub><mi>τ</mi><mi>u</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo><mo>&lt;</mo><msub><mi>τ</mi><mi>u</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>b</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">}</mo><mo stretchy="true" form="postfix">|</mo></mrow><mrow><mo stretchy="true" form="prefix">|</mo><mo stretchy="false" form="prefix">{</mo><mi>u</mi><mo>:</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo>∈</mo><msub><mi>h</mi><mi>u</mi></msub><mo stretchy="false" form="postfix">}</mo><mo stretchy="true" form="postfix">|</mo></mrow></mfrac><mo>,</mo><mspace width="2.0em"></mspace><mrow><mi mathvariant="normal">l</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">t</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>y</mi><mi>b</mi></msub><mo>∣</mo><mi>a</mi><mo>≺</mo><mi>b</mi><mo stretchy="false" form="postfix">)</mo></mrow><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>y</mi><mi>b</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow></mfrac><mo>,</mo></mrow><annotation encoding="application/x-tex">\mathrm{prec}(a,b) = \frac{\left|\{u : \tau_u(a) &lt; \tau_u(b)\}\right|}{\left|\{u : a, b \in h_u\}\right|},
+\qquad
+\mathrm{lift}(a,b) = \frac{P(y_b \mid a \prec b)}{P(y_b)},
+\tag{1}</annotation></semantics></math></p>
+<p>where τ<em>ᵤ</em>(·) is learner <em>u</em>’s first interaction with a
+concept. An edge is accepted when support exceeds 100 learners, prec ≥
+0.75 and lift &gt; 1.1. Requiring lift is essential: precedence alone
+admits pairs separated only by the calendar. The resulting graph is
+acyclic without intervention.</p>
+<h3 id="c.-knowledge-graph-enhanced-knowledge-tracing">C.
+Knowledge-Graph-Enhanced Knowledge Tracing</h3>
+<p>Concept representations come from a three-layer graph convolution
+over the symmetrically normalised adjacency of the prerequisite
+graph,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>A</mi><mo accent="true">̂</mo></mover><mo>=</mo><msup><mi>D</mi><mrow><mi>−</mi><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>+</mo><mi>I</mi><mo stretchy="false" form="postfix">)</mo><msup><mi>D</mi><mrow><mi>−</mi><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><mo>,</mo></mrow><annotation encoding="application/x-tex">\hat{A} = D^{-1/2}(A + I)D^{-1/2},
+\tag{2}</annotation></semantics></math></p>
+<p>where <em>A</em> ∈ ℝ^(C×C) is the weighted adjacency over <em>C</em>
+= 237 concepts. With <em>H</em>⁽⁰⁾ = <em>E</em> a learned embedding
+table,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>H</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>l</mi><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo>=</mo><mrow><mi mathvariant="normal">D</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">p</mi></mrow><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mi mathvariant="normal">R</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">L</mi><mi mathvariant="normal">U</mi></mrow><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mi mathvariant="normal">L</mi><mi mathvariant="normal">N</mi></mrow><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mover><mi>A</mi><mo accent="true">̂</mo></mover><msup><mi>H</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>l</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><msup><mi>W</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>l</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mi>l</mi><mo>=</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo>,</mo><mn>2</mn><mo>,</mo></mrow><annotation encoding="application/x-tex">H^{(l+1)} = \mathrm{Drop}\!\left(\mathrm{ReLU}\!\left(\mathrm{LN}\!\left(\hat{A} H^{(l)} W^{(l)}\right)\right)\right), \quad l = 0,1,2,
+\tag{3}</annotation></semantics></math></p>
+<p>giving <em>Z</em> = <em>H</em>⁽³⁾ ∈ ℝ^(C×64). <em>Z</em> is
+recomputed at every forward pass, so gradients propagate into the graph
+structure.</p>
+<p>For interaction <em>t</em> with concept <em>c_t</em>, response
+<em>r_t</em> and kind <em>k_t</em>,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mi>t</mi></msub><mo>=</mo><msub><mi>W</mi><mi>c</mi></msub><mi>Z</mi><mo stretchy="false" form="prefix">[</mo><msub><mi>c</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">]</mo><mo>+</mo><msub><mi>W</mi><mi>r</mi></msub><mi>e</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>r</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>+</mo><msub><mi>W</mi><mi>k</mi></msub><mi>e</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>k</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>+</mo><msub><mi>W</mi><mi>f</mi></msub><msub><mi>f</mi><mi>t</mi></msub><mo>+</mo><msub><mi>W</mi><mi>s</mi></msub><mi>s</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">x_t = W_c Z[c_t] + W_r e(r_t) + W_k e(k_t) + W_f f_t + W_s s,
+\tag{4}</annotation></semantics></math></p>
+<p>where <em>s</em> denotes static learner features and <em>f_t</em>
+carries click volume, elapsed time since the previous interaction,
+elapsed time since the same concept was last seen, and position through
+the presentation.</p>
+<p>Forgetting is modelled as an additive attention bias decaying with
+elapsed time,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>b</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mo stretchy="false" form="prefix">(</mo><mi>h</mi><mo stretchy="false" form="postfix">)</mo></mrow></msubsup><mo>=</mo><mi>−</mi><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">p</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">s</mi></mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>γ</mi><mi>h</mi></msub><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">log</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msub><mi mathvariant="normal">Δ</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">b^{(h)}_{ij} = -\,\mathrm{softplus}(\gamma_h)\,\log(1 + \Delta_{ij}),
+\tag{5}</annotation></semantics></math></p>
+<p>with Δ<em>ᵢⱼ</em> the days between interactions <em>i</em> and
+<em>j</em> and γ*_h* learned per head, so that one head may attend to
+recent activity while another retains longer memory. Attention is</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>A</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>h</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo>=</mo><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">x</mi></mrow><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><msup><mi>Q</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>h</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><msup><msup><mi>K</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>h</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mi>⊤</mi></msup></mrow><msqrt><msub><mi>d</mi><mi>k</mi></msub></msqrt></mfrac><mo>+</mo><msup><mi>b</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>h</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo>+</mo><mi>M</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">A^{(h)} = \mathrm{softmax}\!\left(\frac{Q^{(h)}{K^{(h)}}^{\top}}{\sqrt{d_k}} + b^{(h)} + M\right),
+\tag{6}</annotation></semantics></math></p>
+<p>where <em>M</em> combines the causal and padding masks. Setting γ*_h*
+= 0 recovers ordinary attention and constitutes the temporal ablation of
+Table II.</p>
+<p>Writing <em>h_t</em> for the encoder state after interaction
+<em>t</em>,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mi>t</mi></msub><mo>=</mo><mi>σ</mi><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mi mathvariant="normal">M</mi><mi mathvariant="normal">L</mi><mi mathvariant="normal">P</mi></mrow><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mo stretchy="false" form="prefix">[</mo><mspace width="0.167em"></mspace><msub><mi>h</mi><mrow><mi>t</mi><mo>−</mo><mn>1</mn></mrow></msub><mspace width="0.167em"></mspace><mo>;</mo><mspace width="0.167em"></mspace><mi>Z</mi><mo stretchy="false" form="prefix">[</mo><msub><mi>c</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">]</mo><mspace width="0.167em"></mspace><mo stretchy="false" form="postfix">]</mo><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">\hat{y}_t = \sigma\!\left(\mathrm{MLP}\!\left([\,h_{t-1}\,;\,Z[c_t]\,]\right)\right),
+\tag{7}</annotation></semantics></math></p>
+<p>conditioning on the identity of <em>c_t</em> but never its response.
+Training minimises binary cross-entropy over assessment positions 𝒮
+alone,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="script">ℒ</mi><mo>=</mo><mi>−</mi><mfrac><mn>1</mn><mrow><mo stretchy="false" form="prefix">|</mo><mi mathvariant="script">𝒮</mi><mo stretchy="false" form="prefix">|</mo></mrow></mfrac><munder><mo>∑</mo><mrow><mi>t</mi><mo>∈</mo><mi mathvariant="script">𝒮</mi></mrow></munder><mrow><mo stretchy="true" form="prefix">[</mo><mspace width="0.167em"></mspace><msub><mi>y</mi><mi>t</mi></msub><mi mathvariant="normal">log</mi><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mi>t</mi></msub><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>y</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">)</mo><mi mathvariant="normal">log</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mi>t</mi></msub><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\mathcal{L} = -\frac{1}{|\mathcal{S}|}\sum_{t \in \mathcal{S}} \left[\, y_t \log \hat{y}_t + (1 - y_t)\log(1 - \hat{y}_t)\,\right].
+\tag{8}</annotation></semantics></math></p>
+<p>Clickstream interactions update the hidden state without contributing
+a loss term. This dual-signal construction is what makes a sequence
+model of length 200 trainable on a dataset in which learners average 8.7
+assessments each.</p>
+<p>Because predicted mastery is displayed to learners, probabilities are
+calibrated by temperature scaling [10],</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>T</mi><mo>⋆</mo></msup><mo>=</mo><mrow><mi mathvariant="normal">arg</mi><mo>&#8289;</mo></mrow><munder><mi mathvariant="normal">min</mi><mi>T</mi></munder><mrow><mi mathvariant="normal">B</mi><mi mathvariant="normal">C</mi><mi mathvariant="normal">E</mi></mrow><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mi>σ</mi><mo stretchy="false" form="prefix">(</mo><mi>z</mi><mi>/</mi><mi>T</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="2.0em"></mspace><mover><mi>y</mi><mo accent="true">̂</mo></mover><mo>=</mo><mi>σ</mi><mo stretchy="false" form="prefix">(</mo><mi>z</mi><mi>/</mi><msup><mi>T</mi><mo>⋆</mo></msup><mo stretchy="false" form="postfix">)</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">T^\star = \arg\min_{T} \mathrm{BCE}\!\left(\sigma(z/T), y\right), \qquad \hat{y} = \sigma(z/T^\star),
+\tag{9}</annotation></semantics></math></p>
+<p>fitted on one half of each fold’s held-out predictions and evaluated
+on the other. The mastery vector consumed by the planner evaluates the
+prediction head against every concept,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>t</mi></msub><mo stretchy="false" form="prefix">[</mo><mi>c</mi><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mi>σ</mi><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mi mathvariant="normal">M</mi><mi mathvariant="normal">L</mi><mi mathvariant="normal">P</mi></mrow><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mo stretchy="false" form="prefix">[</mo><mspace width="0.167em"></mspace><msub><mi>h</mi><mi>t</mi></msub><mspace width="0.167em"></mspace><mo>;</mo><mspace width="0.167em"></mspace><mi>Z</mi><mo stretchy="false" form="prefix">[</mo><mi>c</mi><mo stretchy="false" form="postfix">]</mo><mspace width="0.167em"></mspace><mo stretchy="false" form="postfix">]</mo><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mi>c</mi><mo>=</mo><mn>1</mn><mo>,</mo><mi>…</mi><mo>,</mo><mi>C</mi><mi>.</mi></mrow><annotation encoding="application/x-tex">m_t[c] = \sigma\!\left(\mathrm{MLP}\!\left([\,h_t\,;\,Z[c]\,]\right)\right), \quad c = 1,\dots,C.
+\tag{10}</annotation></semantics></math></p>
+<h3 id="d.-prerequisite-constrained-path-optimisation">D.
+Prerequisite-Constrained Path Optimisation</h3>
+<p>Recommendation is formalised as a Markov decision process. The state
+concatenates the mastery vector, a coverage mask of concepts already
+recommended, the static learner features and the remaining budget,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mi>t</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">[</mo><mspace width="0.167em"></mspace><msub><mi>m</mi><mi>t</mi></msub><mspace width="0.167em"></mspace><mo stretchy="false" form="postfix">∥</mo><mspace width="0.167em"></mspace><msub><mi>o</mi><mi>t</mi></msub><mspace width="0.167em"></mspace><mo stretchy="false" form="postfix">∥</mo><mspace width="0.167em"></mspace><mi>s</mi><mspace width="0.167em"></mspace><mo stretchy="false" form="postfix">∥</mo><mspace width="0.167em"></mspace><msub><mi>b</mi><mi>t</mi></msub><mspace width="0.167em"></mspace><mo stretchy="false" form="postfix">]</mo><mo>∈</mo><msup><mi mathvariant="double-struck">ℝ</mi><mrow><mn>2</mn><mi>C</mi><mo>+</mo><mn>57</mn></mrow></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">s_t = [\, m_t \,\|\, o_t \,\|\, s \,\|\, b_t \,] \in \mathbb{R}^{2C + 57}.
+\tag{11}</annotation></semantics></math></p>
+<p>An action <em>a</em> ∈ {1, …, <em>C</em>} is admissible only if</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>m</mi><mi>t</mi></msub><mo stretchy="false" form="prefix">[</mo><mi>a</mi><mo stretchy="false" form="postfix">]</mo><mo>&lt;</mo><msub><mi>τ</mi><mi mathvariant="normal">m</mi></msub><mspace width="0.278em"></mspace><mo>∧</mo><mspace width="0.278em"></mspace><mo>∀</mo><mi>p</mi><mo>∈</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo><mo>:</mo><msub><mi>m</mi><mi>t</mi></msub><mo stretchy="false" form="prefix">[</mo><mi>p</mi><mo stretchy="false" form="postfix">]</mo><mo>≥</mo><msub><mi>τ</mi><mi mathvariant="normal">r</mi></msub><mspace width="0.278em"></mspace><mo>∧</mo><mspace width="0.278em"></mspace><mi>a</mi><mo>∈</mo><mi mathvariant="script">ℰ</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">m_t[a] &lt; \tau_{\mathrm{m}} \;\wedge\; \forall p \in \mathrm{pre}(a): m_t[p] \geq \tau_{\mathrm{r}} \;\wedge\; a \in \mathcal{E},
+\tag{12}</annotation></semantics></math></p>
+<p>with ℰ the concepts of the learner’s enrolled modules. Encoding the
+pedagogical constraint in the admissible set, rather than expecting a
+learned policy to discover it, makes an unprepared recommendation
+impossible by construction; this is verified empirically in Table IV.
+The reward</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>r</mi><mi>t</mi></msub><mo>=</mo><mi>α</mi><munder><mo>∑</mo><mi>c</mi></munder><mrow><mi mathvariant="normal">max</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mi mathvariant="normal">Δ</mi><mi>m</mi><mo stretchy="false" form="prefix">[</mo><mi>c</mi><mo stretchy="false" form="postfix">]</mo><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>β</mi><mn mathvariant="double-struck">𝟙</mn><mo stretchy="false" form="prefix">[</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">q</mi></mrow><mo stretchy="false" form="postfix">]</mo><mo>−</mo><mi>δ</mi><mn mathvariant="double-struck">𝟙</mn><mo stretchy="false" form="prefix">[</mo><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">t</mi></mrow><mo stretchy="false" form="postfix">]</mo><mo>−</mo><mi>η</mi></mrow><annotation encoding="application/x-tex">r_t = \alpha \sum_c \max(0, \Delta m[c]) + \beta \mathbb{1}[\mathrm{prereq}] - \delta \mathbb{1}[\mathrm{redundant}] - \eta
+\tag{13}</annotation></semantics></math></p>
+<p>uses α = 1.0, β = 0.2, δ = 0.5, η = 0.05.</p>
+<p>Predicted mastery is bimodal in this setting: because non-submission
+is treated as failure (Section IV), engaged learners score near 0.98 on
+nearly every concept and disengaged learners near 0.00. Fixed thresholds
+therefore fail to discriminate, and τ_m, τ_r are set to the 70th and
+30th percentiles of each learner’s own mastery distribution.</p>
+<p>The policy evaluated here is greedy with respect to one-step
+predicted improvement,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munder><mo>∑</mo><mrow><mi>c</mi><mo>∈</mo><mi mathvariant="script">ℰ</mi></mrow></munder><mrow><mo stretchy="true" form="prefix">[</mo><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">l</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">g</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">t</mi></mrow><mspace width="0.167em"></mspace><msubsup><mi>m</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow><mrow><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo></mrow></msubsup><mo stretchy="false" form="prefix">[</mo><mi>c</mi><mo stretchy="false" form="postfix">]</mo><mo>−</mo><mrow><mi mathvariant="normal">l</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">g</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">t</mi></mrow><mspace width="0.167em"></mspace><msubsup><mi>m</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow><mrow><mo stretchy="false" form="prefix">(</mo><mi>⌀</mi><mo stretchy="false" form="postfix">)</mo></mrow></msubsup><mo stretchy="false" form="prefix">[</mo><mi>c</mi><mo stretchy="false" form="postfix">]</mo><mspace width="0.167em"></mspace><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\mathrm{score}(a) = \sum_{c \in \mathcal{E}} \left[\, \mathrm{logit}\, m^{(a)}_{t+1}[c] - \mathrm{logit}\, m^{(\varnothing)}_{t+1}[c] \,\right].
+\tag{14}</annotation></semantics></math></p>
+<p>Two choices in (14) are load-bearing. The baseline <em>m</em>^(∅) is
+an equal elapsed period <strong>without</strong> study rather than the
+present state: studying advances the clock, and the decay of (5) then
+attenuates every earlier interaction, so that measuring against the
+present moment makes every available action appear harmful. Scoring in
+log-odds rather than probability is necessary because engaged learners
+saturate near 0.98, where probability differences round to zero and the
+ranking degenerates. A learned policy over (11)–(13) is left to future
+work; Section V reports how much headroom remains for one.</p>
+<h3 id="e.-explanation-by-priority-backtracking">E. Explanation by
+Priority Backtracking</h3>
+<p>For a recommended concept *c**, each prerequisite ancestor <em>a</em>
+is scored by its shortfall, discounted by graph distance,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>π</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mrow><mi mathvariant="normal">max</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mspace width="0.222em"></mspace><msub><mi>τ</mi><mi mathvariant="normal">r</mi></msub><mo>−</mo><mi>m</mi><mo stretchy="false" form="prefix">[</mo><mi>a</mi><mo stretchy="false" form="postfix">]</mo><mo stretchy="false" form="postfix">)</mo><mo>⋅</mo><msup><mi>ρ</mi><mrow><mspace width="0.167em"></mspace><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><msup><mi>c</mi><mo>⋆</mo></msup><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mn>1</mn></mrow></msup><mo>,</mo></mrow><annotation encoding="application/x-tex">\pi(a) = \max(0,\ \tau_{\mathrm{r}} - m[a]) \cdot \rho^{\,d(a,c^\star) - 1},
+\tag{15}</annotation></semantics></math></p>
+<p>with ρ = 0.6 and traversal depth at most four, so that an unmet
+prerequisite immediately preceding the recommendation outranks an equal
+shortfall further back. Ancestors are reported in descending π.
+Counterfactual statements are computed by raising a gap concept’s
+mastery to τ_m and re-evaluating (14), so the claimed effect of closing
+a gap is measured rather than asserted. Algorithm 1 states the full
+procedure.</p>
+<p><strong>Algorithm 1</strong> Explained recommendation</p>
+<pre><code>Require: history h, graph G, parameters θ, budget k
+Ensure:  k recommendations, each with an explanation
+ 1: Z ← GCN(Â)                                        ▷ Eq. (3)
+ 2: m ← Mastery(h, Z, θ)                              ▷ Eq. (10), calibrated
+ 3: τ ← Percentiles(m|_ℰ)
+ 4: L ← {a : Admissible(a, m, τ, G)}                   ▷ Eq. (12)
+ 5: if L = ∅ then L ← Relax(m, τ)
+ 6: m^(∅) ← Mastery(Idle(h), Z, θ)
+ 7: for all a ∈ L do                                  ▷ single batched pass
+ 8:     m^(a) ← Mastery(h ⊕ (a, correct), Z, θ)
+ 9:     score(a) ← Σ_{c∈ℰ} [ logit m^(a)[c] − logit m^(∅)[c] ]
+10: A ← TopK(L, score, k)
+11: for all a ∈ A do
+12:     𝒢 ← Backtrack(G, m, a, τ)                      ▷ Eq. (15)
+13:     𝒞 ← Counterfactual(a, 𝒢, θ)
+14:     Render(a, 𝒢, 𝒞)
+15: return A with explanations</code></pre>
+<hr />
+<h2 id="iv.-implementation">IV. Implementation</h2>
+<h3 id="a.-environment">A. Environment</h3>
+<p>The framework is implemented in Python 3.11 with PyTorch. Data
+preparation is performed in SQL against an embedded DuckDB database, so
+that every transformation is auditable without reading application code.
+Training used a single NVIDIA T4; inference and all data processing run
+on CPU. Table IX reports measured cost.</p>
+<h3 id="b.-dataset-and-preprocessing">B. Dataset and Preprocessing</h3>
+<p>Evaluation uses the Open University Learning Analytics Dataset [3],
+comprising 32,593 enrolments, 10,655,280 clickstream events and 173,912
+assessment records across seven modules. Categorical attributes are
+one-hot encoded and missing assessment scores are median-imputed. OULAD
+timestamps are day-granular with no intra-day resolution; a session is
+therefore taken to be one learner-day.</p>
+<p>Two properties of the data required specific treatment.</p>
+<p><strong>Label construction.</strong> OULAD records only
+<em>submitted</em> assessments. Binarising at the pass mark of 40 yields
+a 95.6% positive rate, with the fifth percentile of submitted scores
+equal to the pass mark itself; the failures are absent from the records
+rather than from reality. Of 323,925 expected submissions, 150,013 never
+occurred. Treating non-submission as failure, restricted to assessments
+falling while a learner remained registered, yields a 67.9 / 32.1
+balance and changes the prediction target to successful completion.</p>
+<p><strong>Concept supervision is sparse and uneven.</strong>
+Assessments exist for only 89 of the 237 concepts. Mastery estimates for
+the remaining 148 are reached through prerequisite propagation, which is
+the condition Section V examines directly.</p>
+<p>Sequences are split 80/10/10 and evaluated by five-fold
+cross-validation stratified on final outcome and <strong>grouped by
+learner</strong>, so that no learner contributes to both training and
+test partitions. Table VIII summarises the resulting corpus.</p>
+<h3 id="c.-model-configuration">C. Model Configuration</h3>
+<p>The knowledge tracing encoder uses two transformer layers, hidden
+dimension 128, four attention heads and a maximum sequence length of
+200. The graph encoder uses three convolution layers with layer
+normalisation and ReLU, producing 64-dimensional concept embeddings.
+Dropout is 0.2. Optimisation uses Adam at learning rate 10⁻³ with cosine
+annealing, weight decay 10⁻⁴, batch size 64 and at most 12 epochs with
+early stopping at patience 3. The model has 466,569 parameters. Random
+seeds are fixed and recorded with every result.</p>
+<h3 id="d.-evaluation-protocol">D. Evaluation Protocol</h3>
+<p>Knowledge tracing is assessed by AUC-ROC, RMSE and expected
+calibration error over assessment positions on held-out learners.
+Statistical comparisons use paired <em>t</em>-tests over the five folds
+with Holm–Bonferroni correction [11] across the comparison family, and
+Cohen’s <em>d</em> is reported alongside, since with large numbers of
+paired decisions statistical significance is attainable at negligible
+effect size.</p>
+<p>Path quality is assessed against observed behaviour rather than
+simulation: each held-out learner’s history is truncated at several
+points, each planner is asked for a recommendation, and the ground truth
+is the set of concepts that learner actually engaged with over the
+following interactions. Only learners who passed or achieved distinction
+contribute ground truth.</p>
+<hr />
+<h2 id="v.-results-and-discussion">V. Results and Discussion</h2>
+<h3 id="a.-predictive-accuracy">A. Predictive Accuracy</h3>
+<p>Table I reports predictive performance. The proposed framework
+attains AUC-ROC 0.9538 ± 0.0019, exceeding DKT by 0.0103 (<em>p</em> =
+0.0009) and the graph-based baseline by 0.0036 (<em>p</em> = 0.022)
+after correction. A majority-class baseline returns exactly 0.5000,
+confirming that the reported discrimination is not an artefact of the
+67.9 / 32.1 class distribution. SAKT — attention without graph
+conditioning or temporal decay — reaches 0.9233, indicating that the
+improvement does not follow simply from the use of attention.</p>
+<p>Calibration is reported in Table V. Because predicted mastery is
+shown to learners inside explanations, a poorly calibrated probability
+is an incorrect statement rather than a cosmetic defect; expected
+calibration error of 0.0054 after temperature scaling supports the
+values the interface displays.</p>
+<h3 id="b.-why-conventional-ablation-is-insufficient">B. Why
+Conventional Ablation Is Insufficient</h3>
+<p>Table II reports the standard component ablation. Removing
+knowledge-graph propagation changes accuracy by −0.0001 (<em>p</em> =
+0.77) and removing temporal attention by −0.0006 (<em>p</em> = 0.45).
+Read at face value, neither component contributes.</p>
+<p>That reading is an artefact of the measurement. Predictive accuracy
+is computed only at assessment positions, and assessments exist for 89
+of the 237 concepts, each carrying on the order of 2,700 labelled
+examples. A free embedding table learns such concepts adequately without
+structural information; the graph is redundant there. Its function is to
+support the remaining 148 concepts, which never enter the accuracy
+computation. The conventional ablation is structurally incapable of
+observing the component it removes.</p>
+<h3 id="c.-cold-concept-evaluation">C. Cold-Concept Evaluation</h3>
+<p>To measure the contribution directly, all assessments were withheld
+for 27 of the 89 assessed concepts and their observed responses removed
+from the model input, so that they behave as genuinely unassessed
+concepts; evaluation was then restricted to those concepts alone. Table
+III reports the outcome: 0.9004 ± 0.0059 with graph propagation against
+0.8679 ± 0.0042 without, a difference of +0.0325 (<em>p</em> = 0.0003,
+<em>d</em> = 5.06), with the graph-conditioned model superior on every
+fold.</p>
+<p>Knowledge-graph propagation therefore contributes nothing where
+direct supervision is plentiful and substantially where it is absent.
+This has a practical consequence for the recommender, which ranks across
+all 237 concepts, most of which carry no assessment; and a
+methodological consequence for the literature, in which component
+ablations are routinely reported on metrics unable to observe the
+component under test.</p>
+<p>Table VI reports the related case of learners rather than concepts.
+With no interaction history the model reaches 0.7421 using a
+learner-profile prior obtained by clustering early behaviour, rising to
+0.9449 after four interactions.</p>
+<h3 id="d.-learning-path-quality">D. Learning Path Quality</h3>
+<p>Table IV reports 906 recommendation decisions from 400 held-out
+successful learners. The proposed planner attains the highest NDCG@5 at
+0.1532, ahead of weakest-first (0.1344), random selection among
+admissible actions (0.1300), popularity (0.1069) and syllabus order
+(0.0612). All differences are significant after correction.</p>
+<p>The effect sizes qualify that conclusion and we report them rather
+than the <em>p</em>-values alone. Against syllabus order the effect is
+small (<em>d</em> = 0.36); against random selection among admissible
+actions it is negligible (<em>d</em> = 0.09). The honest interpretation
+is that the prerequisite mask performs most of the work and the learned
+ranking adds a small but consistent improvement. This also bounds the
+headroom available to a learned policy: an agent optimising over (13)
+must improve on a greedy baseline that itself exceeds random selection
+by <em>d</em> = 0.09.</p>
+<p>Prerequisite violations are zero across all 906 decisions and every
+planner. The pedagogical guarantee of (12) is therefore verified rather
+than assumed. Concept coverage of 0.726 indicates that the planner does
+not collapse onto a small set of popular concepts, the characteristic
+failure mode that popularity-based recommendation exhibits here at
+0.510.</p>
+<h3 id="e.-explanation-quality">E. Explanation Quality</h3>
+<p>Table VII reports objective measures over 25 recommendation
+decisions, each repeated under three perturbations. The sample is small
+and we report it as such; the measures are nonetheless informative
+because each is computed against the model’s own counterfactual response
+rather than against an opinion. Fidelity of 0.5318 indicates that cited
+prerequisite deficits are positively but imperfectly predictive of
+measured counterfactual improvement. Stability of 0.5310 indicates that
+roughly half the cited gaps persist under a ±0.02 perturbation of the
+mastery estimate.</p>
+<p>Sufficiency of 0.0020 is the most informative of the three and we
+report it as a negative finding. It shows that the concept named in an
+explanation accounted for only 0.2% of the predicted benefit, the
+remainder arising from transfer to related concepts the explanation did
+not mention. The explanations were accurate but substantially
+incomplete. The renderer was subsequently amended to name the principal
+beneficiaries. No rating scale would have surfaced this: participants
+cannot assess a quantity the explanation omits.</p>
+<hr />
+<h2 id="vi.-conclusion-and-future-work">VI. Conclusion and Future
+Work</h2>
+<h3 id="a.-conclusion">A. Conclusion</h3>
+<p>This paper presented an explainable learning-path recommendation
+framework combining knowledge-graph-conditioned knowledge tracing,
+prerequisite-constrained planning and priority-backtracking explanation,
+evaluated on OULAD. The knowledge tracing model attains AUC-ROC 0.9538 ±
+0.0019 with expected calibration error 0.0054, significantly exceeding
+DKT, SAKT and a graph-based baseline.</p>
+<p>The principal finding concerns evaluation. A conventional ablation
+indicates that knowledge-graph propagation contributes nothing, yet
+under a protocol that evaluates concepts lacking direct supervision the
+same component improves accuracy by +0.0325 (<em>d</em> = 5.06). The
+discrepancy is not a property of this model but of the metric: aggregate
+accuracy measured where supervision is abundant cannot observe a
+structural prior whose purpose is to compensate for its absence. We
+suggest that component ablations in this literature be accompanied by
+evidence that the reporting metric is capable of detecting the component
+under test.</p>
+<h3 id="b.-limitations">B. Limitations</h3>
+<p>The prediction target is successful completion rather than knowledge.
+Because OULAD records only submitted assessments, treating
+non-submission as failure is necessary for a usable class balance but
+means a substantial share of the signal is engagement rather than
+understanding. This is appropriate for a system intended to prompt
+intervention, but it is a weaker claim than measuring mastery.</p>
+<p>The concept graph is derived, not given. OULAD provides no concept
+annotations, prerequisite relations or material titles, so concepts are
+defined structurally and labelled by activity composition rather than
+subject matter. Placement for 82% of materials relies on observed
+access; the substitute is validated at ρ = 0.975 on the subset carrying
+both signals, but deriving concept order from behaviour and then mining
+prerequisites from behaviour is partially self-referential.</p>
+<p>Supervision covers 89 of 237 concepts, so mastery for the remainder
+is not directly calibrated. Predicted mastery is bimodal, requiring
+learner-relative thresholds. The proposed model additionally conditions
+on learner features that the DKT and SAKT baselines do not, as those
+follow their original formulations; part of the reported improvement may
+therefore reflect feature access rather than architecture.</p>
+<p>All results derive from a single institution’s distance-learning data
+across seven modules, and generalisation to campus-based teaching is
+untested.</p>
+<h3 id="c.-ethical-considerations">C. Ethical Considerations</h3>
+<p>All data used in this study is drawn from OULAD, which is publicly
+released under CC-BY 4.0 and contains no personally identifying
+information; learners are represented by anonymised identifiers. No data
+was collected from human participants for the experiments reported here.
+The system produces advisory recommendations and makes no determinative
+decision concerning any learner.</p>
+<p>The model conditions on attributes including gender, disability
+status, index of multiple deprivation and age band. A subgroup analysis
+of predictive accuracy and recommendation quality across these
+attributes has not been conducted and is identified below as required
+future work. Until it is, the system should not be deployed in any
+setting where its recommendations influence assessment or progression
+decisions.</p>
+<h3 id="d.-future-work">D. Future Work</h3>
+<p>Four directions follow directly from the limitations above.</p>
+<p><strong>Fairness analysis.</strong> Subgroup performance across
+gender, disability, deprivation band and age band must be established
+before deployment. This is the most immediate requirement.</p>
+<p><strong>A learned policy.</strong> Section V quantifies the available
+headroom: the greedy planner exceeds random selection among admissible
+actions by <em>d</em> = 0.09. A policy learned over (11)–(13), evaluated
+both in simulation and by off-policy estimation on logged trajectories,
+would establish whether that margin can be widened.</p>
+<p><strong>User evaluation.</strong> The objective measures reported
+here establish whether explanations are faithful to the model; they do
+not establish whether learners find them useful. A controlled study with
+ethical approval, comparing conditions with and without explanation,
+would address the complementary question.</p>
+<p><strong>Expert validation of mined edges.</strong> The prerequisite
+graph is inferred from behaviour. Rating a sample of mined edges by
+subject experts would provide an independent estimate of its
+precision.</p>
+<hr />
+<h2 id="reproducibility">Reproducibility</h2>
+<p>OULAD is available at
+<code>research.stem.open.ac.uk/ouanalyse/dataset</code> under CC-BY 4.0.
+All source code, SQL transformations, configurations and generated
+results are available at
+<code>github.com/abhay27singh/explainable-learning-path-recommender</code>.
+Every table in this paper is regenerated from raw data by a single
+command with fixed random seeds.</p>
+<hr />
+<h2 id="tables">Tables</h2>
+<p><strong>TABLE I.</strong> Comparative predictive performance. Mean ±
+standard deviation over five-fold cross-validation with folds grouped by
+learner. <em>p</em>-values are paired <em>t</em>-tests against the
+proposed model, Holm–Bonferroni corrected; <em>d</em> is Cohen’s
+<em>d</em> for paired samples.</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr>
+<th>Model</th>
+<th>AUC-ROC</th>
+<th>RMSE</th>
+<th>ECE</th>
+<th><em>p</em></th>
+<th><em>d</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Majority (no-skill)</td>
+<td>0.5000 ± 0.0000</td>
+<td>0.4669 ± 0.0004</td>
+<td>0.0037</td>
+<td>&lt; 0.001</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SAKT [8]</td>
+<td>0.9233 ± 0.0018</td>
+<td>0.2992 ± 0.0017</td>
+<td>0.0081</td>
+<td>&lt; 0.001</td>
+<td>26.16</td>
+</tr>
+<tr>
+<td>DKT [5]</td>
+<td>0.9435 ± 0.0017</td>
+<td>0.2751 ± 0.0022</td>
+<td>0.0102</td>
+<td>0.0009</td>
+<td>5.67</td>
+</tr>
+<tr>
+<td>GNN-based</td>
+<td>0.9502 ± 0.0014</td>
+<td>0.2665 ± 0.0020</td>
+<td>0.0064</td>
+<td>0.0220</td>
+<td>2.25</td>
+</tr>
+<tr>
+<td><strong>Proposed</strong></td>
+<td><strong>0.9538 ± 0.0019</strong></td>
+<td><strong>0.2621 ± 0.0026</strong></td>
+<td><strong>0.0054</strong></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Improvement vs. GNN-based</td>
+<td>+0.0036</td>
+<td>−0.0044</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Improvement vs. DKT</td>
+<td>+0.0103</td>
+<td>−0.0130</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE II.</strong> Component ablation under the conventional
+protocol. Neither component produces a detectable change. Section V-B
+explains why this measurement cannot observe the knowledge graph.</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>AUC-ROC</th>
+<th>RMSE</th>
+<th><em>p</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Proposed (full)</td>
+<td>0.9538 ± 0.0019</td>
+<td>0.2621 ± 0.0026</td>
+<td>—</td>
+</tr>
+<tr>
+<td>w/o knowledge graph</td>
+<td>0.9539 ± 0.0021</td>
+<td>0.2618 ± 0.0025</td>
+<td>0.77</td>
+</tr>
+<tr>
+<td>w/o temporal attention</td>
+<td>0.9532 ± 0.0014</td>
+<td>0.2624 ± 0.0024</td>
+<td>0.45</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE III.</strong> Cold-concept ablation. All assessments
+are withheld for 27 of the 89 assessed concepts and their responses
+removed from the model input; evaluation is restricted to those
+concepts. The graph-conditioned model is superior on every fold.</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>AUC-ROC</th>
+<th>RMSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>With knowledge graph</td>
+<td><strong>0.9004 ± 0.0059</strong></td>
+<td><strong>0.3359 ± 0.0059</strong></td>
+</tr>
+<tr>
+<td>Without</td>
+<td>0.8679 ± 0.0042</td>
+<td>0.3611 ± 0.0113</td>
+</tr>
+<tr>
+<td>Difference</td>
+<td>+0.0325, <em>p</em> = 0.0003, <em>d</em> = 5.06</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE IV.</strong> Learning path quality over 906
+recommendation decisions from 400 held-out learners who passed or
+achieved distinction. Ground truth is the set of concepts each learner
+actually engaged with next. All planners operate under the same
+admissible-action constraint of (12).</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr>
+<th>Planner</th>
+<th>NDCG@5</th>
+<th>Hit@5</th>
+<th>Prec@5</th>
+<th>Prereq. violations</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Syllabus order</td>
+<td>0.0612 ± 0.154</td>
+<td>0.1832</td>
+<td>0.0453</td>
+<td>0.0000</td>
+<td>0.452</td>
+</tr>
+<tr>
+<td>Popularity</td>
+<td>0.1069 ± 0.199</td>
+<td>0.2936</td>
+<td>0.0808</td>
+<td>0.0000</td>
+<td>0.510</td>
+</tr>
+<tr>
+<td>Random (admissible)</td>
+<td>0.1300 ± 0.218</td>
+<td>0.3455</td>
+<td>0.0863</td>
+<td>0.0000</td>
+<td>0.722</td>
+</tr>
+<tr>
+<td>Weakest-first</td>
+<td>0.1344 ± 0.207</td>
+<td>0.3642</td>
+<td>0.0956</td>
+<td>0.0000</td>
+<td>0.515</td>
+</tr>
+<tr>
+<td><strong>Proposed</strong></td>
+<td><strong>0.1532 ± 0.238</strong></td>
+<td><strong>0.3687</strong></td>
+<td><strong>0.1051</strong></td>
+<td><strong>0.0000</strong></td>
+<td><strong>0.726</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Paired comparison of NDCG@5 against the proposed planner
+(Holm-corrected):</p>
+<table>
+<thead>
+<tr>
+<th>Comparison</th>
+<th>Difference</th>
+<th><em>p</em></th>
+<th>Cohen’s <em>d</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>vs. syllabus order</td>
+<td>+0.0921</td>
+<td>&lt; 0.001</td>
+<td>0.36 (small)</td>
+</tr>
+<tr>
+<td>vs. popularity</td>
+<td>+0.0464</td>
+<td>&lt; 0.001</td>
+<td>0.17 (negligible)</td>
+</tr>
+<tr>
+<td>vs. random</td>
+<td>+0.0232</td>
+<td>0.0125</td>
+<td>0.09 (negligible)</td>
+</tr>
+<tr>
+<td>vs. weakest-first</td>
+<td>+0.0189</td>
+<td>0.0167</td>
+<td>0.08 (negligible)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE V.</strong> Calibration of predicted mastery.
+Temperature is fitted on one half of each fold’s held-out predictions
+and evaluated on the other.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Expected calibration error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Before temperature scaling</td>
+<td>0.0084</td>
+</tr>
+<tr>
+<td>After temperature scaling</td>
+<td><strong>0.0054</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE VI.</strong> Predictive accuracy as a function of
+available interaction history.</p>
+<table>
+<thead>
+<tr>
+<th>Prior interactions</th>
+<th>AUC-ROC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0.7421 ± 0.0353</td>
+</tr>
+<tr>
+<td>1–4</td>
+<td>0.9449 ± 0.0086</td>
+</tr>
+<tr>
+<td>5–9</td>
+<td>0.9559 ± 0.0062</td>
+</tr>
+<tr>
+<td>10–19</td>
+<td>0.9539 ± 0.0056</td>
+</tr>
+<tr>
+<td>≥ 20</td>
+<td>0.9514 ± 0.0023</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE VII.</strong> Objective explanation quality over 25
+recommendation decisions, each with three perturbation replicates. These
+measures record whether an explanation is faithful to the model, rather
+than whether a reader found it agreeable.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Measure</th>
+<th>Value</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fidelity</td>
+<td>0.5318</td>
+<td>Rank correlation between cited deficits and measured counterfactual
+improvement</td>
+</tr>
+<tr>
+<td>Sufficiency</td>
+<td>0.0020</td>
+<td>Share of predicted gain attributable to the concept named</td>
+</tr>
+<tr>
+<td>Stability</td>
+<td>0.5310</td>
+<td>Overlap of cited gaps under ±0.02 perturbation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE VIII.</strong> Dataset and derived concept graph.</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Distinct learners</td>
+<td>28,785</td>
+</tr>
+<tr>
+<td>Enrolments</td>
+<td>32,593</td>
+</tr>
+<tr>
+<td>Clickstream events</td>
+<td>10,655,280</td>
+</tr>
+<tr>
+<td>Assessment records</td>
+<td>173,912</td>
+</tr>
+<tr>
+<td>Learning materials</td>
+<td>6,364</td>
+</tr>
+<tr>
+<td>Concepts derived</td>
+<td>237</td>
+</tr>
+<tr>
+<td>  prerequisite edges</td>
+<td>724</td>
+</tr>
+<tr>
+<td>  corequisite edges</td>
+<td>302</td>
+</tr>
+<tr>
+<td>  concepts with assessments</td>
+<td>89 of 237</td>
+</tr>
+<tr>
+<td>Interaction sequences</td>
+<td>27,904</td>
+</tr>
+<tr>
+<td>Supervised tokens</td>
+<td>242,670</td>
+</tr>
+<tr>
+<td>Label balance</td>
+<td>67.9% / 32.1%</td>
+</tr>
+<tr>
+<td>Placement validation</td>
+<td>ρ = 0.975</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE IX.</strong> Computational cost, measured on the
+hardware used.</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model parameters</td>
+<td>466,569</td>
+</tr>
+<tr>
+<td>Recommendation latency (CPU)</td>
+<td>≈ 160 ms</td>
+</tr>
+<tr>
+<td>Cached mastery lookup</td>
+<td>7 ms</td>
+</tr>
+<tr>
+<td>Training per configuration (T4)</td>
+<td>≈ 25 min</td>
+</tr>
+<tr>
+<td>Data preparation from raw files</td>
+<td>≈ 2.5 min</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="references">References</h2>
+<p>[1] A. Li, Y. Li, and X. Gao, “Personalized learning path
+recommendation based on knowledge graphs: A survey,”
+<em>Electronics</em>, vol. 15, no. 1, Art. no. 238, 2026, doi:
+10.3390/electronics15010238.</p>
+<p>[2] S. B. Aher and L. M. R. J. Lobo, “Combination of machine learning
+algorithms for recommendation of courses in e-learning system based on
+historical data,” <em>Knowledge-Based Systems</em>, vol. 51, pp. 1–14,
+2013, doi: 10.1016/j.knosys.2013.04.015.</p>
+<p>[3] J. Kuzilek, M. Hlosta, and Z. Zdrahal, “Open University Learning
+Analytics dataset,” <em>Scientific Data</em>, vol. 4, Art. no. 170171,
+2017, doi: 10.1038/sdata.2017.171.</p>
+<p>[4] A. T. Corbett and J. R. Anderson, “Knowledge tracing: Modeling
+the acquisition of procedural knowledge,” <em>User Modeling and
+User-Adapted Interaction</em>, vol. 4, no. 4, pp. 253–278, 1994.</p>
+<p>[5] C. Piech, J. Bassen, J. Huang, S. Ganguli, M. Sahami, L. Guibas,
+and J. Sohl-Dickstein, “Deep knowledge tracing,” in <em>Advances in
+Neural Information Processing Systems</em>, vol. 28, 2015,
+pp. 505–513.</p>
+<p>[6] J. Zhang, X. Shi, I. King, and D.-Y. Yeung, “Dynamic key-value
+memory networks for knowledge tracing,” in <em>Proc. 26th Int. Conf.
+World Wide Web (WWW)</em>, 2017, pp. 765–774, doi:
+10.1145/3038912.3052580.</p>
+<p>[7] A. Ghosh, N. T. Heffernan, and A. S. Lan, “Context-aware
+attentive knowledge tracing,” in <em>Proc. 26th ACM SIGKDD Int. Conf.
+Knowledge Discovery and Data Mining (KDD)</em>, 2020, pp. 2330–2339,
+doi: 10.1145/3394486.3403282.</p>
+<p>[8] S. Pandey and G. Karypis, “A self-attentive model for knowledge
+tracing,” in <em>Proc. 12th Int. Conf. Educational Data Mining
+(EDM)</em>, 2019, pp. 384–389.</p>
+<p>[9] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N.
+Gomez, L. Kaiser, and I. Polosukhin, “Attention is all you need,” in
+<em>Advances in Neural Information Processing Systems</em>, vol. 30,
+2017, pp. 5998–6008.</p>
+<p>[10] C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger, “On calibration
+of modern neural networks,” in <em>Proc. 34th Int. Conf. Machine
+Learning (ICML)</em>, 2017, pp. 1321–1330.</p>
+<p>[11] S. Holm, “A simple sequentially rejective multiple test
+procedure,” <em>Scandinavian Journal of Statistics</em>, vol. 6, no. 2,
+pp. 65–70, 1979.</p>
+<p>[12] B. Ma, T. Yang, and B. Ren, “A survey on explainable course
+recommendation systems,” in <em>Distributed, Ambient and Pervasive
+Interactions</em>, N. A. Streitz and S. Konomi, Eds. Cham: Springer,
+2024, pp. 273–287, doi: 10.1007/978-3-031-60012-8_17.</p>
+</body>
+</html>
