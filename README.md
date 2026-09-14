@@ -125,8 +125,12 @@ for an intervention system, but it is not the same claim as measuring understand
 
 ## Quick start
 
+The website runs from a fresh clone without retraining: the one trained model it loads,
+`artifacts/models/kgdkt_proposed_fold0.pt` (1.9 MB), is committed. The dataset is not,
+so the first run downloads it and rebuilds the processed data once.
+
 ```bash
-make install                                    # Python 3.11 venv
+make install                                    # Python 3.11 venv and dependencies
 
 mkdir -p data/raw && cd data/raw                # 487 MB
 curl -L -o oulad.zip https://schools.stem.open.ac.uk/cdn/files/anonymisedData.zip
@@ -138,21 +142,38 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 32 tests
+make test                                       # 84 tests
 make api                                        # http://localhost:8420
 ```
 
-Training runs on a free Colab T4 — see [`RUNBOOK.md`](RUNBOOK.md). Checkpoints are not
-committed; the demo states plainly when it is running untrained.
+Accounts live in `data/app.db`, which is created on first start and never committed, so
+every copy starts with no accounts. Students and advisers sign up on the site. An admin
+can only be created from the command line, with the password typed at a hidden prompt:
+
+```bash
+.venv/bin/python scripts/08_admin.py create <username>
+```
+
+The remaining checkpoints (every fold and every baseline, 39 MB) are needed only to
+reproduce the paper's tables, not to run the site. Training runs on a free Colab T4: see
+[`RUNBOOK.md`](RUNBOOK.md).
 
 ## Web application
 
-FastAPI service and a single-page app with scrypt-hashed accounts and role-based
-access. **Students** track their own learning, record activity, and receive explained
-recommendations that update live. **Advisers** search all 25,101 dataset learners plus
-registered students, inspect any record, and override concepts a learner already knows.
-A results dashboard reads `results/*.json` directly, so the site cannot drift from the
-paper.
+FastAPI service and a single-page app with scrypt-hashed accounts and role-based access.
+
+- **Students** sign up with their level: class 10, class 12, diploma, undergraduate or
+  postgraduate. Diploma and degree students also choose a course and follow it week by
+  week from Week 1. Each step is explained from the prerequisite graph, and the path
+  moves on when a week is marked studied or passed. Streaks, an activity calendar and a
+  weekly summary come from what the student records.
+- **Course Finder** is rule-based, not the model. It suggests courses for the level after
+  the student's own, lists all 43 courses to explore, and links free NPTEL and SWAYAM
+  material for each subject.
+- **Advisers** search all 25,101 dataset learners plus registered students, inspect any
+  record, mark weeks a learner already knows, and compare planning strategies.
+- **Admin** manages accounts and is the only role that sees the research results page,
+  which reads `results/*.json` directly so it cannot drift from the paper.
 
 *Demonstration-grade authentication: no TLS, no rate limiting, no account recovery. Do
 not reuse a real password.*

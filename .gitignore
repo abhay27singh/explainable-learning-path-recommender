@@ -10,7 +10,10 @@ data/processed/
 data/app.db
 
 # Trained checkpoints — 39 MB. Share separately; see docs/portability.md.
-artifacts/models/
+# The one checkpoint the web app loads (1.9 MB) is committed, so the site runs
+# after a fresh clone without retraining.
+artifacts/models/*
+!artifacts/models/kgdkt_proposed_fold0.pt
 
 # Environment
 .venv/
