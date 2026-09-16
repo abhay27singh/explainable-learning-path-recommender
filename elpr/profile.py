@@ -14,7 +14,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from elpr.data.dataset import CATEGORICAL, NUMERIC
+from elpr.data.columns import CATEGORICAL, NUMERIC
 
 # form field -> (matrix column, OULAD values in code order, readable labels)
 CATEGORICAL_FIELDS: dict[str, tuple[str, list[str], dict[str, str]]] = {

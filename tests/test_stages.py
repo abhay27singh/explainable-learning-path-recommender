@@ -15,10 +15,11 @@ from elpr import course_finder as cf
 def test_finder_offers_only_the_next_level_from_each_stage():
     o = cf.options()
     assert [s["value"] for s in o["stages"]] == list(cf.STAGES)
-    assert o["next_levels"]["class_10"] == ["diploma_10"]
-    assert o["next_levels"]["class_12"] == ["diploma_12", "ug"]
-    assert o["next_levels"]["ug"] == ["pg"]
-    assert o["next_levels"]["pg"] == []
+    # every rung also reaches the skill path, which is what NEP 2020 asks for
+    assert o["next_levels"]["class_10"] == ["diploma_10", "skill"]
+    assert o["next_levels"]["class_12"] == ["diploma_12", "ug", "skill"]
+    assert o["next_levels"]["ug"] == ["pg", "skill"]
+    assert o["next_levels"]["pg"] == ["skill"]
     assert set(cf.NEXT_LEVELS) == set(cf.STAGES)
     assert {lv for v in cf.NEXT_LEVELS.values() for lv in v} <= set(cf.LEVELS)
     assert {s["value"] for s in o["stages"] if s["has_course"]} == set(cf.COURSE_STAGES)

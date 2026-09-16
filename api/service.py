@@ -9,6 +9,7 @@ execution model re-runs the script on every interaction.
 from __future__ import annotations
 
 import functools
+import json
 from pathlib import Path
 
 import numpy as np
@@ -71,6 +72,9 @@ class Service:
             "weakest": WeakestFirstPlanner(self.graph),
         }
         self.explainer = Explainer(self.engine, self.graph)
+        # One cached mastery vector per registered student, invalidated by their own
+        # activity, profile and course. Dataset learners use _cached_mastery instead.
+        self._mastery_cache: dict[int, tuple] = {}
 
         # Index sequences for lookup without scanning the frame each request.
         self.by_student = {
@@ -140,9 +144,26 @@ class Service:
             student_features=self.features_for_user(user),
         )
 
-    def registered_state(self, user: User, overrides: tuple = ()):
-        sequence = self.registered_sequence(user)
+    def _registered_mastery(self, user: User):
+        """The student's sequence and mastery, cached until they record something new.
+
+        Keyed by how many events they have and when the last one landed, so pressing
+        "I studied this" invalidates it immediately and nothing stale is ever shown."""
+        events = self.store.events(user.id)
+        version = (str(self.store.path), len(events),
+                   events[-1]["created_at"] if events else 0.0, user.module,
+                   json.dumps(self.store.get_profile(user.id), sort_keys=True))
+        cached = self._mastery_cache.get(user.id)
+        if cached and cached[0] == version:
+            return cached[1], cached[2]
+        sequence = self.registered_sequence(user, events)
         mastery = self.engine.mastery(sequence)
+        self._mastery_cache[user.id] = (version, sequence, mastery)
+        return sequence, mastery
+
+    def registered_state(self, user: User, overrides: tuple = ()):
+        sequence, base = self._registered_mastery(user)
+        mastery = base.copy()
         for concept in overrides:
             mastery[int(concept)] = 0.999
         module = user.module or self.modules[0]
@@ -210,22 +231,26 @@ class Service:
         )
 
     @functools.lru_cache(maxsize=256)
-    def _cached_state(self, student: int, module: str | None, upto: float, overrides: tuple):
+    def _cached_mastery(self, student: int, module: str | None, upto: float):
+        """One model run per learner. Adviser overrides are applied to a copy of the
+        result, so marking weeks as known never re-runs the model: building a five-step
+        path used to cost five runs and now costs one."""
         row, sequence = self.sequence_for(student, module, upto)
-        mastery = self.engine.mastery(sequence)
-        # Advisor override: mark concepts the adviser says are already known.
+        return row, sequence, self.engine.mastery(sequence)
+
+    def state_for(
+        self, student: int, module: str | None = None, upto: float = 1.0,
+        overrides: tuple = (),
+    ):
+        row, sequence, base = self._cached_mastery(int(student), module, float(upto))
+        mastery = base.copy()
+        # Adviser override: mark concepts the adviser says are already known.
         for concept in overrides:
             mastery[int(concept)] = 0.999
         state = State.create(
             mastery, sequence, enrolled=enrolment_mask(self.graph, [row.code_module])
         )
         return row, state
-
-    def state_for(
-        self, student: int, module: str | None = None, upto: float = 1.0,
-        overrides: tuple = (),
-    ):
-        return self._cached_state(int(student), module, float(upto), tuple(sorted(overrides)))
 
     # -- recommendations --------------------------------------------------------
     def recommend(
@@ -248,6 +273,19 @@ class Service:
             },
             "recommendations": explanations,
         }
+
+    @functools.lru_cache(maxsize=128)
+    def dataset_path(self, student: int, steps: int, known: tuple) -> dict:
+        """A dataset learner's path, cached outright.
+
+        Their history is fixed research data, so the same question has the same answer
+        for ever. The planner simulates every candidate concept at every step, which is
+        the expensive part of the adviser view."""
+        def make(overrides):
+            row, state = self.state_for(student, None, 1.0, overrides)
+            return row.code_module, state
+
+        return self.learning_path(make, steps, known)
 
     def done_concepts(self, user: User) -> tuple:
         """Weeks the student has finished, oldest first: studied or passed, unless the

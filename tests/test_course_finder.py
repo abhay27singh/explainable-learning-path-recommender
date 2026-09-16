@@ -69,6 +69,23 @@ def test_postgraduate_uses_the_bachelors_degree():
     assert out["degree_label"] == cf.DEGREES["bcom"]
 
 
+def test_a_course_centred_on_the_interest_outranks_one_that_merely_touches_it():
+    """Regression: with one interest picked, every course scored the same and the list
+    fell back to alphabetical, putting B.A. Economics above B.Sc Computer Science for a
+    student who chose data and statistics."""
+    got = keys(cf.recommend("ug", ["data"], stream="pcm")["courses"])
+    assert got.index("bsc_maths") < got.index("ba_econ")
+    assert got.index("bsc_cs") < got.index("ba_econ")
+
+
+def test_fit_labels_describe_the_interests_the_student_picked():
+    one = cf.recommend("ug", ["coding"], stream="pcm")["courses"]
+    assert {c["fit"] for c in one} <= {"Strong match", "Good match"}
+    assert next(c["fit"] for c in one if c["key"] == "btech_cse") == "Strong match"
+    two = cf.recommend("ug", ["coding", "law"], stream="pcm")["courses"]
+    assert next(c["fit"] for c in two if c["key"] == "btech_cse") == "Partial match"
+
+
 def test_ranking_follows_interests():
     out = cf.recommend("ug", ["coding", "maths", "data"], stream="pcm")
     assert keys(out["courses"])[0] == "btech_cse"
@@ -101,11 +118,29 @@ def test_explore_lists_every_course_without_filtering():
     assert pg["levels"] and all(l["level"] == "pg" for l in pg["levels"])
 
 
-def test_study_links_point_only_at_nptel_and_swayam_and_skip_placements():
+def test_college_subjects_link_to_nptel_swayam_and_youtube_and_skip_placements():
     links = cf.study_links("Data Structures")
-    assert links["nptel"].startswith("https://www.google.com/search?q=")
+    assert set(links) == {"nptel", "swayam", "youtube"}
     assert "site%3Anptel.ac.in" in links["nptel"] and "site%3Aswayam.gov.in" in links["swayam"]
     assert "%22Data+Structures%22" in links["nptel"]
+    assert links["youtube"].startswith("https://www.youtube.com/results?search_query=")
+
+
+def test_school_subjects_never_link_to_university_platforms():
+    """Regression: class 10 and class 12 subjects linked to NPTEL and SWAYAM, which are
+    university platforms and carry nothing for school students."""
+    for schooling in ("class 10", "class 12"):
+        links = cf.study_links("Science", schooling)
+        assert set(links) == {"ncert", "khan", "youtube"}
+        assert "nptel" not in str(links) and "swayam" not in str(links)
+        assert "site%3Ancert.nic.in" in links["ncert"]
+        assert "site%3Akhanacademy.org" in links["khan"]
+        assert schooling.replace(" ", "+") in links["youtube"]
+
+    school = cf.subjects_now("class_10")["subjects"] + cf.subjects_now("class_12", "pcm")["subjects"]
+    assert school and all(set(s["links"]) == {"ncert", "khan", "youtube"} for s in school)
+    college = cf.course("btech_cse")["years"][0]["subjects"]
+    assert all(set(s["links"]) == {"nptel", "swayam", "youtube"} for s in college)
     for placement in ("Internship", "Major Project", "Dissertation", "Portfolio",
                       "Moot Court and Internship", "Industrial Training and Project"):
         assert cf.study_links(placement) == {}, placement

@@ -9,30 +9,14 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-CATEGORICAL = {
-    "gender_code": 2,
-    "region_code": 13,
-    "education_code": 5,
-    "imd_code": 11,
-    "age_code": 3,
-    "disability_code": 2,
-    "module_code": 7,
-    "learner_profile": 3,
-}
-NUMERIC = [
-    "num_of_prev_attempts",
-    "studied_credits",
-    "date_registration",
-    "early_sessions",
-    "early_clicks",
-    "early_clicks_per_session",
-    "early_span",
-    "early_mean_gap",
-    "early_gap_std",
-    "early_active_days",
-]
-
-RESPONSE_INCORRECT, RESPONSE_CORRECT, RESPONSE_UNLABELLED = 0, 1, 2
+# Re-exported so every existing import of these names keeps working.
+from elpr.data.columns import (  # noqa: F401
+    CATEGORICAL,
+    NUMERIC,
+    RESPONSE_CORRECT,
+    RESPONSE_INCORRECT,
+    RESPONSE_UNLABELLED,
+)
 
 
 def build_student_matrix(features: pd.DataFrame) -> tuple[np.ndarray, list[str]]:

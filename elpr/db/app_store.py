@@ -58,6 +58,36 @@ CREATE TABLE IF NOT EXISTS learner_profiles (
     updated_at REAL NOT NULL
 );
 
+-- Courses a student saved from the Course Finder, newest first when read back.
+CREATE TABLE IF NOT EXISTS saved_courses (
+    user_id    INTEGER NOT NULL REFERENCES users(id),
+    course_key TEXT NOT NULL,
+    created_at REAL NOT NULL,
+    PRIMARY KEY (user_id, course_key)
+);
+
+-- What happened on each account, so an admin can answer "it is not working for me".
+-- Plain facts only: never a password, never the contents of an answer.
+CREATE TABLE IF NOT EXISTS user_log (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id),
+    at      REAL NOT NULL,
+    kind    TEXT NOT NULL,
+    detail  TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_log_user ON user_log(user_id, id DESC);
+
+-- An adviser's own notes on a learner, keyed by learner id so they work for both
+-- registered students and dataset learners.
+CREATE TABLE IF NOT EXISTS learner_notes (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL,
+    author_id  INTEGER REFERENCES users(id),
+    at         REAL NOT NULL,
+    text       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_notes_student ON learner_notes(student_id, id DESC);
+
 CREATE TABLE IF NOT EXISTS sessions (
     token      TEXT PRIMARY KEY,
     user_id    INTEGER NOT NULL REFERENCES users(id),
@@ -99,11 +129,12 @@ class User:
     module: str | None
     student_id: int | None
     stage: str | None = None      # class_10, class_12, diploma, ug or pg
+    stream: str | None = None     # class 12 stream, for class_12 students
 
 
 def _user(row) -> User:
     return User(row["id"], row["username"], row["display_name"], row["role"],
-                row["module"], row["student_id"], row["stage"])
+                row["module"], row["student_id"], row["stage"], row["stream"])
 
 
 def _hash(password: str, salt: bytes) -> bytes:
@@ -120,12 +151,14 @@ class AppStore:
         self._migrate_stage()
 
     def _migrate_stage(self) -> None:
-        """Add the study-level column to databases created before it existed."""
+        """Add the study-level and stream columns to databases created before them."""
         con = self._connect()
         columns = {r["name"] for r in con.execute("PRAGMA table_info(users)")}
-        if "stage" not in columns:
-            with con:
+        with con:
+            if "stage" not in columns:
                 con.execute("ALTER TABLE users ADD COLUMN stage TEXT")
+            if "stream" not in columns:
+                con.execute("ALTER TABLE users ADD COLUMN stream TEXT")
 
     def _migrate_roles(self) -> None:
         """Widen the role CHECK constraint on databases created before admin existed.
@@ -167,7 +200,7 @@ class AppStore:
     # -- accounts ---------------------------------------------------------------
     def register(
         self, username: str, password: str, display_name: str, role: str,
-        module: str | None = None, stage: str | None = None,
+        module: str | None = None, stage: str | None = None, stream: str | None = None,
     ) -> User:
         username = username.strip().lower()
         if not username or len(username) < 3:
@@ -190,9 +223,9 @@ class AppStore:
 
             cursor = con.execute(
                 "INSERT INTO users (username, display_name, role, salt, password_hash,"
-                " module, stage, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                " module, stage, stream, created_at) VALUES (?,?,?,?,?,?,?,?,?)",
                 (username, display_name or username, role, salt,
-                 _hash(password, salt), module, stage, time.time()),
+                 _hash(password, salt), module, stage, stream, time.time()),
             )
             user_id = cursor.lastrowid
             student_id = None
@@ -201,14 +234,17 @@ class AppStore:
                 con.execute(
                     "UPDATE users SET student_id = ? WHERE id = ?", (student_id, user_id)
                 )
-        return User(user_id, username, display_name or username, role, module, student_id, stage)
+        return User(user_id, username, display_name or username, role, module, student_id,
+                    stage, stream)
 
-    def set_studies(self, user_id: int, stage: str, module: str | None) -> None:
-        """Where a student is now and, for diploma and degree students, their course."""
+    def set_studies(self, user_id: int, stage: str, module: str | None,
+                    stream: str | None = None) -> None:
+        """Where a student is now: their level, their course if they are on one, and
+        their class 12 stream if they are in class 12."""
         con = self._connect()
         with con:
-            con.execute("UPDATE users SET stage = ?, module = ? WHERE id = ?",
-                        (stage, module, user_id))
+            con.execute("UPDATE users SET stage = ?, module = ?, stream = ? WHERE id = ?",
+                        (stage, module, stream, user_id))
 
     def authenticate(self, username: str, password: str) -> User | None:
         row = self._connect().execute(
@@ -288,10 +324,18 @@ class AppStore:
         return True
 
     # -- adviser view -----------------------------------------------------------
-    def registered_students(self) -> list[dict]:
+    # A student is "quiet" after this many days with nothing recorded. Long enough that
+    # an ordinary busy week does not flag someone, short enough to act on.
+    QUIET_AFTER_DAYS = 7
+
+    def registered_students(self, now: float | None = None) -> list[dict]:
+        """Registered students with their activity, and how long each has been quiet.
+
+        `quiet_days` counts from their last recorded activity, or from the day they
+        signed up if they have never recorded anything, which is the case worth chasing."""
         rows = self._connect().execute(
             "SELECT u.id AS user_id, u.student_id, u.display_name, u.username, u.module,"
-            "       u.created_at,"
+            "       u.stage, u.created_at,"
             "       COUNT(e.id) AS n_events,"
             "       SUM(CASE WHEN e.kind = 'assessment' THEN 1 ELSE 0 END) AS n_assessments,"
             "       MAX(e.created_at) AS last_active"
@@ -299,7 +343,22 @@ class AppStore:
             " WHERE u.role = 'student'"
             " GROUP BY u.id ORDER BY COALESCE(MAX(e.created_at), u.created_at) DESC"
         ).fetchall()
-        return [dict(r) for r in rows]
+        now = time.time() if now is None else now
+        out = []
+        for row in rows:
+            record = dict(row)
+            since = record["last_active"] or record["created_at"]
+            record["quiet_days"] = max(0, int((now - since) // 86400))
+            record["quiet"] = record["quiet_days"] >= self.QUIET_AFTER_DAYS
+            record["never_started"] = not record["n_events"]
+            out.append(record)
+        return out
+
+    def user_by_username(self, username: str) -> User | None:
+        row = self._connect().execute(
+            "SELECT * FROM users WHERE username = ?", (username.strip().lower(),)
+        ).fetchone()
+        return None if row is None else _user(row)
 
     def user_by_student_id(self, student_id: int) -> User | None:
         row = self._connect().execute(
@@ -336,6 +395,98 @@ class AppStore:
                 " updated_at = excluded.updated_at",
                 (user_id, json.dumps(profile, sort_keys=True), time.time()),
             )
+
+    # -- adviser notes ----------------------------------------------------------
+    NOTE_MAX = 1000
+
+    def add_note(self, student_id: int, author_id: int, text: str) -> int:
+        """Record one adviser note about a learner. Returns its id."""
+        text = text.strip()
+        if not text:
+            raise ValueError("a note cannot be empty")
+        con = self._connect()
+        with con:
+            cur = con.execute(
+                "INSERT INTO learner_notes (student_id, author_id, at, text) VALUES (?,?,?,?)",
+                (int(student_id), author_id, time.time(), text[:self.NOTE_MAX]),
+            )
+        return cur.lastrowid
+
+    def notes(self, student_id: int) -> list[dict]:
+        """Every note on one learner, newest first, with who wrote it."""
+        rows = self._connect().execute(
+            "SELECT n.id, n.at, n.text, u.display_name AS author"
+            " FROM learner_notes n LEFT JOIN users u ON u.id = n.author_id"
+            " WHERE n.student_id = ? ORDER BY n.id DESC", (int(student_id),)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def delete_note(self, note_id: int, author_id: int) -> bool:
+        """Remove a note. An adviser may only remove their own."""
+        con = self._connect()
+        with con:
+            cur = con.execute("DELETE FROM learner_notes WHERE id = ? AND author_id = ?",
+                              (int(note_id), author_id))
+        return bool(cur.rowcount)
+
+    def delete_note_any(self, note_id: int) -> bool:
+        """Remove any note, whoever wrote it. For admins only."""
+        con = self._connect()
+        with con:
+            cur = con.execute("DELETE FROM learner_notes WHERE id = ?", (int(note_id),))
+        return bool(cur.rowcount)
+
+    # -- support log ------------------------------------------------------------
+    LOG_KEEP = 200
+
+    def log(self, user_id: int | None, kind: str, detail: str = "") -> None:
+        """Record one thing that happened on an account, keeping the last 200."""
+        con = self._connect()
+        with con:
+            con.execute("INSERT INTO user_log (user_id, at, kind, detail) VALUES (?,?,?,?)",
+                        (user_id, time.time(), kind, detail[:300]))
+            if user_id is not None:
+                con.execute(
+                    "DELETE FROM user_log WHERE user_id = ? AND id NOT IN ("
+                    " SELECT id FROM user_log WHERE user_id = ? ORDER BY id DESC LIMIT ?)",
+                    (user_id, user_id, self.LOG_KEEP))
+
+    def logs(self, username: str, limit: int = 100) -> list[dict]:
+        """The most recent entries for one account, newest first."""
+        rows = self._connect().execute(
+            "SELECT l.at, l.kind, l.detail FROM user_log l JOIN users u ON u.id = l.user_id"
+            " WHERE u.username = ? ORDER BY l.id DESC LIMIT ?",
+            (username.strip().lower(), int(limit)),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    # -- saved courses ----------------------------------------------------------
+    def save_course(self, user_id: int, course_key: str) -> None:
+        """Add a course to the student's shortlist. Saving twice changes nothing."""
+        con = self._connect()
+        with con:
+            con.execute(
+                "INSERT INTO saved_courses (user_id, course_key, created_at) VALUES (?,?,?)"
+                " ON CONFLICT(user_id, course_key) DO NOTHING",
+                (user_id, course_key, time.time()),
+            )
+
+    def remove_course(self, user_id: int, course_key: str) -> bool:
+        con = self._connect()
+        with con:
+            cur = con.execute(
+                "DELETE FROM saved_courses WHERE user_id = ? AND course_key = ?",
+                (user_id, course_key),
+            )
+        return bool(cur.rowcount)
+
+    def saved_courses(self, user_id: int) -> list[str]:
+        """Course keys the student saved, newest first."""
+        rows = self._connect().execute(
+            "SELECT course_key FROM saved_courses WHERE user_id = ?"
+            " ORDER BY created_at DESC, course_key", (user_id,)
+        ).fetchall()
+        return [r["course_key"] for r in rows]
 
     # -- administration ---------------------------------------------------------
     def create_admin(self, username: str, password: str, display_name: str = "") -> User:
@@ -404,6 +555,8 @@ class AppStore:
             con.execute("DELETE FROM sessions WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM learner_profiles WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM study_events WHERE user_id = ?", (uid,))
+            con.execute("DELETE FROM saved_courses WHERE user_id = ?", (uid,))
+            con.execute("DELETE FROM user_log WHERE user_id = ?", (uid,))
             con.execute("UPDATE recommendation_log SET user_id = NULL WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM users WHERE id = ?", (uid,))
         return True

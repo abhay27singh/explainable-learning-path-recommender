@@ -1,0 +1,646 @@
+% =====================================================================
+% Explainable AI-Based Personalized Learning Path Recommendation System
+% for University Students
+%
+% SPRINGER NATURE CONTRIBUTED-VOLUME (BOOK CHAPTER) VERSION
+% Converted from the IEEE conference version. No number has changed.
+%
+% Compile with SNmult.cls from the Springer "LaTeX template for
+% contributed works" package. Keep SNmult.cls in this folder.
+%
+% FIGURES: put fig1.png ... fig5.png next to this file. If an image is
+% missing a placeholder box of the same size is drawn instead, so the
+% file always compiles.
+% =====================================================================
+
+\documentclass[graybox]{SNmult}
+
+\usepackage{type1cm}
+\usepackage{makeidx}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage[bottom]{footmisc}
+\usepackage{amsmath,amssymb}
+\usepackage{newtxtext}
+\usepackage[varvw]{newtxmath}
+\usepackage{url}
+
+\makeindex
+
+% Figure slot: uses the image when present, a placeholder box otherwise.
+\newcommand{\FIGHEIGHT}{6.4cm}
+\newcommand{\figslot}[3]{%
+  \begin{figure}[t]\centering
+  \IfFileExists{#1}{\includegraphics[width=0.92\textwidth,height=\FIGHEIGHT,keepaspectratio]{#1}}%
+    {\framebox[0.92\textwidth]{\parbox[c][\FIGHEIGHT][c]{0.86\textwidth}{\centering\footnotesize\textit{#1 not found. Place the image file next to chapter.tex.}}}}%
+  \caption{#2}\label{#3}\end{figure}}
+
+\begin{document}
+
+\title*{Explainable AI-Based Personalized Learning Path Recommendation System for University Students}
+\titlerunning{Explainable Personalized Learning Path Recommendation}
+
+\author{Abhay Pratap Singh, Akshay Guleria, Uday Chaturvedi, Gursimar Makkar and Shikha Kamal}
+\authorrunning{A. P. Singh et al.}
+
+\institute{Abhay Pratap Singh \at Department of Computer Science, Chandigarh University, Mohali, India, \email{23BCS11784@cuchd.in}
+\and Akshay Guleria \at Department of Computer Science, Chandigarh University, Mohali, India, \email{23BCS10517@cuchd.in}
+\and Uday Chaturvedi \at Department of Computer Science, Chandigarh University, Mohali, India, \email{23BCS10807@cuchd.in}
+\and Gursimar Makkar \at Department of Computer Science, Chandigarh University, Mohali, India, \email{23BCS11455@cuchd.in}
+\and Shikha Kamal \at Department of Computer Science, Chandigarh University, Mohali, India, \email{shikha.e12552@cumail.in}}
+
+\maketitle
+
+% --- online abstract (appears on SpringerLink) -----------------------
+\abstract*{Digital learning platforms generate large volumes of student interaction data, yet
+educational recommender systems offer little transparency, rarely model forgetting, and are
+seldom evaluated in a way that shows which components actually contribute. This chapter
+proposes an Explainable AI (XAI) based learning path recommender combining a
+knowledge-graph-enhanced Deep Knowledge Tracing module, a prerequisite-constrained planner
+and a priority-backtracking explanation module. On the Open University Learning Analytics
+Dataset (OULAD), under five-fold cross-validation grouped by student, it attains AUC-ROC
+$0.9538 \pm 0.0019$ and RMSE $0.2621 \pm 0.0026$, exceeding DKT ($p = 0.0009$) and a GNN
+baseline ($p = 0.022$) after Holm correction. The central finding concerns evaluation:
+removing the knowledge graph changes accuracy by only $-0.0001$ ($p = 0.77$), because
+accuracy is scored at assessment positions and only 89 of 237 concepts carry assessments.
+Under a cold-concept protocol that withholds assessments for a subset of concepts and scores
+only those, the same graph improves accuracy by $+0.0325$ ($p = 0.0003$, Cohen's $d = 5.06$),
+winning on every fold. The planner makes zero prerequisite violations across 906 decisions
+evaluated against real learner behaviour, and explanations are assessed by objective
+fidelity, sufficiency and stability rather than subjective rating.
+\keywords{Explainable AI $\cdot$ Personalized learning path $\cdot$ Knowledge tracing $\cdot$ Knowledge graphs $\cdot$ Educational data mining $\cdot$ Ablation methodology}}
+
+% --- printed abstract ------------------------------------------------
+\abstract{Digital learning platforms generate large volumes of student interaction data, yet
+educational recommender systems offer little transparency, rarely model forgetting, and are
+seldom evaluated in a way that shows which components actually contribute. This chapter
+proposes an Explainable AI (XAI) based learning path recommender combining a
+knowledge-graph-enhanced Deep Knowledge Tracing module, a prerequisite-constrained planner
+and a priority-backtracking explanation module. On the Open University Learning Analytics
+Dataset (OULAD), under five-fold cross-validation grouped by student, it attains AUC-ROC
+$0.9538 \pm 0.0019$ and RMSE $0.2621 \pm 0.0026$, exceeding DKT ($p = 0.0009$) and a GNN
+baseline ($p = 0.022$) after Holm correction. The central finding concerns evaluation:
+removing the knowledge graph changes accuracy by only $-0.0001$ ($p = 0.77$), because
+accuracy is scored at assessment positions and only 89 of 237 concepts carry assessments.
+Under a cold-concept protocol that withholds assessments for a subset of concepts and scores
+only those, the same graph improves accuracy by $+0.0325$ ($p = 0.0003$, Cohen's $d = 5.06$),
+winning on every fold. The planner makes zero prerequisite violations across 906 decisions
+evaluated against real learner behaviour, and explanations are assessed by objective
+fidelity, sufficiency and stability rather than subjective rating.
+\keywords{Explainable AI $\cdot$ Personalized learning path $\cdot$ Knowledge tracing $\cdot$ Knowledge graphs $\cdot$ Educational data mining $\cdot$ Ablation methodology}}
+
+% =====================================================================
+\section{Introduction}
+\label{sec:intro}
+
+Higher education's embrace of digital learning has opened new possibilities for
+individualized instruction, yet conventional courses still follow one path for all students
+despite differences in prior knowledge and pace, causing course mis-selection and knowledge
+gaps \cite{li2026survey,aher2013combination,kuzilek2017oulad}. Personalized learning path
+recommendation can address this, but most systems concentrate on prediction accuracy and
+offer little explanation for any recommendation \cite{corbett1994knowledge}. Designing a
+system that describes a learner's evolving knowledge, sequences activities well and explains
+its choices is therefore a major challenge. Knowledge tracing methods assess learning rather
+than optimize progression \cite{piech2015dkt,zhang2017dkvmn}, automated sequencing remains
+opaque to students and advisers \cite{ghosh2020akt,shen2021lpkt}, and the link between
+knowledge graphs, sequential decision-making and temporal modeling is underexplored in
+education \cite{kipf2017gcn,mnih2015dqn}.
+
+A further limitation motivates this work. Such systems combine several components, each
+justified by an ablation showing that its removal degrades accuracy. When a structural prior
+exists to support concepts whose supervision is scarce, but accuracy is measured only where
+supervision is abundant, the ablation tests the component in the one regime where it cannot
+matter. The contributions of this work are:
+
+\begin{enumerate}
+\item A knowledge-graph-enhanced knowledge tracing model with a learned per-head temporal
+decay, attaining AUC-ROC $0.9538$ and calibration error $0.0054$ on OULAD.
+\item Evidence that conventional ablation cannot detect a knowledge graph's contribution,
+and a cold-concept protocol that can ($+0.0325$, $d = 5.06$).
+\item A prerequisite-constrained planner whose pedagogical guarantee is enforced by
+construction, verified at zero violations across 906 decisions.
+\item Objective explanation metrics (fidelity, sufficiency, stability) in place of
+subjective rating, released with a reproducible pipeline.
+\end{enumerate}
+
+% =====================================================================
+\section{Literature Review}
+\label{sec:lit}
+
+Early educational recommenders used content-based and collaborative filtering, which
+suffer cold-start problems and data sparsity \cite{li2026survey,aher2013combination};
+hybrid models improved robustness but forecast preferences rather than modeling knowledge
+acquisition \cite{corbett1994knowledge}. Deep Knowledge Tracing (DKT) \cite{piech2015dkt}
+learns the latent knowledge state directly from interaction data, unlike Bayesian Knowledge
+Tracing's static parameters \cite{zhang2017dkvmn}, and attention-based successors
+\cite{pandey2019sakt,ghosh2020akt} attend to any earlier interaction
+\cite{vaswani2017attention}. Reinforcement learning frames path recommendation as a Markov
+Decision Process and, combined with knowledge tracing, has been reported to reduce dropout
+\cite{shen2021lpkt,zhao2026rlkt}. Knowledge graphs support structured, explainable
+recommendation by modelling concepts and their dependencies
+\cite{kipf2017gcn,zhang2023finegrained}, with Bloom's taxonomy providing a theoretical
+foundation for path design through six progressive cognitive levels
+\cite{khosravi2022xaied}, and graph neural networks handling the relational structure such
+graphs induce. Multi-objective hierarchical frameworks have optimized dropout risk, learner
+satisfaction and completion rates, adding priority-backtracking interpreters for
+interpretability \cite{lundberg2017shap,ribeiro2016lime}, and hybrid neuro-symbolic and
+generative approaches have begun to explore understandable explanation generation
+\cite{yang2025explainable}.
+
+\subsection{Research Gap}
+\label{subsec:gap}
+
+Four gaps remain. Explainability is added as an afterthought \cite{xie2025profile}, and
+SHAP-based explanations dominate in education but are applied mainly at the global level
+rather than to individual recommendations \cite{zhao2026rlkt}. Where explanations are
+evaluated at all, it is usually by participant rating, which measures whether readers found
+an explanation agreeable rather than whether it is faithful to the model. Many frameworks
+ignore the dynamic evolution of knowledge, including forgetting, which compromises the
+pedagogical integrity of suggested trajectories \cite{boujmiraz2026review}. Knowledge graphs
+are rarely applied to sequential decision-making and explanation \cite{qiang2026xaiedu}.
+Finally, the contribution of such structural priors is established by ablation on aggregate
+accuracy, without checking whether that metric can observe the component at all.
+
+Together these gaps limit customization, transparency and effective learning-path
+optimization for university students. Existing systems rarely integrate knowledge graphs,
+temporal knowledge tracing, constrained path optimization and pedagogically meaningful
+explanation in one framework, and the validation of such systems reports component
+contributions on metrics that may be unable to detect them, and explanation quality by
+opinion rather than measurement.
+
+% =====================================================================
+\section{Methodology}
+\label{sec:method}
+
+\figslot{fig1.png}{Overall XAI-based personalized learning recommendation framework}{fig:framework}
+
+\subsection{Overall Framework}
+\label{subsec:framework}
+
+The system estimates a learner's changing knowledge state from interaction history; the
+prerequisite relationships of a knowledge graph then constrain a planner that selects the
+next learning task; finally each recommendation receives a pedagogical explanation from a
+priority-backtracking module \cite{zhang2023finegrained} (Fig.~\ref{fig:framework}).
+The framework therefore has three components: learner knowledge estimation, sequential path
+optimization and explanation production \cite{piech2015dkt}. Each is evaluated separately,
+because a gain in one does not imply a gain in another: better prediction need not yield
+better paths, and a faithful explanation need not be a complete one.
+
+\begin{table}[t]
+\caption{Dataset and derived concept graph}
+\label{tab:dataset}
+\begin{tabular}{p{7.2cm}r}
+\hline\noalign{\smallskip}
+\textbf{Quantity} & \textbf{Value} \\
+\noalign{\smallskip}\svhline\noalign{\smallskip}
+Enrolments / distinct learners        & 32{,}593 / 28{,}785 \\
+Clickstream events                    & 10{,}655{,}280 \\
+Assessment records                    & 173{,}912 \\
+Label balance (success / not)         & 67.9\% / 32.1\% \\
+Concepts / prerequisite / co-requisite edges & 237 / 724 / 302 \\
+Concepts carrying assessments         & 89 of 237 \\
+Week-placement agreement (Spearman)   & $\rho = 0.975$ \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+\end{tabular}
+\end{table}
+
+\subsection{Data Acquisition and Concept Graph}
+\label{subsec:data}
+
+Evaluation uses OULAD \cite{kuzilek2017oulad}: 32{,}593 enrolments, 10{,}655{,}280
+clickstream events and 173{,}912 assessment records across seven modules. Records are
+ordered chronologically, categorical attributes one-hot encoded and numerical attributes
+standardized, and missing assessment scores are median-imputed only where a submission
+exists. Timestamps are day-granular with no intra-day resolution, so a session is one
+learner-day rather than an inactivity threshold. The processed data is split 80:10:10.
+
+OULAD supplies no concept annotations or prerequisites, so the graph is derived. A concept
+is a (module, week-of-study) pair. Week placement uses the \texttt{week\_from} field where
+present and otherwise the median access day; where both exist they agree at Spearman
+$\rho = 0.975$. Edges link consecutive weeks, link the four preceding weeks to each
+assessment week, and are mined from behaviour, accepted only where ordering is consistent
+and later success is measurably higher:
+\begin{equation}
+\begin{split}
+\mathrm{prec}(a,b) &= \frac{\left|\{u : \tau_u(a) < \tau_u(b)\}\right|}{\left|\{u : a, b \in h_u\}\right|},\\[2pt]
+\mathrm{lift}(a,b) &= \frac{P(y_b \mid a \prec b)}{P(y_b)},
+\end{split}
+\label{eq:mining}
+\end{equation}
+where $\tau_u(\cdot)$ is learner $u$'s first interaction with a concept, with support above
+100 learners, $\mathrm{prec} \geq 0.75$ and $\mathrm{lift} > 1.1$. Requiring lift removes
+pairs separated only by the academic calendar. The result is 237 concepts, 724 prerequisite
+and 302 co-requisite edges, acyclic without intervention.
+
+Two properties of the data matter for interpretation. OULAD records only \emph{submitted}
+assessments: binarising at the pass mark gives a $95.6\%$ positive rate, with the fifth
+percentile of submitted scores equal to the pass mark itself, and 150{,}013 of
+323{,}925 expected submissions never occurred. Treating non-submission as failure gives a
+$67.9/32.1$ balance and makes the target successful completion. Second, assessments exist
+for only 89 of the 237 concepts; the remaining 148 are reached only through the graph.
+
+\figslot{fig2.png}{Knowledge graph enhanced knowledge tracing}{fig:kt}
+
+\subsection{Knowledge Graph-Enhanced Knowledge Tracing}
+\label{subsec:kt}
+
+A Transformer \cite{vaswani2017attention} encodes the learner's interaction sequence, while
+a Graph Convolutional Network \cite{kipf2017gcn} encodes prerequisite relationships into
+concept embeddings recomputed at every forward pass, so gradients reach the graph structure
+(Fig.~\ref{fig:kt}). The combined representation lets the model account for both the
+learner's past progress and the structural links between concepts. Forgetting is
+modelled as an attention bias that decays with elapsed time,
+\begin{equation}
+b^{(h)}_{ij} = -\,\mathrm{softplus}(\gamma_h)\,\log(1 + \Delta_{ij}),
+\label{eq:decay}
+\end{equation}
+where $\Delta_{ij}$ is the days between interactions $i$ and $j$ and $\gamma_h$ is learned
+per head; $\gamma_h = 0$ gives the temporal ablation. Clickstream events update the hidden
+state without contributing loss, and binary cross-entropy is computed only at assessment
+positions, which makes a length-200 sequence model trainable when learners average 8.7
+assessments. Because mastery is shown to learners, probabilities are calibrated by
+temperature scaling \cite{guo2017calibration}, fitted on half of each held-out fold.
+
+\figslot{fig3.png}{Prerequisite-constrained learning path optimization}{fig:planner}
+
+\subsection{Prerequisite-Constrained Path Optimization}
+\label{subsec:planner}
+
+Recommendation is formulated as a Markov Decision Process whose state holds the mastery
+vector, concepts already recommended, learner features and remaining budget, and the reward
+combines learning progress, prerequisite satisfaction, a redundancy penalty and a step cost.
+Rather than expecting a policy to learn the pedagogical constraint, it is encoded in the
+admissible actions: a concept qualifies only if the learner has not mastered it, every
+prerequisite is at the readiness threshold, and it belongs to an enrolled module, so an
+unprepared recommendation is impossible by construction (Fig.~\ref{fig:planner}).
+
+The evaluated policy is greedy. Each admissible concept is simulated as studied and compared
+against an idle period of equal length, and the concept with the largest total improvement
+in log-odds is chosen. The idle baseline is essential because studying advances the clock
+and \eqref{eq:decay} then decays every earlier interaction; log-odds are needed because
+engaged learners saturate near $0.98$. Thresholds are the 70th and 30th percentiles of each
+learner's own mastery, since mastery is bimodal. A learned policy is left to future work.
+
+\figslot{fig4.png}{Explainable AI module for recommendation justification}{fig:xai}
+
+\subsection{Explainable Recommendation}
+\label{subsec:xai}
+
+The priority-backtracking interpreter traverses the chosen concept's prerequisites, scoring
+each by its shortfall below readiness, discounted by graph distance (Fig.~\ref{fig:xai}).
+Counterfactuals raise a gap concept's mastery and re-evaluate the planner's score, so the
+claimed effect of closing a gap is measured rather than asserted. An unmet prerequisite
+immediately preceding the recommendation therefore outranks an equal shortfall further
+back, and every clause of the generated explanation traces to a number the model produced.
+
+% =====================================================================
+\section{Implementation}
+\label{sec:impl}
+
+\subsection{Development Tools and Computing Environment}
+\label{subsec:tools}
+
+The framework is implemented in Python 3.11 with PyTorch. Data preparation runs in SQL on an
+embedded DuckDB database so every transformation is auditable; NetworkX builds the graph and
+FP-Growth (\texttt{mlxtend}) mines co-requisites. Training used one NVIDIA T4 GPU and all
+inference runs on CPU; data preparation takes about 2.5 minutes and training one
+configuration about 25 minutes.
+
+\subsection{Dataset Configuration}
+\label{subsec:config}
+
+A pipeline built on SQL, Pandas and NumPy turns the raw records into per-enrolment
+sequences, 27{,}904 of them from 25{,}101 learners, with 242{,}670 supervised assessment
+positions (Table~\ref{tab:dataset}). Categorical attributes such as gender and education
+level are one-hot encoded, and long-tailed click counts are log-transformed before
+standardization so a few very active students do not dominate the scale. Sequences are
+windowed to the most recent 200 interactions. Cross-validation folds are stratified on final
+outcome, and no learner appears in more than one fold.
+
+\subsection{Model Implementation Specifications}
+\label{subsec:specs}
+
+The encoder has two Transformer layers, hidden size 128, four heads
+and sequence length 200; the three GCN layers use layer normalization and ReLU, giving
+64-dimensional concept embeddings. Training uses Adam (learning rate $10^{-3}$, weight decay
+$10^{-4}$, cosine annealing), dropout $0.2$, batch size 64 and early stopping at patience 3.
+The model has 466{,}569 parameters, and one batched pass over all admissible concepts keeps
+an explained recommendation near 160~ms on CPU. Random seeds are fixed and recorded with
+every result.
+
+\subsection{Evaluation and Validation}
+\label{subsec:eval}
+
+Baselines are a majority-class predictor, SAKT, DKT and a GNN-based recommender. Predictive
+quality uses AUC-ROC, RMSE and expected calibration error. Path quality is measured against
+observed behaviour: held-out histories are truncated, each planner recommends, and ground
+truth is the concepts the learner actually studied next, with only learners who passed or
+achieved distinction contributing ground truth. Explanation quality is measured by
+fidelity, sufficiency and stability. Ablations remove the knowledge graph and the temporal
+decay, under both the conventional protocol and the cold-concept protocol of
+Sect.~\ref{sec:results}. Cross-validation is five-fold and grouped by student; comparisons
+use paired $t$-tests with Holm--Bonferroni correction \cite{holm1979}, with Cohen's $d$
+reported beside every $p$-value, since with many paired decisions significance is attainable
+at negligible effect size.
+
+% =====================================================================
+\section{Results and Discussion}
+\label{sec:results}
+
+\begin{table}[t]
+\caption{Predictive performance and component ablation. Folds grouped by student, $p$ Holm-corrected. Proposed expected calibration error $=0.0054$}
+\label{tab:accuracy}
+\begin{tabular}{p{4.4cm}p{3.1cm}p{1.8cm}p{1.6cm}}
+\hline\noalign{\smallskip}
+\textbf{Model} & \textbf{AUC-ROC} & \textbf{RMSE} & \textbf{$p$} \\
+\noalign{\smallskip}\svhline\noalign{\smallskip}
+Majority (no-skill) & $0.5000 \pm 0.0000$ & $0.4669$ & $<0.001$ \\
+SAKT                & $0.9233 \pm 0.0018$ & $0.2992$ & $<0.001$ \\
+DKT                 & $0.9435 \pm 0.0017$ & $0.2751$ & $0.0009$ \\
+GNN-based           & $0.9502 \pm 0.0014$ & $0.2665$ & $0.0220$ \\
+\textbf{Proposed}   & $\mathbf{0.9538 \pm 0.0019}$ & $\mathbf{0.2621}$ & --- \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+\quad w/o knowledge graph    & $0.9539 \pm 0.0021$ & $0.2618$ & $0.7704$ \\
+\quad w/o temporal attention & $0.9532 \pm 0.0014$ & $0.2624$ & $0.4507$ \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{Learning path quality over 906 decisions from 400 held-out learners. Effect size against the proposed planner: syllabus order $d=0.36$, random $d=0.09$; all $p<0.02$}
+\label{tab:pathquality}
+\begin{tabular}{p{3.6cm}p{2.0cm}p{1.8cm}p{1.8cm}p{1.8cm}}
+\hline\noalign{\smallskip}
+\textbf{Planner} & \textbf{NDCG@5} & \textbf{Hit@5} & \textbf{Viol.} & \textbf{Cov.} \\
+\noalign{\smallskip}\svhline\noalign{\smallskip}
+Syllabus order      & $0.0612$ & $0.1832$ & $0.0000$ & $0.452$ \\
+Popularity          & $0.1069$ & $0.2936$ & $0.0000$ & $0.510$ \\
+Random (admissible) & $0.1300$ & $0.3455$ & $0.0000$ & $0.722$ \\
+Weakest-first       & $0.1344$ & $0.3642$ & $0.0000$ & $0.515$ \\
+\textbf{Proposed}   & $\mathbf{0.1532}$ & $\mathbf{0.3687}$ & $\mathbf{0.0000}$ & $\mathbf{0.726}$ \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{Cold-concept ablation. Assessments withheld for 27 of the 89 assessed concepts and scored on those only}
+\label{tab:coldconcept}
+\begin{tabular}{p{4.4cm}p{3.6cm}p{3.0cm}}
+\hline\noalign{\smallskip}
+\textbf{Variant} & \textbf{AUC-ROC} & \textbf{RMSE} \\
+\noalign{\smallskip}\svhline\noalign{\smallskip}
+With knowledge graph & $\mathbf{0.9004 \pm 0.0059}$ & $\mathbf{0.3359}$ \\
+Without              & $0.8679 \pm 0.0042$ & $0.3611$ \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+\textbf{Difference}  & \multicolumn{2}{l}{$\mathbf{+0.0325}$, $p = 0.0003$, $d = 5.06$} \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+\end{tabular}
+\end{table}
+
+\figslot{fig5.png}{Calibration of predicted mastery across the five folds. Expected
+calibration error falls from 0.0084 to 0.0054 after temperature scaling}{fig:calibration}
+
+\subsection{Predictive Accuracy}
+\label{subsec:accuracy}
+
+As Table~\ref{tab:accuracy} shows, the proposed model attains the highest AUC-ROC
+($0.9538 \pm 0.0019$) and lowest RMSE ($0.2621$), exceeding DKT by $0.0103$
+($p = 0.0009$) and the GNN baseline by $0.0036$ ($p = 0.022$). The majority baseline scores
+exactly $0.5000$, so the result is not an artefact of class imbalance, and SAKT reaches only
+$0.9233$, so the gain is not simply from attention. Calibration error falls from $0.0084$
+to $0.0054$ after temperature scaling (Fig.~\ref{fig:calibration}). Because predicted
+mastery is shown to learners inside explanations, a poorly calibrated probability would be
+an incorrect statement rather than a cosmetic defect.
+
+\subsection{Learning Path Quality}
+\label{subsec:pathquality}
+
+Across 906 decisions from 400 held-out successful learners (Table~\ref{tab:pathquality}),
+the proposed planner achieves the highest NDCG@5 ($0.1532$) and Hit@5 ($0.3687$). All
+differences are significant, but effect sizes qualify this: $d = 0.36$ against syllabus
+order and only $d = 0.09$ against random admissible selection. The prerequisite constraint
+does most of the work, with the learned ranking adding a small consistent gain. Violations
+are zero for every planner, and coverage of $0.726$ shows the planner does not collapse
+onto popular concepts, the failure mode popularity-based ranking shows at $0.510$. The
+small margin over random selection also bounds the headroom for a learned policy.
+
+\subsection{Explanation Quality}
+\label{subsec:explquality}
+
+Explanations were evaluated objectively rather than by participant rating. The sample is
+small, 25 decisions with three perturbations each, but every measure is computed against
+the model's own counterfactual response rather than an opinion. Fidelity is $0.5318$ and
+stability $0.5310$: cited gaps are positively but imperfectly predictive of measured
+improvement, and about half persist under perturbation. Sufficiency of $0.0020$ is a
+negative finding. The named concept accounted for only $0.2\%$ of predicted benefit, the
+rest arising from unmentioned related concepts, so explanations were accurate but
+incomplete, and the renderer was amended to name the main beneficiaries. No rating scale
+would reveal this, because participants cannot judge a quantity the explanation omits.
+
+\subsection{Why Conventional Ablation Is Insufficient}
+\label{subsec:ablation}
+
+Removing the knowledge graph changes accuracy by $-0.0001$ ($p = 0.77$) and removing
+temporal attention by $-0.0006$ ($p = 0.45$) (Table~\ref{tab:accuracy}). Read at face
+value, neither contributes. But accuracy is computed only at assessment positions, covering
+89 concepts with about 2{,}700 labelled examples each, where a free embedding learns each
+concept adequately without any structural information, so the graph is genuinely redundant
+there. The graph exists for the other 148 concepts, which never enter the metric.
+
+To measure it directly, all assessments were withheld for 27 of the 89 assessed concepts
+and their responses removed from the input; evaluation was restricted to those concepts.
+Table~\ref{tab:coldconcept} shows $0.9004$ with the graph against $0.8679$ without, a gain
+of $+0.0325$ ($p = 0.0003$, $d = 5.06$) on every fold. The graph contributes nothing where
+supervision is plentiful and substantially where it is absent, which matters because the
+recommender ranks across all 237 concepts. Component ablations should be accompanied by
+evidence that the metric can detect the component removed.
+
+\subsection{Overall Discussion}
+\label{subsec:discussion}
+
+Combining knowledge graph modeling, temporal knowledge tracing, constrained planning and
+explanation improves both predictive and recommendation metrics over the baselines.
+Explanation adds computation, about 160~ms for a fully explained recommendation against
+7~ms for a cached mastery lookup, which remains well within the latency of an interactive
+advising interface.
+
+% =====================================================================
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+\subsection{Conclusion}
+\label{subsec:conclusion}
+
+This study combined knowledge graph modeling, Deep Knowledge Tracing,
+prerequisite-constrained planning and priority-backtracking explanation into an explainable
+learning path recommender. On OULAD it exceeded majority, SAKT, DKT and GNN baselines
+(AUC-ROC $0.9538$, calibration error $0.0054$) and made no prerequisite violations. Its
+principal finding is methodological: a knowledge graph that conventional ablation reports as
+useless improves cold-concept accuracy by $+0.0325$ with $d = 5.06$. The discrepancy is a
+property of the metric, not the model: aggregate accuracy measured where supervision is
+abundant cannot observe a structural prior whose purpose is to compensate for its absence.
+Verifying such systems therefore requires evaluation protocols matched to what each
+component is for.
+
+\subsection{Limitations}
+\label{subsec:limitations}
+
+The prediction target is successful completion rather than knowledge. Because OULAD records
+only submitted assessments, treating non-submission as failure is necessary for a usable
+class balance, but a substantial share of the signal is then engagement rather than
+understanding: appropriate for a system intended to prompt intervention, but a weaker claim
+than measuring mastery. The concept graph is likewise derived rather than given. OULAD
+supplies no concept annotations or material titles, placement for $82\%$ of materials
+relies on observed access, and mining prerequisites from the same behaviour that orders
+the concepts is partially self-referential.
+
+Supervision covers 89 of 237 concepts, so mastery for the remainder is not directly
+calibrated, and predicted mastery is bimodal, which is why learner-relative thresholds are
+needed. The proposed model uses learner features that the DKT and SAKT baselines, following
+their original formulations, do not, so part of the gain may reflect feature access rather
+than architecture. Finally, all data comes from a single institution's distance-learning
+courses, and generalization to campus-based teaching is untested.
+
+\subsection{Ethical Considerations}
+\label{subsec:ethics}
+
+OULAD is publicly released under CC-BY 4.0 and anonymised, and no data was collected from
+participants. The system is advisory. Because the model conditions on gender, disability,
+deprivation band and age band, it should not inform assessment or progression decisions
+until a subgroup fairness analysis has been carried out.
+
+\subsection{Future Work}
+\label{subsec:future}
+
+Four directions follow from the limitations. The most immediate is a \textbf{fairness
+analysis}: subgroup performance across gender, disability, deprivation band and age band
+must be established before any deployment. Second, a \textbf{learned policy} over the same
+state and reward should be trained and evaluated, in simulation and by off-policy
+estimation on logged trajectories; algorithms such as Soft Actor-Critic or Proximal Policy
+Optimization would need to beat a greedy planner already $d = 0.09$ above random selection
+to justify their complexity. Third, a \textbf{user evaluation} would address what the
+objective measures cannot: fidelity, sufficiency and stability show whether explanations
+are faithful to the model, not whether learners find them useful. Fourth, \textbf{expert
+validation of the mined edges} would give an independent estimate of graph precision.
+Beyond these, integrating forum and video-lecture activity, testing transfer across
+subjects and institutions, and building lighter models through pruning and distillation
+are natural extensions.
+
+\begin{acknowledgement}
+All source code, SQL transformations and results are publicly available, and every table in
+this chapter is regenerated from the raw data by a single command with fixed random seeds:
+\url{https://github.com/abhay27singh/explainable-learning-path-recommender}.
+\end{acknowledgement}
+
+% =====================================================================
+\begin{thebibliography}{99}
+
+\bibitem{li2026survey}
+Li, A., Li, Y., Gao, X.: Personalized learning path recommendation based on knowledge
+graphs: a survey. Electronics \textbf{15}(1), 238 (2026)
+
+\bibitem{aher2013combination}
+Aher, S.B., Lobo, L.M.R.J.: Combination of machine learning algorithms for recommendation
+of courses in e-learning system based on historical data. Knowl.-Based Syst. \textbf{51},
+1--14 (2013)
+
+\bibitem{kuzilek2017oulad}
+Kuzilek, J., Hlosta, M., Zdrahal, Z.: Open University Learning Analytics dataset. Sci. Data
+\textbf{4}, 170171 (2017)
+
+\bibitem{corbett1994knowledge}
+Corbett, A.T., Anderson, J.R.: Knowledge tracing: modeling the acquisition of procedural
+knowledge. User Model. User-Adapt. Interact. \textbf{4}(4), 253--278 (1994)
+
+\bibitem{piech2015dkt}
+Piech, C., Bassen, J., Huang, J., Ganguli, S., Sahami, M., Guibas, L., Sohl-Dickstein, J.:
+Deep knowledge tracing. In: Advances in Neural Information Processing Systems, vol.~28,
+pp.~505--513 (2015)
+
+\bibitem{zhang2017dkvmn}
+Zhang, J., Shi, X., King, I., Yeung, D.-Y.: Dynamic key-value memory networks for knowledge
+tracing. In: Proceedings of the 26th International Conference on World Wide Web,
+pp.~765--774 (2017)
+
+\bibitem{ghosh2020akt}
+Ghosh, A., Heffernan, N.T., Lan, A.S.: Context-aware attentive knowledge tracing. In:
+Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery and Data
+Mining, pp.~2330--2339 (2020)
+
+\bibitem{shen2021lpkt}
+Shen, S., Liu, Q., Chen, E., Huang, Z., Huang, W., Yin, Y., Su, Y., Wang, S.: Learning
+process-consistent knowledge tracing. In: Proceedings of the 27th ACM SIGKDD Conference on
+Knowledge Discovery and Data Mining, pp.~1452--1460 (2021)
+
+\bibitem{vaswani2017attention}
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, L.,
+Polosukhin, I.: Attention is all you need. In: Advances in Neural Information Processing
+Systems, vol.~30, pp.~5998--6008 (2017)
+
+\bibitem{kipf2017gcn}
+Kipf, T.N., Welling, M.: Semi-supervised classification with graph convolutional networks.
+In: International Conference on Learning Representations (2017)
+
+\bibitem{mnih2015dqn}
+Mnih, V., Kavukcuoglu, K., Silver, D., Rusu, A.A., Veness, J., Bellemare, M.G., Graves, A.,
+Riedmiller, M., Fidjeland, A.K., Ostrovski, G., et al.: Human-level control through deep
+reinforcement learning. Nature \textbf{518}, 529--533 (2015)
+
+\bibitem{khosravi2022xaied}
+Khosravi, H., Buckingham Shum, S., Chen, G., Conati, C., Tsai, Y.-S., Kay, J., Knight, S.,
+Martinez-Maldonado, R., Sadiq, S., Ga\v{s}evi\'{c}, D.: Explainable artificial intelligence
+in education. Comput. Educ.: Artif. Intell. \textbf{3}, 100074 (2022)
+
+\bibitem{ribeiro2016lime}
+Ribeiro, M.T., Singh, S., Guestrin, C.: ``Why should I trust you?'' Explaining the
+predictions of any classifier. In: Proceedings of the 22nd ACM SIGKDD International
+Conference on Knowledge Discovery and Data Mining, pp.~1135--1144 (2016)
+
+\bibitem{lundberg2017shap}
+Lundberg, S.M., Lee, S.-I.: A unified approach to interpreting model predictions. In:
+Advances in Neural Information Processing Systems, vol.~30, pp.~4765--4774 (2017)
+
+\bibitem{zhang2023finegrained}
+Zhang, S., Liu, Q., Chen, Y., Wang, L., Zhao, H.: A fine-grained and multi-context-aware
+learning path recommendation model over knowledge graphs for online learning communities.
+Inf. Process. Manag. \textbf{60}(5), 103464 (2023)
+
+\bibitem{yang2025explainable}
+Yang, Y., Peng, X., Chen, M., Liu, S.: An explainable graph-based course recommendation
+model based on multiple interest factors. Expert Syst. Appl. \textbf{264}, 125889 (2025)
+
+\bibitem{xie2025profile}
+Xie, X., Feng, X.: Personalized learning path recommendation based on learner profile and
+knowledge graph. Comput. Inform. \textbf{44}(4), 983--1008 (2025)
+
+\bibitem{zhao2026rlkt}
+Zhao, J., Wang, H., Li, M., Sun, Y.: Personalized learning path recommendation for middle
+school students based on joint optimization of deep reinforcement learning and knowledge
+tracing. Sci. Rep. (2026)
+
+\bibitem{boujmiraz2026review}
+Boujmiraz, S., Darhmaoui, H., Drissi El Maliani, A.: Predicting student performance: a
+comprehensive review of machine learning, deep learning, and explainable AI approaches.
+Comput. Educ.: Artif. Intell. \textbf{10}, 100548 (2026)
+
+\bibitem{qiang2026xaiedu}
+Qiang, M., Liu, Z., Zhang, R.: Explainable AI in education: integrating educational domain
+knowledge into the deep learning model for improved student performance prediction. Sci.
+Rep. \textbf{16}, 9515 (2026)
+
+\bibitem{pandey2019sakt}
+Pandey, S., Karypis, G.: A self-attentive model for knowledge tracing. In: Proceedings of
+the 12th International Conference on Educational Data Mining, pp.~384--389 (2019)
+
+\bibitem{guo2017calibration}
+Guo, C., Pleiss, G., Sun, Y., Weinberger, K.Q.: On calibration of modern neural networks.
+In: Proceedings of the 34th International Conference on Machine Learning, pp.~1321--1330
+(2017)
+
+\bibitem{holm1979}
+Holm, S.: A simple sequentially rejective multiple test procedure. Scand. J. Stat.
+\textbf{6}(2), 65--70 (1979)
+
+\end{thebibliography}
+
+\end{document}

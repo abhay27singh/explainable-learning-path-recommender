@@ -30,6 +30,7 @@ NOTE = ("Eligibility, entrance exams and subjects vary by university and board. 
 SUBJECTS_NOTE = "Common CBSE combinations. State boards and schools may differ."
 
 LEVELS: dict[str, str] = {
+    "skill": "Skill course",
     "diploma_10": "Diploma after class 10",
     "diploma_12": "Diploma after class 12",
     "ug": "Undergraduate degree",
@@ -37,8 +38,28 @@ LEVELS: dict[str, str] = {
 }
 # what the student is asked for at each level
 LEVEL_INPUT: dict[str, str] = {
+    "skill": "none",
     "diploma_10": "none", "diploma_12": "stream", "ug": "stream", "pg": "degree",
 }
+
+# NEP 2020 removes the hard separation between academic and vocational study, so skill
+# courses sit beside the academic ladder rather than below it: they can be taken from
+# any rung, alongside school or a degree.
+TRACKS: dict[str, str] = {
+    "academic": "Academic path",
+    "skill": "Skill path",
+}
+SKILL_NOTE = ("Skill courses under the National Skills Qualifications Framework (NSQF). "
+              "NEP 2020 removes the separation between academic and vocational study, so "
+              "these can be taken alongside school or a degree, not instead of one.")
+# What a degree is worth if a student leaves part way, under NEP 2020's multiple entry
+# and exit rules. Institutions apply these through the Academic Bank of Credits.
+NEP_UG_EXITS: tuple[str, ...] = (
+    "Leave after 1 year: certificate",
+    "Leave after 2 years: diploma",
+    "Leave after 3 years: bachelor's degree",
+    "Finish 4 years: bachelor's degree with research",
+)
 
 # Where a student is now. Students at a course stage are enrolled on a course and get a
 # week-by-week path; school students get Course Finder suggestions for the next level.
@@ -49,8 +70,14 @@ STAGES: dict[str, str] = {
 COURSE_STAGES: tuple[str, ...] = ("diploma", "ug", "pg")
 # the levels the Course Finder offers from each stage
 NEXT_LEVELS: dict[str, tuple[str, ...]] = {
-    "class_10": ("diploma_10",), "class_12": ("diploma_12", "ug"),
-    "diploma": ("ug",), "ug": ("pg",), "pg": (),
+    "class_10": ("diploma_10", "skill"), "class_12": ("diploma_12", "ug", "skill"),
+    "diploma": ("ug", "skill"), "ug": ("pg", "skill"), "pg": ("skill",),
+}
+
+# What a class 10 student is studying now. Same idea as STREAM_SUBJECTS one rung up.
+CLASS10_SUBJECTS: dict[str, list[str]] = {
+    "core": ["English", "Mathematics", "Science", "Social Science"],
+    "optional": ["Hindi", "Sanskrit", "Computer Applications", "Information Technology"],
 }
 
 STREAMS: dict[str, str] = {
@@ -119,17 +146,44 @@ _NOT_A_TOPIC = re.compile(
     r"electives?\b|specialisation", re.I)
 
 
-def study_links(subject: str) -> dict[str, str]:
-    """Free-course search links for one subject, or {} for placements and projects.
+def _search(query: str) -> str:
+    return "https://www.google.com/search?q=" + quote_plus(query)
 
-    NPTEL and SWAYAM do not honour a search term in their own URLs (checked in a
-    browser), so these are Google searches restricted to each site."""
+
+def _youtube(query: str) -> str:
+    return "https://www.youtube.com/results?search_query=" + quote_plus(query)
+
+
+def study_links(subject: str, schooling: str | None = None,
+                track: str = "academic") -> dict[str, str]:
+    """Free study links for one subject, or {} for placements and projects.
+
+    Which sites depends on who is studying. NPTEL and SWAYAM are university platforms
+    and carry nothing for class 10 or class 12, so school subjects link to NCERT, Khan
+    Academy and YouTube instead. YouTube is offered at every level.
+
+    NPTEL, SWAYAM and NCERT do not honour a search term in their own URLs (checked in a
+    browser), so those are Google searches restricted to each site. YouTube does, so
+    that one is a real YouTube search."""
     if _NOT_A_TOPIC.search(subject):
         return {}
     phrase = f'"{subject}"'
+    if track == "skill":               # trade skills: Skill India, and demonstrations
+        return {
+            "skillindia": _search(f"site:skillindia.gov.in {phrase}"),
+            "nsdc": _search(f"site:nsdcindia.org OR site:skillindiadigital.gov.in {phrase}"),
+            "youtube": _youtube(f"{subject} training practical demonstration"),
+        }
+    if schooling:                      # "class 10" or "class 12"
+        return {
+            "ncert": _search(f"site:ncert.nic.in {phrase} {schooling}"),
+            "khan": _search(f"site:khanacademy.org {phrase}"),
+            "youtube": _youtube(f"{subject} {schooling} full chapter explanation"),
+        }
     return {
-        "nptel": "https://www.google.com/search?q=" + quote_plus(f"site:nptel.ac.in {phrase}"),
-        "swayam": "https://www.google.com/search?q=" + quote_plus(f"site:swayam.gov.in {phrase}"),
+        "nptel": _search(f"site:nptel.ac.in {phrase}"),
+        "swayam": _search(f"site:swayam.gov.in {phrase}"),
+        "youtube": _youtube(f"{subject} full course lecture"),
     }
 
 
@@ -149,7 +203,7 @@ class Course:
     degrees: frozenset | None = None   # postgraduate: qualifying degrees (None = any degree)
 
     def eligible(self, subjects: set[str], degree: str | None) -> bool:
-        if self.level == "diploma_10":
+        if self.level in ("diploma_10", "skill"):
             return True
         if self.level == "pg":
             return self.degrees is None or degree in self.degrees
@@ -157,14 +211,22 @@ class Course:
             return False
         return not self.needs_any or bool(set(self.needs_any) & subjects)
 
+    @property
+    def track(self) -> str:
+        return "skill" if self.level == "skill" else "academic"
+
     def to_dict(self) -> dict:
         return {
             "key": self.key, "name": self.name, "level": self.level,
             "level_label": LEVELS[self.level], "category": self.category,
             "duration": self.duration, "framework": self.framework,
-            "eligibility": self.eligibility,
+            "eligibility": self.eligibility, "track": self.track,
+            "track_label": TRACKS[self.track],
+            # NEP 2020 lets a degree student leave with a qualification at each year
+            "exits": list(NEP_UG_EXITS) if self.level == "ug" else [],
             "years": [{"year": label,
-                       "subjects": [{"name": s, "links": study_links(s)} for s in subjects]}
+                       "subjects": [{"name": s, "links": study_links(s, track=self.track)}
+                                    for s in subjects]}
                       for label, subjects in self.years],
         }
 
@@ -179,7 +241,116 @@ THREE_OR_FOUR = "3 years (4 with honours under NEP 2020)"
 LATERAL = ("Class 10 pass, usually with Mathematics and Science. Lateral entry to the second "
            "year of a B.Tech is often possible afterwards")
 
+ITI = "ITI trade certificate under the NSQF, awarded by NCVT or SCVT"
+NSDC = "NSQF qualification pack from the relevant Sector Skill Council"
+SKILL_ANY = "Class 8 or class 10 pass, depending on the trade and the centre"
+
 COURSES: tuple[Course, ...] = (
+    # ---- skill path: NSQF trades and job roles, open from any rung of the ladder ----
+    Course("iti_electrician", "ITI Electrician", "skill", "Trades and technology",
+           "2 years", ITI, "Class 10 pass with Science and Mathematics",
+           {"electronics": 3, "machines": 2},
+           (("Year 1: Basics of the trade",
+             ("Electrical Safety and Tools", "Basic Electrical Practice", "Wiring and Circuits",
+              "Measuring Instruments", "Workshop Calculation and Science")),
+            ("Year 2: On the job",
+             ("Motors and Transformers", "Domestic and Industrial Wiring",
+              "Motor Winding and Repair", "Panel and Control Wiring", "Employability Skills")))),
+    Course("iti_fitter", "ITI Fitter", "skill", "Trades and technology",
+           "2 years", ITI, "Class 10 pass with Science and Mathematics",
+           {"machines": 3, "design": 1},
+           (("Year 1: Bench and machine work",
+             ("Fitting Hand Tools and Safety", "Measurement and Marking", "Drilling and Grinding",
+              "Engineering Drawing", "Workshop Calculation and Science")),
+            ("Year 2: Assembly and maintenance",
+             ("Machine Assembly and Alignment", "Pipe Fitting", "Bearings and Lubrication",
+              "Preventive Maintenance", "Employability Skills")))),
+    Course("iti_welder", "ITI Welder", "skill", "Trades and technology",
+           "1 year", ITI, "Class 8 or class 10 pass, depending on the state",
+           {"machines": 3},
+           (("Core trade practice",
+             ("Welding Safety and Equipment", "Arc Welding", "Gas Welding and Cutting",
+              "MIG and TIG Welding", "Welding Defects and Inspection", "Employability Skills")),)),
+    Course("iti_copa", "ITI Computer Operator and Programming Assistant (COPA)", "skill",
+           "Digital and office skills", "1 year", ITI, "Class 10 pass",
+           {"coding": 2, "business": 1, "data": 1},
+           (("Core trade practice",
+             ("Computer Fundamentals and Operating Systems", "Office Productivity Software",
+              "Typing and Data Entry", "Web Design Basics", "Database Basics",
+              "Accounting with Tally", "Employability Skills")),)),
+    Course("skill_solar", "Solar Panel Installation Technician", "skill",
+           "Green and energy skills", "3 to 6 months", NSDC, SKILL_ANY,
+           {"electronics": 3, "machines": 2},
+           (("Qualification pack",
+             ("Solar Energy Basics", "Panel Mounting and Site Survey", "Wiring and Inverters",
+              "Testing and Commissioning", "Safety at Height", "Maintenance and Fault Finding")),)),
+    Course("skill_healthcare", "General Duty Assistant (healthcare)", "skill",
+           "Healthcare skills", "6 to 12 months", NSDC, "Class 10 pass",
+           {"health": 3, "people": 2, "biology": 1},
+           (("Qualification pack",
+             ("Human Body Basics", "Patient Care and Hygiene", "Vital Signs and Monitoring",
+              "Infection Control", "Medical Records and Communication", "First Aid and Emergency")),)),
+    Course("skill_beauty", "Beauty Therapist", "skill", "Personal care and wellness",
+           "3 to 6 months", NSDC, SKILL_ANY,
+           {"design": 2, "people": 2, "health": 1},
+           (("Qualification pack",
+             ("Skin and Hair Science", "Salon Hygiene and Safety", "Facial and Skin Treatments",
+              "Hair Care and Styling", "Client Consultation", "Salon Business Basics")),)),
+    Course("skill_tailoring", "Self-Employed Tailor", "skill", "Craft and design skills",
+           "3 to 6 months", NSDC, SKILL_ANY,
+           {"design": 3, "business": 1},
+           (("Qualification pack",
+             ("Measurement and Body Shapes", "Pattern Making", "Cutting and Stitching",
+              "Machine Care", "Finishing and Alterations", "Costing and Customer Orders")),)),
+    Course("skill_agri", "Agriculture Extension Service Provider", "skill",
+           "Agriculture skills", "3 to 6 months", NSDC, "Class 10 pass",
+           {"biology": 3, "business": 1, "people": 1},
+           (("Qualification pack",
+             ("Soil and Crop Basics", "Seeds and Sowing", "Irrigation Methods",
+              "Pest and Disease Management", "Farm Machinery", "Marketing Farm Produce")),)),
+    Course("skill_retail", "Retail Sales Associate", "skill", "Business and service skills",
+           "3 months", NSDC, "Class 10 pass",
+           {"business": 3, "people": 2},
+           (("Qualification pack",
+             ("Retail Basics", "Product Knowledge", "Customer Service", "Billing and Point of Sale",
+              "Stock and Display", "Workplace Communication")),)),
+    Course("skill_data_entry", "Data Entry and Spreadsheet Operator", "skill",
+           "Digital and office skills", "3 months", NSDC, "Class 10 pass",
+           {"data": 2, "coding": 1, "business": 1},
+           (("Qualification pack",
+             ("Keyboard Skills and Accuracy", "Word Processing", "Spreadsheets and Formulas",
+              "Charts and Reports", "Data Cleaning Basics", "Digital Safety")),)),
+    Course("skill_digital_marketing", "Digital Marketing Executive", "skill",
+           "Business and service skills", "3 to 6 months", NSDC, "Class 12 pass",
+           {"media": 3, "business": 2, "data": 1},
+           (("Qualification pack",
+             ("Digital Marketing Basics", "Social Media Content", "Search Engine Optimisation",
+              "Online Advertising", "Email and Messaging Campaigns", "Measuring Results")),)),
+    Course("skill_web_dev", "Web Developer (front end)", "skill", "Digital and office skills",
+           "6 months", NSDC, "Class 12 pass",
+           {"coding": 3, "design": 2},
+           (("Qualification pack",
+             ("HTML and CSS", "JavaScript Basics", "Responsive Layouts", "Version Control with Git",
+              "Working with APIs", "Accessibility and Testing")),)),
+    Course("skill_data_analytics", "Data Analytics Associate", "skill",
+           "Digital and office skills", "6 months", NSDC, "Class 12 pass, Mathematics helps",
+           {"data": 3, "maths": 2, "coding": 1},
+           (("Qualification pack",
+             ("Spreadsheets for Analysis", "SQL and Databases", "Statistics for Analytics",
+              "Python for Data", "Dashboards and Visualisation", "Reporting Findings")),)),
+    Course("skill_hospitality", "Food and Beverage Service Steward", "skill",
+           "Hospitality skills", "3 to 6 months", NSDC, "Class 10 pass",
+           {"hospitality": 3, "people": 2},
+           (("Qualification pack",
+             ("Food Safety and Hygiene", "Table Service", "Menu and Beverage Knowledge",
+              "Customer Handling", "Billing and Settlement", "Teamwork in Service")),)),
+    Course("skill_teaching_aide", "Early Childhood Educator Assistant", "skill",
+           "Teaching and care skills", "6 months", NSDC, "Class 12 pass",
+           {"teaching": 3, "people": 2},
+           (("Qualification pack",
+             ("Child Development Basics", "Play-Based Learning", "Classroom Routines",
+              "Storytelling and Language Activities", "Health and Safety of Children",
+              "Working with Parents")),)),
     # ------------------------------------------------------------- diploma after class 10
     Course("dip_cs", "Diploma in Computer Engineering", "diploma_10", "Engineering and technology",
            "3 years", "AICTE-approved polytechnic curriculum", LATERAL,
@@ -587,6 +758,9 @@ def options() -> dict:
         "levels": [{"value": k, "label": v, "input": LEVEL_INPUT[k]} for k, v in LEVELS.items()],
         "stages": [{"value": k, "label": v, "has_course": k in COURSE_STAGES}
                    for k, v in STAGES.items()],
+        "tracks": [{"value": k, "label": v} for k, v in TRACKS.items()],
+        "skill_note": SKILL_NOTE,
+        "nep_ug_exits": list(NEP_UG_EXITS),
         "next_levels": {k: list(v) for k, v in NEXT_LEVELS.items()},
         "streams": [{"value": k, "label": v, "core": STREAM_SUBJECTS[k]["core"],
                      "optional": STREAM_SUBJECTS[k]["optional"]} for k, v in STREAMS.items()],
@@ -596,8 +770,69 @@ def options() -> dict:
     }
 
 
-def _fit(score: int) -> str:
-    return "Strong fit" if score >= 5 else "Good fit" if score >= 3 else "Possible fit"
+# What each class 12 stream opens up, in the student's own words.
+STREAM_LEADS: dict[str, str] = {
+    "pcm": "Engineering (B.Tech, B.E.), computer science, mathematics, statistics and architecture",
+    "pcb": "Medicine (MBBS), dentistry, pharmacy, nursing, and biology and life sciences",
+    "pcmb": "Both routes: engineering and computer science, or medicine and life sciences",
+    "commerce": "Commerce, accountancy, business administration, economics and finance",
+    "arts": "Psychology, economics, English, law, sociology, design and teaching",
+}
+
+
+def subjects_now(stage: str, stream: str | None = None) -> dict:
+    """The subjects a student is studying at this stage, with free study links.
+
+    Class 10 has one national set of subjects; class 12 depends on the stream. A student
+    already on a course studies that course's own subjects, so this returns nothing and
+    the weekly path takes over."""
+    if stage not in STAGES:
+        raise ValueError("unknown stage")
+    if stage == "class_10":
+        core, optional, label = CLASS10_SUBJECTS["core"], CLASS10_SUBJECTS["optional"], "Class 10"
+        schooling = "class 10"
+    elif stage == "class_12":
+        if stream not in STREAMS:
+            raise ValueError("choose your class 12 stream")
+        core = STREAM_SUBJECTS[stream]["core"]
+        optional = STREAM_SUBJECTS[stream]["optional"]
+        label = f"Class 12, {STREAMS[stream]}"
+        schooling = "class 12"
+    else:
+        return {"stage": stage, "label": STAGES[stage], "subjects": [], "optional": [], "note": ""}
+    # school subjects, so NCERT, Khan Academy and YouTube rather than NPTEL and SWAYAM
+    with_links = lambda names: [{"name": n, "links": study_links(n, schooling)} for n in names]
+    return {"stage": stage, "label": label, "subjects": with_links(core),
+            "optional": with_links(optional), "note": SUBJECTS_NOTE}
+
+
+def next_after(stage: str, stream: str | None = None) -> dict:
+    """What a student can study after this stage.
+
+    Class 10 leads to a class 12 stream or to a diploma, so both are returned: the
+    streams are choices of subjects, the levels are courses in the catalogue."""
+    if stage not in STAGES:
+        raise ValueError("unknown stage")
+    levels = [{"value": lv, "label": LEVELS[lv], "input": LEVEL_INPUT[lv]}
+              for lv in NEXT_LEVELS[stage]]
+    streams = []
+    if stage == "class_10":
+        streams = [{"value": k, "label": v, "leads_to": STREAM_LEADS[k],
+                    "core": STREAM_SUBJECTS[k]["core"], "optional": STREAM_SUBJECTS[k]["optional"]}
+                   for k, v in STREAMS.items()]
+    return {"stage": stage, "label": STAGES[stage], "levels": levels, "streams": streams,
+            "leads_to": STREAM_LEADS.get(stream or "", "")}
+
+
+def _fit(score: int, matched: list, chosen: list) -> str:
+    """How well a course answers what the student picked.
+
+    Absolute thresholds made every course a "Possible fit" when only one interest was
+    chosen, which told the student nothing. This compares the course against the
+    interests they actually picked."""
+    if len(matched) < len(chosen):
+        return "Partial match"
+    return "Strong match" if score >= 2 * len(chosen) else "Good match"
 
 
 def recommend(level: str = "ug", interests: list[str] | None = None, stream: str | None = None,
@@ -636,14 +871,19 @@ def recommend(level: str = "ug", interests: list[str] | None = None, stream: str
             continue
         labels = [INTERESTS[i] for i in matched]
         reason = "Matches your interests: " + ", ".join(labels) + "."
+        # how much of the course itself is about what they picked, so that a course
+        # centred on the interest outranks a course that merely touches it
+        share = round(score / sum(course.interests.values()), 4)
         if course.eligible(taken, degree if needs == "degree" else None):
-            courses.append({**course.to_dict(), "score": score, "matched": labels,
-                            "reason": reason, "fit": _fit(score)})
+            courses.append({**course.to_dict(), "score": score, "share": share,
+                            "matched": labels, "reason": reason,
+                            "fit": _fit(score, matched, chosen)})
         else:
             also.append({"key": course.key, "name": course.name, "score": score,
-                         "matched": labels, "reason": reason, "needs": course.eligibility})
+                         "share": share, "matched": labels, "reason": reason,
+                         "needs": course.eligibility})
 
-    order = lambda c: (-c["score"], c["name"])
+    order = lambda c: (-c["score"], -c["share"], c["name"])
     return {
         "method": METHOD,
         "note": NOTE,
@@ -688,3 +928,73 @@ def course(key: str) -> dict:
     if key not in _BY_KEY:
         raise KeyError(key)
     return _BY_KEY[key].to_dict()
+
+
+def exists(key: str) -> bool:
+    return key in _BY_KEY
+
+
+def looking_ahead(stream: str, level: str = "ug") -> dict:
+    """Courses a class 10 student could take later, if they pick this stream.
+
+    Read-only: they are two years away from applying, so this is what the stream opens
+    up rather than a recommendation. Eligibility uses the stream's core subjects only,
+    so nothing here depends on optional subjects they have not chosen yet."""
+    if stream not in STREAMS:
+        raise ValueError("unknown class 12 stream")
+    if level not in LEVELS:
+        raise ValueError("unknown level")
+    taken = set(STREAM_SUBJECTS[stream]["core"])
+    courses = [c.to_dict() for c in COURSES
+               if c.level == level and c.eligible(taken, None)]
+    return {
+        "stream": stream, "stream_label": STREAMS[stream], "level": level,
+        "level_label": LEVELS[level], "leads_to": STREAM_LEADS[stream],
+        "courses": sorted(courses, key=lambda c: c["name"]),
+        "note": ("What this stream opens up after class 12, using its core subjects only. "
+                 "Optional subjects you choose in class 11 can open up more."),
+    }
+
+
+# The shortest and longest plans offered. Below four weeks a degree's subject list is
+# meaningless; beyond three years a plan stops being a plan.
+PLAN_WEEKS = (4, 8, 12, 16, 24, 36, 52, 78, 104, 156)
+PLAN_NOTE = ("A study plan, not the official course timetable. Subjects keep their own "
+             "order, so earlier years come first.")
+
+
+def weekly_plan(key: str, weeks: int = 24) -> dict:
+    """Spread a course's subjects over however many weeks the student wants.
+
+    Subjects are dealt out in order, so the load per week is as even as the list allows:
+    26 subjects over 12 weeks gives weeks of 3 and weeks of 2, never 5 and then 1. Weeks
+    are never empty, so asking for more weeks than there are subjects is refused."""
+    course = _BY_KEY.get(key)
+    if course is None:
+        raise KeyError(key)
+    if weeks < 1:
+        raise ValueError("choose at least one week")
+    subjects = [(year, name) for year, names in course.years for name in names
+                if not _NOT_A_TOPIC.search(name)]
+    if not subjects:
+        raise ValueError("this course has no subjects to plan")
+    weeks = min(int(weeks), len(subjects))
+
+    base, extra = divmod(len(subjects), weeks)
+    out, at = [], 0
+    for index in range(weeks):
+        take = base + (1 if index < extra else 0)
+        block = subjects[at:at + take]
+        at += take
+        out.append({
+            "week": index + 1,
+            "years": sorted({year for year, _ in block}),
+            "subjects": [{"name": name, "links": study_links(name)} for _, name in block],
+        })
+    return {
+        "key": course.key, "name": course.name, "level_label": LEVELS[course.level],
+        "weeks": out, "n_weeks": weeks, "n_subjects": len(subjects),
+        "per_week": round(len(subjects) / weeks, 1),
+        "options": [w for w in PLAN_WEEKS if w <= len(subjects)] or [len(subjects)],
+        "note": PLAN_NOTE,
+    }

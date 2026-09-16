@@ -12,11 +12,14 @@ Access rules, enforced server-side rather than by hiding buttons:
 from __future__ import annotations
 
 import sys
+import threading
 import time
 from dataclasses import replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fastapi import Cookie, FastAPI, HTTPException, Query, Response
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 
 from elpr.modules import module_display_map, subject_area
@@ -28,10 +31,15 @@ from pydantic import BaseModel, Field
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from api.service import Service  # noqa: E402
 from elpr.db.app_store import User  # noqa: E402
 
+if TYPE_CHECKING:                      # importing the service pulls in PyTorch, which
+    from api.service import Service    # would delay the port opening by several seconds
+
 app = FastAPI(title="Explainable Learning Path Recommender", version="1.0.0")
+# The course list is 112 KB of JSON and the page itself 98 KB; both compress to about
+# a tenth of that, which matters on a phone connection.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 service: Service | None = None
 WEB = ROOT / "web"
 COOKIE = "elpr_session"
@@ -39,16 +47,46 @@ COOKIE = "elpr_session"
 
 @app.on_event("startup")
 def load() -> None:
-    global service
-    start = time.perf_counter()
-    service = Service()
-    print(f"loaded {service.checkpoint}, {service.graph.n_concepts} concepts, "
-          f"in {time.perf_counter() - start:.1f}s")
+    """Warm the model in the background so the page is served straight away.
+
+    Loading PyTorch, the checkpoint and the learner records takes about five seconds.
+    Blocking startup on that left the port closed, so a refresh in those seconds showed
+    "site can't be reached". Now the page loads immediately and the API answers 503 with
+    a plain message until the model is ready; the interface waits and retries."""
+    def warm() -> None:
+        global service
+        from api.service import Service
+
+        start = time.perf_counter()
+        loaded = Service()
+        service = loaded
+        print(f"loaded {loaded.checkpoint}, {loaded.graph.n_concepts} concepts, "
+              f"in {time.perf_counter() - start:.1f}s")
+
+    threading.Thread(target=warm, name="warm-model", daemon=True).start()
+
+
+@app.middleware("http")
+async def log_failed_requests(request, call_next):
+    """Record failed API calls against the signed-in account.
+
+    This is what makes a student's "it is not working" answerable: the admin can see
+    the request that failed and when. Paths and status codes only, never form data."""
+    response = await call_next(request)
+    if response.status_code >= 400 and request.url.path.startswith("/api/") and service:
+        try:
+            user = _current(request.cookies.get(COOKIE))
+            if user is not None:
+                service.store.log(user.id, f"error {response.status_code}",
+                                  f"{request.method} {request.url.path}")
+        except Exception:                      # logging must never break a response
+            pass
+    return response
 
 
 def _service() -> Service:
     if service is None:
-        raise HTTPException(503, "model still loading")
+        raise HTTPException(503, "starting up, this takes a few seconds")
     return service
 
 
@@ -96,17 +134,25 @@ class Registration(Credentials):
     role: str = Field(default="student")
     module: str | None = None
     stage: str | None = None
+    stream: str | None = None
 
 
-def _studies(s: Service, stage: str | None, module: str | None) -> tuple:
-    """Validate a student's level and course. Only diploma and degree students have a course."""
+def _studies(s: Service, stage: str | None, module: str | None,
+             stream: str | None = None) -> tuple:
+    """Validate a student's level, course and class 12 stream.
+
+    Only diploma and degree students have a course; only class 12 students have a stream."""
     if stage not in course_finder.STAGES:
         raise HTTPException(400, "choose where you are in your studies")
+    if stage == "class_12":
+        if stream is not None and stream not in course_finder.STREAMS:
+            raise HTTPException(400, "unknown class 12 stream")
+        return stage, None, stream
     if stage not in course_finder.COURSE_STAGES:
-        return stage, None
+        return stage, None, None
     if module not in s.modules:
         raise HTTPException(400, "choose the course you are studying")
-    return stage, module
+    return stage, module, None
 
 
 def _stage(user: User | None) -> str | None:
@@ -119,17 +165,18 @@ def _stage(user: User | None) -> str | None:
 @app.post("/api/auth/register")
 def register(body: Registration, response: Response) -> dict:
     s = _service()
-    stage = module = None
+    stage = module = stream = None
     if body.role == "student":
-        stage, module = _studies(s, body.stage, body.module)
+        stage, module, stream = _studies(s, body.stage, body.module, body.stream)
     try:
         user = s.store.register(
-            body.username, body.password, body.display_name, body.role, module, stage
+            body.username, body.password, body.display_name, body.role, module, stage, stream
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
 
     token = s.store.create_session(user.id)
+    s.store.log(user.id, "signed up", f"{user.role}, {stage or 'no level'}")
     response.set_cookie(COOKIE, token, httponly=True, samesite="lax", max_age=12 * 3600)
     return _me(user)
 
@@ -140,7 +187,13 @@ def login(body: Credentials, response: Response) -> dict:
     user = s.store.authenticate(body.username, body.password)
     if user is None:
         # Same message either way — never reveal whether the username exists.
+        # The attempt is logged against the account when the username is real, which is
+        # what lets an admin answer "I cannot sign in". The password is never recorded.
+        known = s.store.user_by_username(body.username)
+        if known is not None:
+            s.store.log(known.id, "sign-in failed", "wrong password")
         raise HTTPException(401, "incorrect username or password")
+    s.store.log(user.id, "signed in")
     token = s.store.create_session(user.id)
     response.set_cookie(COOKIE, token, httponly=True, samesite="lax", max_age=12 * 3600)
     return _me(user)
@@ -158,7 +211,7 @@ def _me(user: User) -> dict:
     return {
         "username": user.username, "display_name": user.display_name,
         "role": user.role, "module": user.module, "student_id": user.student_id,
-        "stage": _stage(user),
+        "stage": _stage(user), "stream": user.stream,
     }
 
 
@@ -261,15 +314,12 @@ def learner_path(student: int, steps: int = Query(5, ge=1, le=8), known: str | N
         target = s.store.user_by_student_id(student)
         if target is None:
             raise HTTPException(404, "unknown learner")
-        make = lambda ov: s.registered_state(target, ov)
-    else:
-        def make(ov):
-            try:
-                row, state = s.state_for(student, None, 1.0, ov)
-            except KeyError as exc:
-                raise HTTPException(404, str(exc)) from exc
-            return row.code_module, state
-    return s.learning_path(make, steps, _overrides(known))
+        return s.learning_path(lambda ov: s.registered_state(target, ov), steps,
+                               _overrides(known))
+    try:
+        return s.dataset_path(student, steps, _overrides(known))
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @app.get("/api/me/progress")
@@ -298,13 +348,19 @@ def record_study(body: StudyEvent, elpr_session: str | None = Cookie(None)) -> d
     if body.kind not in ("study", "assessment"):
         raise HTTPException(400, "kind must be study or assessment")
     s.store.add_event(user.id, body.concept_id, body.kind, body.correct)
+    s.store.log(user.id, "recorded activity",
+                f"week concept {body.concept_id}, {body.kind}"
+                + ("" if body.correct is None else f", {'passed' if body.correct else 'found it hard'}"))
     return {"ok": True, "n_events": len(s.store.events(user.id))}
 
 
 @app.post("/api/me/undo")
 def undo(elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
-    return {"ok": _service().store.undo_last_event(user.id)}
+    store = _service().store
+    undone = store.undo_last_event(user.id)
+    store.log(user.id, "undid last activity", "" if undone else "nothing to undo")
+    return {"ok": undone}
 
 
 # ---------------------------------------------------------------- course finder
@@ -337,6 +393,77 @@ def course_finder_suggest(body: FinderBody, elpr_session: str | None = Cookie(No
                                        degree=body.degree)
     except ValueError as exc:
         raise HTTPException(400, str(exc))
+
+
+class SaveCourseBody(BaseModel):
+    key: str
+
+
+@app.get("/api/me/courses")
+def my_saved_courses(elpr_session: str | None = Cookie(None)) -> dict:
+    """The student's shortlist, newest first, with subjects and study links."""
+    user = _require(elpr_session)
+    if user.role != "student":
+        raise HTTPException(400, "only students have a shortlist")
+    keys = _service().store.saved_courses(user.id)
+    return {"courses": [course_finder.course(k) for k in keys if course_finder.exists(k)]}
+
+
+@app.post("/api/me/courses")
+def save_course(body: SaveCourseBody, elpr_session: str | None = Cookie(None)) -> dict:
+    user = _require(elpr_session)
+    if user.role != "student":
+        raise HTTPException(400, "only students have a shortlist")
+    if not course_finder.exists(body.key):
+        raise HTTPException(404, "no such course")
+    store = _service().store
+    store.save_course(user.id, body.key)
+    store.log(user.id, "saved a course", body.key)
+    return {"saved": body.key}
+
+
+@app.delete("/api/me/courses/{key}")
+def unsave_course(key: str, elpr_session: str | None = Cookie(None)) -> dict:
+    user = _require(elpr_session)
+    if user.role != "student":
+        raise HTTPException(400, "only students have a shortlist")
+    return {"removed": _service().store.remove_course(user.id, key)}
+
+
+@app.get("/api/course-finder/subjects")
+def course_finder_subjects(stage: str, stream: str | None = None) -> dict:
+    """What a student studies at this rung of the ladder, and what the next rung is.
+
+    Public: the Course Finder walks class 10, class 12, diploma, degree, postgraduate
+    for visitors as well as registered students."""
+    try:
+        now = (course_finder.subjects_now(stage, stream)
+               if stage != "class_12" or stream else
+               {"stage": stage, "label": course_finder.STAGES[stage], "subjects": [],
+                "optional": [], "note": ""})
+        return {"now": now, "next": course_finder.next_after(stage, stream)}
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/course-finder/ahead")
+def course_finder_ahead(stream: str, level: str = "ug") -> dict:
+    """What a class 12 stream opens up later. Read-only, and public."""
+    try:
+        return course_finder.looking_ahead(stream, level)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/course-finder/plan")
+def course_finder_plan(key: str, weeks: int = Query(24, ge=1, le=260)) -> dict:
+    """One course's subjects spread over the number of weeks the student chooses."""
+    try:
+        return course_finder.weekly_plan(key, weeks)
+    except KeyError:
+        raise HTTPException(404, "no such course")
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @app.get("/api/course-finder/explore")
@@ -383,29 +510,64 @@ def update_profile(body: ProfileBody, elpr_session: str | None = Cookie(None)) -
     user = _require(elpr_session)
     if user.role != "student":
         raise HTTPException(400, "only students have a learning profile")
+    store = _service().store
     cleaned = clean_profile(body.profile)
-    _service().store.set_profile(user.id, cleaned)
+    store.set_profile(user.id, cleaned)
+    store.log(user.id, "saved background details", f"{len(cleaned)} answers")
     return {"profile": cleaned}
 
 
 class StudiesBody(BaseModel):
     stage: str
     module: str | None = None
+    stream: str | None = None
 
 
 @app.put("/api/me/studies")
 def update_studies(body: StudiesBody, elpr_session: str | None = Cookie(None)) -> dict:
-    """Where the student is now and, for diploma and degree students, their course."""
+    """Where the student is now: level, course if they are on one, class 12 stream if not."""
     user = _require(elpr_session)
     s = _service()
     if user.role != "student":
         raise HTTPException(400, "only students have studies to set")
-    stage, module = _studies(s, body.stage, body.module)
-    s.store.set_studies(user.id, stage, module)
-    return _me(replace(user, stage=stage, module=module))
+    stage, module, stream = _studies(s, body.stage, body.module, body.stream)
+    s.store.set_studies(user.id, stage, module, stream)
+    s.store.log(user.id, "changed studies",
+                ", ".join(x for x in (stage, module, stream) if x))
+    return _me(replace(user, stage=stage, module=module, stream=stream))
+
+
+@app.get("/api/me/study-plan")
+def my_study_plan(elpr_session: str | None = Cookie(None)) -> dict:
+    """What a school student is studying now, with free study links, and what comes next.
+
+    The ladder is class 10, then class 12 or a diploma, then a degree, then postgraduate
+    study. A student already on a course has a weekly path instead."""
+    user = _require(elpr_session)
+    if user.role != "student":
+        raise HTTPException(400, "only students have a study plan")
+    stage = _stage(user)
+    if stage is None:
+        raise HTTPException(400, "choose where you are in your studies")
+    now = {"stage": stage, "label": course_finder.STAGES[stage], "subjects": [],
+           "optional": [], "note": ""}
+    if stage == "class_10" or (stage == "class_12" and user.stream):
+        now = course_finder.subjects_now(stage, user.stream)
+    return {"stream": user.stream, "now": now, "next": course_finder.next_after(stage, user.stream)}
 
 
 # ---------------------------------------------------------------- admin
+@app.get("/api/admin/accounts/{username}/log")
+def admin_account_log(username: str, limit: int = Query(100, ge=1, le=200),
+                      elpr_session: str | None = Cookie(None)) -> dict:
+    """What happened on one account, newest first, so an admin can answer a problem."""
+    _require_admin(elpr_session)
+    store = _service().store
+    if store.user_by_username(username) is None:
+        raise HTTPException(404, "no such account")
+    return {"username": username.strip().lower(), "entries": store.logs(username, limit)}
+
+
 @app.get("/api/admin/accounts")
 def admin_accounts(elpr_session: str | None = Cookie(None)) -> dict:
     """Every registered account, with activity. Never returns salts or hashes."""
@@ -437,7 +599,8 @@ def students(q: str = "", limit: int = Query(40, le=200),
          "presentation": "registered", "n_events": r["n_events"] or 0,
          "n_assessments": r["n_assessments"] or 0,
          "outcome": "in progress", "display_name": r["display_name"],
-         "registered": True}
+         "registered": True, "quiet": r["quiet"], "quiet_days": r["quiet_days"],
+         "never_started": r["never_started"]}
         for r in s.store.registered_students()
         if not q or str(r["student_id"]).startswith(q)
         or q.lower() in (r["display_name"] or "").lower()
@@ -518,11 +681,49 @@ def recommend(student: int, k: int = Query(3, le=10), planner: str = "greedy",
     return payload
 
 
+class NoteBody(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
+@app.get("/api/students/{student}/notes")
+def learner_notes(student: int, elpr_session: str | None = Cookie(None)) -> dict:
+    """Adviser notes on one learner. Advisers and admins only, never the student."""
+    _require_adviser(elpr_session)
+    return {"student": student, "notes": _service().store.notes(student)}
+
+
+@app.post("/api/students/{student}/notes")
+def add_learner_note(student: int, body: NoteBody,
+                     elpr_session: str | None = Cookie(None)) -> dict:
+    user = _require_adviser(elpr_session)
+    s = _service()
+    try:
+        note_id = s.store.add_note(student, user.id, body.text)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {"id": note_id, "notes": s.store.notes(student)}
+
+
+@app.delete("/api/students/{student}/notes/{note_id}")
+def delete_learner_note(student: int, note_id: int,
+                        elpr_session: str | None = Cookie(None)) -> dict:
+    """An adviser may delete their own notes; an admin may delete any."""
+    user = _require_adviser(elpr_session)
+    s = _service()
+    removed = s.store.delete_note(note_id, user.id)
+    if not removed and user.role == "admin":
+        removed = s.store.delete_note_any(note_id)
+    if not removed:
+        raise HTTPException(404, "no note of yours with that id")
+    return {"deleted": note_id, "notes": s.store.notes(student)}
+
+
 @app.get("/api/adviser/overview")
 def overview(elpr_session: str | None = Cookie(None)) -> dict:
     _require_adviser(elpr_session)
     s = _service()
-    return {"registered": s.store.registered_students(), "stats": s.store.stats()}
+    return {"registered": s.store.registered_students(), "stats": s.store.stats(),
+            "quiet_after_days": s.store.QUIET_AFTER_DAYS}
 
 
 # ---------------------------------------------------------------- results
@@ -552,4 +753,7 @@ if WEB.exists():
 
     @app.get("/")
     def index() -> FileResponse:
-        return FileResponse(WEB / "index.html")
+        # The page is the whole application, so a cached copy means a student keeps
+        # seeing yesterday's version after an update. Never cache it.
+        return FileResponse(WEB / "index.html",
+                            headers={"Cache-Control": "no-store, must-revalidate"})

@@ -5,11 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Learning Path Recommender</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F5E7A'/%3E%3Cpath d='M7 24 L16 16 L25 8' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='7' cy='24' r='3.2' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='white'/%3E%3Ccircle cx='25' cy='8' r='3.2' fill='white'/%3E%3C/svg%3E" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="preload" href="/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
 
 <style>
+  /* Inter, served from this machine. Loading it from Google blocked the first paint on
+     a request we do not control, and broke the look entirely with no internet. */
+  @font-face{
+    font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;
+    src:url('/static/fonts/inter-latin.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,
+      U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
   :root{
     color-scheme:light;
     --ground:#F6F8FA; --surface:#fff; --surface-alt:#EDF1F5;
@@ -180,6 +186,20 @@
   .learner.new{border-left:3px solid var(--good)}
   .grouphead{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin:16px 0 8px;font-weight:600}
   .card{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:16px 18px;margin-bottom:12px;border-radius:var(--radius);box-shadow:var(--shadow)}
+  /* one header per page: title, one line of context, one action */
+  .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin:0 0 16px}
+  .page-head h1{margin:0;font-size:26px}
+  .page-head p{margin:4px 0 0;color:var(--ink-soft);font-size:14px}
+  .course{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);
+    padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .course-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .course h3{margin:0;font-size:16px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 8px}
+  .chip{font-size:12px;color:var(--ink-soft);background:var(--surface-alt);border-radius:6px;padding:2px 9px;white-space:nowrap}
+  .chip.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .course .need{margin:0;font-size:13px;color:var(--ink-soft)}
+  .course .actions{margin-top:12px}
+  .course details.working{margin-top:8px}
   .card h3{margin:0 0 4px;font-size:16px}
   .rank{font-size:12px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em}
   .prose{margin:9px 0 0;color:var(--ink-soft)}
@@ -209,7 +229,18 @@
   .badge-chip{font-size:12px;padding:4px 9px;border:1px solid var(--rule);border-radius:6px;color:var(--ink-faint)}
   .badge-chip.earned{border-color:var(--good);color:var(--good);background:var(--good-soft)}
   .skel{background:var(--surface-alt);border-radius:8px}
-  #toast{position:fixed;right:18px;bottom:18px;z-index:60;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;
+  /* focused panel for one week, so a step can be read without the page around it */
+  .sheet{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:20px;
+    background:rgba(16,24,40,.45)}
+  .sheet[hidden]{display:none!important}
+  .sheet-card{background:var(--surface);border:1px solid var(--rule);border-radius:14px;
+    box-shadow:0 20px 50px rgba(16,24,40,.22);max-width:560px;width:100%;max-height:86vh;
+    overflow:auto;padding:24px 26px}
+  .sheet-card h2{margin:6px 0 4px;font-size:22px}
+  .sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .sheet-close{border:0;background:none;font-size:20px;line-height:1;padding:4px 8px;color:var(--ink-faint)}
+  .sheet-close:hover{color:var(--ink)}
+  #toast{position:fixed;right:18px;bottom:18px;z-index:80;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;
     font-size:14px;opacity:0;transform:translateY(6px);transition:opacity .15s ease,transform .15s ease;pointer-events:none}
   #toast.show{opacity:1;transform:none}
   .chipset{display:flex;flex-direction:column;gap:6px}
@@ -263,6 +294,7 @@
     <nav class="links" aria-label="Main">
       <button data-go="home" class="guest-only">Home</button>
       <button data-go="dashboard" class="auth-only" id="nav-dashboard">My learning</button>
+      <button data-go="progress" class="auth-only" id="nav-progress" style="display:none">Progress</button>
       <button data-go="finder">Course Finder</button>
       <button data-go="research" id="nav-research" style="display:none">Research</button>
       <button data-go="admin" id="nav-admin" style="display:none">Admin</button>
@@ -317,7 +349,7 @@
         </div>
         <div class="feature">
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
-          <h3>Course Finder</h3><p>Finishing class 10, class 12 or a degree? Match your subjects and interests to courses, with free NPTEL and SWAYAM study links.</p>
+          <h3>Course Finder</h3><p>Finishing class 10, class 12 or a degree? Match your subjects and interests to courses, with free study links for every subject.</p>
           <a class="btn small" data-go="finder" href="#/finder">Find a course</a>
         </div>
         <div class="feature">
@@ -366,7 +398,11 @@
         <option value="adviser">Academic adviser</option>
       </select>
       <div id="stage-wrap"><label for="reg-stage">Where are you in your studies?</label>
-        <select name="stage" id="reg-stage"></select></div>
+        <select name="stage" id="reg-stage" required></select>
+        <p class="caption" style="margin:6px 0 0">Class 10, Class 12, Diploma, Undergraduate
+          or Postgraduate. Pick where you are now, not where you want to go.</p></div>
+      <div id="stream-wrap"><label for="reg-stream">Your class 12 stream</label>
+        <select name="stream" id="reg-stream"></select></div>
       <div id="module-wrap"><label for="reg-module">Course I am studying</label>
         <select name="module" id="reg-module"></select>
         <p class="caption" style="margin:6px 0 0">Course names are illustrative. The university kept the real titles private.</p></div>
@@ -381,6 +417,8 @@
 
 <!-- ================= app views ================= -->
 <div class="view" id="view-dashboard"></div>
+
+<div class="view" id="view-progress"></div>
 
 <div class="view" id="view-finder">
   <main class="split">
@@ -483,6 +521,7 @@ function show(name){
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "view-" + name));
   document.querySelectorAll("nav.links button").forEach(b => b.classList.toggle("on", b.dataset.go === name));
   if(name === "dashboard") renderHome();
+  if(name === "progress") renderProgress();
   if(name === "research") renderResults().then(renderAbout);
   if(name === "admin") renderAdmin();
   if(name === "finder") renderFinder();
@@ -500,9 +539,10 @@ document.addEventListener("click", e => {
 const stageLabel = v => ((finderOptions && finderOptions.stages) || []).find(s => s.value === v)?.label || "";
 const courseStage = v => !!((finderOptions && finderOptions.stages) || []).find(s => s.value === v)?.has_course;
 function syncSignup(){
-  const student = $("#reg-role").value === "student";
+  const student = $("#reg-role").value === "student", stage = $("#reg-stage").value;
   $("#stage-wrap").style.display = student ? "block" : "none";
-  $("#module-wrap").style.display = student && courseStage($("#reg-stage").value) ? "block" : "none";
+  $("#module-wrap").style.display = student && courseStage(stage) ? "block" : "none";
+  $("#stream-wrap").style.display = student && stage === "class_12" ? "block" : "none";
 }
 $("#reg-role").onchange = syncSignup;
 $("#reg-stage").onchange = syncSignup;
@@ -517,32 +557,52 @@ $("#form-login").onsubmit = async e => {
 $("#form-register").onsubmit = async e => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target));
-  if(f.role !== "student"){ delete f.module; delete f.stage; }
-  else if(!courseStage(f.stage)) delete f.module;
+  if(f.role !== "student"){ delete f.module; delete f.stage; delete f.stream; }
+  else{
+    if(!courseStage(f.stage)) delete f.module;
+    if(f.stage !== "class_12") delete f.stream;
+  }
   try { me = await post("/api/auth/register", f); enter(); nav("dashboard"); toast("Welcome, your account is ready"); }
   catch(err){ showErr(e.target, err.message); }
 };
 $("#signout").onclick = async () => {
   await post("/api/auth/logout");
   me = null; known.clear(); current = null;
+  saved.clear(); savedCourses = []; savedLoaded = false;
   document.body.classList.remove("signed-in");
   $("#nav-admin").style.display = "none";
   $("#nav-research").style.display = "none";
+  $("#nav-progress").style.display = "none";
   nav("home");
 };
 
 async function bootstrap(){
-  try{
-    const h = await api("/api/health");
+  // The server answers straight away but the model warms in the background, so wait
+  // for it rather than showing a broken page.
+  let h = null, waited = false;
+  for(let i = 0; i < 60 && !h; i++){
+    try{ h = await api("/api/health"); }
+    catch(err){
+      if(!/starting up/i.test(err.message || "")) break;
+      if(!waited){ waited = true; toast("Starting up, one moment"); }
+      await new Promise(r => setTimeout(r, 800));
+    }
+  }
+  if(h){
     window.MODULE_NAMES = h.module_names || {};
     window.MODULE_AREAS = h.module_areas || {};
     window.MODULES = h.modules;
     $("#reg-module").innerHTML = h.modules.map(m=>`<option value="${m}">${modName(m)}</option>`).join("");
-  }catch{}
+  }
   try{
     finderOptions = await api("/api/course-finder/options");
-    $("#reg-stage").innerHTML = finderOptions.stages.map(s =>
-      `<option value="${esc(s.value)}"${s.value === "ug" ? " selected" : ""}>${esc(s.label)}</option>`).join("");
+    // No level is pre-selected: a student who skips this ends up on the wrong ladder,
+    // and a pre-filled answer hides that class 10 and class 12 are offered at all.
+    $("#reg-stage").innerHTML = `<option value="" disabled selected>Choose your level</option>`
+      + finderOptions.stages.map(s =>
+        `<option value="${esc(s.value)}">${esc(s.label)}</option>`).join("");
+    $("#reg-stream").innerHTML = finderOptions.streams.map(s =>
+      `<option value="${esc(s.value)}">${esc(s.label)}</option>`).join("");
   }catch{}
   syncSignup();
   try{
@@ -553,12 +613,14 @@ async function bootstrap(){
 }
 
 function enter(){
+  savedLoaded = false;
   document.body.classList.add("signed-in");
   $("#who").textContent = me.display_name;
   $("#rolebadge").textContent = me.role;
   $("#nav-dashboard").textContent = me.role === "student" ? "My learning" : "Learners";
   $("#nav-admin").style.display = me.role === "admin" ? "" : "none";
   $("#nav-research").style.display = me.role === "admin" ? "" : "none";
+  $("#nav-progress").style.display = me.role === "student" && me.module ? "" : "none";
 }
 
 /* ---------------- feedback ---------------- */
@@ -580,10 +642,132 @@ function skeleton(){
 
 /* ---------------- course finder (rule-based, not the ML model) ---------------- */
 let finderOptions = null, finderTimer = null, finderSeq = 0, exploreCache = null;
-const linkRow = l => l && l.nptel ? `<span class="study-links"><a href="${esc(l.nptel)}" target="_blank" rel="noopener">NPTEL</a><a href="${esc(l.swayam)}" target="_blank" rel="noopener">SWAYAM</a></span>` : "";
+// Which sites a subject links to depends on the level: NCERT and Khan Academy for
+// school, NPTEL and SWAYAM for college, YouTube for both.
+const LINK_NAMES = {ncert: "NCERT", khan: "Khan Academy", nptel: "NPTEL", swayam: "SWAYAM", youtube: "YouTube"};
+const linkRow = l => {
+  const parts = Object.keys(LINK_NAMES).filter(k => l && l[k]);
+  return parts.length ? `<span class="study-links">${parts.map(k =>
+    `<a href="${esc(l[k])}" target="_blank" rel="noopener">${LINK_NAMES[k]}</a>`).join("")}</span>` : "";
+};
 const yearList = years => years.map(y => `<p class="prose" style="margin:10px 0 2px"><b>${esc(y.year)}</b></p>
   <ul class="plain" style="margin-top:2px">${y.subjects.map(x => `<li>${esc(x.name)}${linkRow(x.links)}</li>`).join("")}</ul>`).join("");
 const signupCta = () => me ? "" : `<button class="small" data-go="signup">Create an account to track your learning</button>`;
+const chip = t => `<span class="chip">${esc(t)}</span>`;
+const pageHead = (title, sub, action = "") => `<div class="page-head">
+  <div><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ""}</div>${action}</div>`;
+/* One course card everywhere: the Finder, Explore and the shortlist. Facts as chips,
+   the syllabus behind a disclosure, so nothing repeats down the page. */
+const courseCard = (c, extra = "") => `<div class="course" data-key="${esc(c.key || "")}">
+  <div class="course-top"><h3>${esc(c.name)}</h3>${
+    c.fit === "Partial match" ? `<span class="chip">Partial match</span>` : ""}</div>
+  <div class="chips">${c.track === "skill" ? `<span class="chip on">Skill path</span>` : ""}${
+    [c.level_label, c.duration, ...(c.matched || [])].filter(Boolean).map(chip).join("")}</div>
+  <p class="need">Usually needs: ${esc(c.eligibility || c.needs || "")}</p>
+  ${(c.exits || []).length ? `<details class="working"><summary>You can leave with a qualification at each year</summary>
+    <ul class="plain">${c.exits.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <p class="caption" style="margin:6px 0 0">Multiple entry and exit under NEP 2020, applied through
+      the Academic Bank of Credits. Universities differ, so check the one you apply to.</p></details>` : ""}
+  ${c.years ? `<details class="working"><summary>What you will study, with free study links</summary>${yearList(c.years)}</details>
+    <details class="working plan"><summary>Plan it week by week</summary>
+      <div class="plan-body">Loading</div></details>` : ""}
+  ${extra ? `<div class="actions">${extra}</div>` : ""}
+</div>`;
+
+/* Spread a course over the weeks a student has. The server does the arithmetic so the
+   page and the tests agree on what a week contains. */
+const planCache = {};
+async function loadPlan(card, weeks){
+  const key = card.dataset.key, body = card.querySelector(".plan-body");
+  if(!key) return;
+  const id = `${key}:${weeks || ""}`;
+  body.innerHTML = `<p class="muted small">Working it out</p>`;
+  try{
+    planCache[id] = planCache[id] || await api(`/api/course-finder/plan?key=${encodeURIComponent(key)}`
+      + (weeks ? `&weeks=${weeks}` : ""));
+  }catch(err){ body.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
+  const p = planCache[id];
+  body.innerHTML = `
+    <p class="muted small">${p.n_subjects} subjects. Finish in
+      <select class="plan-weeks">${p.options.map(w =>
+        `<option value="${w}"${w === p.n_weeks ? " selected" : ""}>${w} weeks</option>`).join("")}</select>
+      and that is about ${p.per_week} ${p.per_week === 1 ? "subject" : "subjects"} a week.</p>
+    <ol class="plain plan-weeks-list">${p.weeks.map(w => `<li><b>Week ${w.week}</b>
+      <ul class="plain">${w.subjects.map(s => `<li>${esc(s.name)}${linkRow(s.links)}</li>`).join("")}</ul></li>`).join("")}</ol>
+    <p class="caption" style="margin:8px 0 0">${esc(p.note)}</p>`;
+  body.querySelector(".plan-weeks").onchange = e => loadPlan(card, e.target.value);
+}
+/* A class 11 stream, with a look at the degrees it opens up two years later. */
+const streamCard = st => `<div class="course" data-stream="${esc(st.value)}">
+  <div class="course-top"><h3>${esc(st.label)}</h3></div>
+  <div class="chips">${st.core.map(chip).join("")}</div>
+  <p class="need">Leads to ${esc(st.leads_to)}.</p>
+  <details class="working ahead"><summary>Degrees this stream opens</summary>
+    <div class="ahead-body">Loading</div></details>
+</div>`;
+const aheadCache = {};
+async function loadAhead(card){
+  const stream = card.dataset.stream, body = card.querySelector(".ahead-body");
+  body.innerHTML = `<p class="muted small">Looking ahead</p>`;
+  try{
+    aheadCache[stream] = aheadCache[stream] || await api(`/api/course-finder/ahead?stream=${encodeURIComponent(stream)}`);
+  }catch(err){ body.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
+  const a = aheadCache[stream];
+  body.innerHTML = `<p class="muted small">${a.courses.length} ${esc(a.level_label.toLowerCase())} courses.
+      ${esc(a.note)}</p>
+    ${a.courses.map(c => courseCard(c, saveBtn(c.key))).join("")}`;
+  bindSave(body);
+  bindPlans(body);
+}
+function bindAhead(root){
+  root.querySelectorAll("details.ahead").forEach(d => d.ontoggle = () => {
+    if(d.open && d.querySelector(".ahead-body").textContent === "Loading")
+      loadAhead(d.closest(".course"));
+  });
+}
+function bindPlans(root){
+  root.querySelectorAll("details.plan").forEach(d => d.ontoggle = () => {
+    if(d.open && d.querySelector(".plan-body").textContent === "Loading")
+      loadPlan(d.closest(".course"), null);
+  });
+}
+
+/* ---------------- shortlist: courses a student saves ---------------- */
+let saved = new Set(), savedCourses = [], savedLoaded = false;
+async function loadSaved(){
+  saved = new Set(); savedCourses = []; savedLoaded = true;
+  if(!me || me.role !== "student") return;
+  try{
+    savedCourses = (await api("/api/me/courses")).courses;
+    saved = new Set(savedCourses.map(c => c.key));
+  }catch{}
+}
+const saveBtn = key => me && me.role === "student"
+  ? `<button class="small save${saved.has(key) ? " on" : ""}" data-key="${esc(key)}">${saved.has(key) ? "Saved" : "Save to my list"}</button>`
+  : `<button class="small" data-go="signup">Save this course</button>`;
+function bindSave(root){
+  root.querySelectorAll(".save").forEach(b => b.onclick = async () => {
+    const key = b.dataset.key, had = saved.has(key);
+    b.disabled = true;
+    try{
+      if(had) await api("/api/me/courses/" + encodeURIComponent(key), {method:"DELETE"});
+      else await post("/api/me/courses", {key});
+    }catch(err){ toast(err.message); b.disabled = false; return; }
+    had ? saved.delete(key) : saved.add(key);
+    b.disabled = false;
+    b.classList.toggle("on", saved.has(key));
+    b.textContent = saved.has(key) ? "Saved" : "Save to my list";
+    toast(had ? "Removed from your list" : "Added to your list");
+  });
+}
+function shortlistBlock(courses){
+  if(!courses.length) return `<div class="block"><h3>Your shortlist</h3>
+    <p class="muted small">Courses you save in the Course Finder appear here, with what you would study and free study links.</p>
+    <button class="small" data-go="finder">Find a course</button></div>`;
+  return `<div class="block"><h3>Your shortlist</h3>
+    <p class="muted small">${courses.length} saved ${courses.length === 1 ? "course" : "courses"}.</p>
+    ${courses.map(c => courseCard(c, saveBtn(c.key))).join("")}</div>`;
+}
 
 async function renderFinder(){
   const wrap = $("#finder-form-wrap");
@@ -594,132 +778,154 @@ async function renderFinder(){
       finderOptions = await r.json();
     }catch(e){ wrap.innerHTML = `<div class="err">Could not load the Course Finder.</div>`; return; }
   }
+  if(!savedLoaded) await loadSaved();
   const o = finderOptions;
-  // a signed-in student sees only the level after their own
-  const stage = me && me.role === "student" ? me.stage : null;
-  const levels = stage ? o.levels.filter(l => (o.next_levels[stage] || []).includes(l.value)) : o.levels;
-  const results = $("#finder-results");
-  if(wrap.dataset.stage !== String(stage)){
-    wrap.dataset.stage = String(stage);
-    wrap.innerHTML = "";
-    results.dataset.filled = "";
+  // The Finder walks the ladder: where you are now, what you study there, what comes
+  // next. A signed-in student starts on their own rung and cannot move it here.
+  const own = me && me.role === "student" ? me.stage : null;
+  if(!$("#finder-form") || wrap.dataset.stage !== String(own)){
+    wrap.dataset.stage = String(own);
+    finderState = {stage: own || "class_12", stream: (me && me.stream) || o.streams[0].value,
+                   subjects: [], degree: o.degrees[0].value, interests: [], level: null};
+    $("#finder-results").dataset.filled = "";
+    buildFinderForm(own);
   }
-  if(!levels.length){
-    if(!wrap.innerHTML){
-      wrap.innerHTML = `<h2 style="margin:0 0 4px">Find a course</h2>
-        <p class="caption" style="margin:0 0 12px">You are at ${esc(stageLabel(stage))} level, so there is no higher level to suggest. You can still explore every course.</p>
-        <button class="small" type="button" id="finder-explore" style="width:100%">Explore all courses</button>`;
-      $("#finder-explore").onclick = () => showExplore("all");
-    }
-    if(!results.dataset.filled) showExplore("all");
-    return;
-  }
-  const preferred = levels.some(l => l.value === "ug") ? "ug" : levels[0].value;
-  if(!$("#finder-form")){
-    wrap.innerHTML = `<form id="finder-form">
-      <h2 style="margin:0 0 4px">Find a course</h2>
-      <p class="caption" style="margin:0 0 6px">${stage ? `Courses for after ${esc(stageLabel(stage))}.` : "Pick your level,"} Choose your background and what you enjoy. Results update as you choose.</p>
-      <label for="finder-level">I am looking for</label>
-      <select id="finder-level" name="level">${levels.map(x =>
-        `<option value="${esc(x.value)}"${x.value === preferred ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>
-      <div id="finder-background"></div>
-      <label>What you enjoy</label>
-      <div class="chipset">${o.interests.map(x =>
-        `<label class="pick"><input type="checkbox" name="interest" value="${esc(x.value)}">${esc(x.label)}</label>`).join("")}</div>
-      <div style="margin-top:18px"><button class="primary" type="submit">Find courses</button></div>
-      <div style="margin-top:8px"><button class="small" type="button" id="finder-explore" style="width:100%">Explore all courses</button></div>
-      <div id="finder-msg" class="caption" style="margin:8px 0 0"></div>
-    </form>`;
-    const f = $("#finder-form");
-    const field = n => f.querySelector(`[name="${n}"]`);
-    const subjects = () => {
-      const st = o.streams.find(x => x.value === field("stream").value);
-      $("#finder-subjects").innerHTML = `<label>Your class 12 subjects</label>
-        <div class="chipset">${st.core.map(x => `<label class="pick"><input type="checkbox" checked disabled>${esc(x)}</label>`).join("")}
-          ${st.optional.map(x => `<label class="pick"><input type="checkbox" name="subject" value="${esc(x)}">${esc(x)}
-            <span class="caption" style="margin:0 0 0 auto">optional</span></label>`).join("")}</div>
-        <p class="caption" style="margin:6px 0 0">${esc(o.subjects_note)}</p>`;
-    };
-    const background = () => {
-      const level = o.levels.find(l => l.value === f.level.value);
-      const box = $("#finder-background");
-      if(level.input === "stream"){
-        box.innerHTML = `<label for="finder-stream">Class 12 stream</label>
-          <select id="finder-stream" name="stream">${o.streams.map(x =>
-            `<option value="${esc(x.value)}">${esc(x.label)}</option>`).join("")}</select>
-          <div id="finder-subjects"></div>`;
-        subjects();
-      }else if(level.input === "degree"){
-        box.innerHTML = `<label for="finder-degree">Your bachelor's degree</label>
-          <select id="finder-degree" name="degree">${o.degrees.map(x =>
-            `<option value="${esc(x.value)}">${esc(x.label)}</option>`).join("")}</select>`;
-      }else{
-        box.innerHTML = `<p class="caption" style="margin:12px 0 0">No stream needed. These diplomas usually need a class 10 pass.</p>`;
-      }
-    };
-    const gather = () => ({
-      level: f.level.value,
-      stream: field("stream") ? field("stream").value : null,
-      degree: field("degree") ? field("degree").value : null,
-      subjects: [...f.querySelectorAll('input[name="subject"]:checked')].map(x => x.value),
-      interests: [...f.querySelectorAll('input[name="interest"]:checked')].map(x => x.value),
-    });
-    const find = async () => {
-      const body = gather(), msg = $("#finder-msg");
-      if(!body.interests.length){ msg.textContent = "Pick at least one interest to see courses."; return; }
-      msg.textContent = "";
-      const seq = ++finderSeq;
-      const res = await fetch("/api/course-finder", {method:"POST",
-        headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
-      const out = await res.json().catch(() => ({}));
-      if(seq !== finderSeq) return;
-      if(!res.ok){ msg.textContent = out.detail || "Something went wrong. Try again."; return; }
-      showFinderResults(out);
-    };
-    background();
-    f.addEventListener("change", e => {
-      if(e.target.name === "level") background();
-      if(e.target.name === "stream") subjects();
-      clearTimeout(finderTimer);
-      finderTimer = setTimeout(find, 250);
-    });
-    f.onsubmit = e => { e.preventDefault(); find(); };
-    $("#finder-explore").onclick = () => showExplore("all");
-  }
-  if(!results.dataset.filled){
-    results.innerHTML = `<h2>Course Finder</h2>
-      <div class="callout"><b>${esc(o.method)}.</b> Suggestions come from readable rules that match your
-        level, your class 12 subjects or degree, and your interests to common courses in India. ${esc(o.note)}</div>
-      <p class="caption" style="margin:0">Choose at least one interest to see courses, or explore everything.</p>
-      <div style="margin-top:12px"><button class="small" id="finder-explore-intro">Explore all courses</button></div>`;
-    $("#finder-explore-intro").onclick = () => showExplore("all");
-  }
+  showLadder();
 }
 
-function showFinderResults(out){
-  const el = $("#finder-results");
+let finderState = {};
+
+function buildFinderForm(own){
+  const o = finderOptions, s = finderState;
+  $("#finder-form-wrap").innerHTML = `<form id="finder-form">
+    <h2 style="margin:0 0 4px">Find a course</h2>
+    <p class="caption" style="margin:0 0 6px">Where you are now, what you study there, and what you can do next.</p>
+    <label for="finder-stage">Where you are now</label>
+    ${own ? `<div class="fixed">${esc(stageLabel(own))}</div>
+      <p class="caption" style="margin:6px 0 0">Change this under My details.</p>`
+      : `<select id="finder-stage" name="stage">${o.stages.map(x =>
+          `<option value="${esc(x.value)}"${x.value === s.stage ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`}
+    <div id="finder-background"></div>
+    <div id="finder-interests"></div>
+    <div style="margin-top:8px"><button class="small" type="button" id="finder-explore" style="width:100%">Explore all courses</button></div>
+    <div id="finder-msg" class="caption" style="margin:8px 0 0"></div>
+  </form>`;
+  const f = $("#finder-form");
+  f.addEventListener("change", e => {
+    const s = finderState;
+    if(e.target.name === "stage"){ s.stage = e.target.value; s.level = null; }
+    if(e.target.name === "stream") s.stream = e.target.value;
+    if(e.target.name === "degree") s.degree = e.target.value;
+    s.subjects = [...f.querySelectorAll('input[name="subject"]:checked')].map(x => x.value);
+    s.interests = [...f.querySelectorAll('input[name="interest"]:checked')].map(x => x.value);
+    clearTimeout(finderTimer);
+    finderTimer = setTimeout(showLadder, 200);
+  });
+  f.onsubmit = e => { e.preventDefault(); showLadder(); };
+  $("#finder-explore").onclick = () => showExplore("all");
+}
+
+/* The background a rung needs: class 12 asks for the stream and subjects, a degree
+   holder for their degree, class 10 for nothing. */
+function finderBackground(){
+  const o = finderOptions, s = finderState, box = $("#finder-background");
+  const subjects = () => {
+    const st = o.streams.find(x => x.value === s.stream);
+    $("#finder-subjects").innerHTML = `<label>Your class 12 subjects</label>
+      <div class="chipset">${st.core.map(x => `<label class="pick"><input type="checkbox" checked disabled>${esc(x)}</label>`).join("")}
+        ${st.optional.map(x => `<label class="pick"><input type="checkbox" name="subject" value="${esc(x)}"${
+          s.subjects.includes(x) ? " checked" : ""}>${esc(x)}
+          <span class="caption" style="margin:0 0 0 auto">optional</span></label>`).join("")}</div>
+      <p class="caption" style="margin:6px 0 0">${esc(o.subjects_note)}</p>`;
+  };
+  if(s.stage === "class_12" || s.stage === "diploma"){
+    box.innerHTML = `<label for="finder-stream">Your class 12 stream</label>
+      <select id="finder-stream" name="stream">${o.streams.map(x =>
+        `<option value="${esc(x.value)}"${x.value === s.stream ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>
+      <div id="finder-subjects"></div>`;
+    subjects();
+  }else if(s.stage === "ug"){
+    box.innerHTML = `<label for="finder-degree">Your bachelor's degree</label>
+      <select id="finder-degree" name="degree">${o.degrees.map(x =>
+        `<option value="${esc(x.value)}"${x.value === s.degree ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`;
+  }else{
+    box.innerHTML = "";
+  }
+  const levels = o.next_levels[s.stage] || [];
+  $("#finder-interests").innerHTML = levels.length ? `<label>What you enjoy</label>
+    <div class="chipset">${o.interests.map(x =>
+      `<label class="pick"><input type="checkbox" name="interest" value="${esc(x.value)}"${
+        s.interests.includes(x.value) ? " checked" : ""}>${esc(x.label)}</label>`).join("")}</div>
+    <div style="margin-top:18px"><button class="primary" type="submit">Find courses</button></div>` : "";
+}
+
+/* Right-hand panel: the subjects of this rung, then the courses of the next one. */
+async function showLadder(){
+  const s = finderState, el = $("#finder-results");
+  finderBackground();
+  const seq = ++finderSeq;
+  let plan;
+  try{
+    plan = await api(`/api/course-finder/subjects?stage=${encodeURIComponent(s.stage)}`
+      + (s.stage === "class_12" ? `&stream=${encodeURIComponent(s.stream)}` : ""));
+  }catch(e){ el.innerHTML = `<div class="err">${esc(e.message || e)}</div>`; return; }
+  if(seq !== finderSeq) return;
+
+  const levels = plan.next.levels;
+  if(!s.level || !levels.some(l => l.value === s.level))
+    s.level = (levels.find(l => l.value === "ug") || levels[0] || {}).value || null;
+
+  let courses = "";
+  if(s.level && s.interests.length){
+    const body = {level: s.level, stream: s.stream, degree: s.degree,
+                  subjects: s.subjects, interests: s.interests};
+    const res = await fetch("/api/course-finder", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+    const out = await res.json().catch(() => ({}));
+    if(seq !== finderSeq) return;
+    courses = res.ok ? finderCourses(out)
+      : `<div class="err">${esc(out.detail || "Something went wrong. Try again.")}</div>`;
+  }
+
   el.dataset.filled = "1";
-  const background = out.stream_label ? `${out.stream_label}: ${out.subjects.join(", ")}` : out.degree_label || "Class 10 pass";
-  const card = (c, i) => `<div class="card">
-    <div class="rank">Option ${i + 1} · ${esc(c.fit)}</div>
-    <h3>${esc(c.name)}</h3>
-    <p class="prose">${esc(c.reason)}</p>
-    <ul class="plain"><li>Duration: ${esc(c.duration)}</li><li>Usually needs: ${esc(c.eligibility)}</li><li>Subjects based on: ${esc(c.framework)}</li></ul>
-    <details class="working"><summary>What you will study, with free study links</summary>${yearList(c.years)}</details>
-  </div>`;
-  el.innerHTML = `<h2>${esc(out.level_label)}: courses for you</h2>
-    <p class="caption" style="margin:0 0 12px">${esc(background)} · interested in ${esc(out.interests.join(", "))}</p>
-    <div class="callout"><b>${esc(out.method)}.</b> ${esc(out.note)} Study links search NPTEL and SWAYAM, India's free course platforms.</div>
-    ${out.courses.length ? out.courses.map(card).join("")
-      : `<div class="empty">No course at this level matches those interests for your background. Try another interest, or explore all courses.</div>`}
-    ${out.also_consider.length ? `<h2>Also consider</h2>
+  el.innerHTML = `
+    ${pageHead(`After ${plan.now.stage === "class_12" && s.stream ? "class 12" : stageLabel(s.stage).toLowerCase()}`,
+      plan.next.leads_to || (levels.length ? `You can go on to ${levels.map(l => l.label).join(" or ")}.`
+        : "You are at the top of the ladder. Explore any course that interests you."),
+      `<button class="small" id="finder-explore-2">Explore all courses</button>`)}
+    ${plan.now.subjects.length ? `<div class="block"><h3>What you study now</h3>
+      <p class="muted small">${esc(plan.now.label)}. Every subject links to free material you can study today.</p>
+      ${subjectList(plan.now.subjects)}
+      ${plan.now.optional.length ? `<details class="working" style="margin-top:10px">
+        <summary>Optional subjects schools also offer</summary>${subjectList(plan.now.optional)}</details>` : ""}
+    </div>` : ""}
+    ${plan.next.streams.length ? `<div class="block"><h3>Choose a stream for class 11 and 12</h3>
+      <p class="muted small">Your stream decides which degrees you can apply for later.</p>
+      ${plan.next.streams.map(st => streamCard(st)).join("")}
+    </div>` : ""}
+    ${levels.length ? `<div class="block"><h3>Courses you can do next</h3>
+      <p class="muted small">The academic path and the skill path both count. NEP 2020 treats them
+        as equal, and a skill course can be taken alongside school or a degree.</p>
+      ${levels.length > 1 ? `<div class="row" style="margin-bottom:10px">${levels.map(l =>
+        `<button class="small lvl${l.value === s.level ? " on" : ""}" data-l="${esc(l.value)}">${esc(l.label)}</button>`).join("")}</div>` : ""}
+      ${s.level === "skill" ? `<p class="caption" style="margin:0 0 10px">${esc(finderOptions.skill_note || "")}</p>` : ""}
+      ${courses || `<p class="muted small" style="margin:0">Pick at least one interest on the left to see courses.</p>`}
+    </div>` : ""}
+    <p class="caption" style="margin:14px 0 0">${esc(finderOptions.method)}. ${esc(finderOptions.note)}</p>
+    ${signupCta() ? `<div style="margin-top:12px">${signupCta()}</div>` : ""}`;
+  $("#finder-explore-2").onclick = () => showExplore("all");
+  el.querySelectorAll(".lvl").forEach(b => b.onclick = () => { s.level = b.dataset.l; showLadder(); });
+  bindSave(el);
+  bindPlans(el);
+  bindAhead(el);
+}
+
+function finderCourses(out){
+  return `${out.courses.length ? out.courses.map(c => courseCard(c, saveBtn(c.key))).join("")
+      : `<div class="empty">No course at this level matches those interests for your background.</div>`}
+    ${out.also_consider.length ? `<h3 style="margin:18px 0 6px">Also consider</h3>
       <p class="caption" style="margin:0 0 10px">These match your interests but usually need a different background.</p>
-      ${out.also_consider.map(c => `<div class="card" style="border-left-color:var(--rule)">
-        <h3>${esc(c.name)}</h3><p class="prose">${esc(c.reason)}</p>
-        <ul class="plain"><li>Usually needs: ${esc(c.needs)}</li></ul></div>`).join("")}` : ""}
-    <p class="caption" style="margin:18px 0 0">Subjects are grouped by year because each institution sets its own semester and weekly schedule.</p>
-    <div class="row" style="margin-top:14px"><button class="small" id="finder-explore-2">Explore all courses</button>${signupCta()}</div>`;
-  $("#finder-explore-2").onclick = () => showExplore(out.level);
+      ${out.also_consider.map(c => courseCard(c)).join("")}` : ""}`;
 }
 
 async function showExplore(level){
@@ -734,14 +940,14 @@ async function showExplore(level){
     }catch(e){ el.innerHTML = `<div class="err">Could not load the course list.</div>`; return; }
   }
   const x = exploreCache;
-  el.innerHTML = `<h2>Explore all courses</h2>
-    <p class="caption" style="margin:0 0 12px">All ${x.count} courses, whatever your background. Open any course to see its subjects and free study links, even outside your own field.</p>
-    <div class="callout"><b>${esc(x.method)}.</b> ${esc(x.note)}</div>
+  el.innerHTML = `
+    ${pageHead("Explore all courses", `All ${x.count} courses, whatever your background, with free study links.`)}
     <div class="row" style="margin:0 0 12px">${[["all", "All levels"], ...x.levels.map(l => [l.level, l.label])].map(([v, lab]) =>
       `<button class="small ex-level${v === level ? " on" : ""}" data-l="${esc(v)}">${esc(lab)}</button>`).join("")}</div>
     <input id="ex-filter" placeholder="Filter by course or subject, for example economics or data structures" autocomplete="off" style="margin-bottom:14px" />
     <div id="ex-list"></div>
-    <div style="margin-top:14px">${signupCta()}</div>`;
+    <p class="caption" style="margin:14px 0 0">${esc(x.method)}. ${esc(x.note)}</p>
+    <div style="margin-top:12px">${signupCta()}</div>`;
   const draw = () => {
     const q = $("#ex-filter").value.trim().toLowerCase();
     let shown = 0;
@@ -750,15 +956,14 @@ async function showExplore(level){
         const cs = cat.courses.filter(c => !q || c.name.toLowerCase().includes(q) || c.category.toLowerCase().includes(q)
           || c.years.some(y => y.subjects.some(sb => sb.name.toLowerCase().includes(q))));
         shown += cs.length;
-        return cs.length ? `<h3 style="margin:16px 0 8px">${esc(cat.category)}</h3>${cs.map(c => `<div class="card" style="border-left-color:var(--rule)">
-            <h3>${esc(c.name)}</h3>
-            <ul class="plain"><li>Duration: ${esc(c.duration)}</li><li>Usually needs: ${esc(c.eligibility)}</li></ul>
-            <details class="working"><summary>What you will study, with free study links</summary>${yearList(c.years)}</details>
-          </div>`).join("")}` : "";
+        return cs.length ? `<h3 style="margin:16px 0 8px">${esc(cat.category)}</h3>${
+          cs.map(c => courseCard(c, saveBtn(c.key))).join("")}` : "";
       }).join("");
       return cats ? `<h2>${esc(l.label)}</h2>${cats}` : "";
     }).join("");
     $("#ex-list").innerHTML = shown ? html : `<div class="empty">No course or subject matches that filter.</div>`;
+    bindSave($("#ex-list"));
+    bindPlans($("#ex-list"));
   };
   el.querySelectorAll(".ex-level").forEach(b => b.onclick = () => showExplore(b.dataset.l));
   $("#ex-filter").oninput = draw;
@@ -969,24 +1174,80 @@ function pathList(steps, t, forStudent){
   if(!steps.length) return "";
   const items = steps.map((r, i) => `<li class="${i === 0 ? "now" : ""}">
       <span class="path-num" aria-hidden="true">${i + 1}</span>
-      <button class="path-step" aria-expanded="false" data-i="${i}">
+      <button class="path-step" data-i="${i}">
         <div class="t">${esc(weekOf(r.label))}${i === 0 ? ` <span class="pill-lvl">Now</span>` : ""}</div>
         <div class="s">${i === 0 ? `${!r.gaps.length ? "Ready now" : "Revise earlier weeks first"} · level now ${LEVEL(r.mastery, t).toLowerCase()}` : "Once the steps above are done"}</div>
       </button>
-      <div class="path-detail" hidden>
-        <ul class="plain" style="margin:0">${reasonsFor(r, t, forStudent, new Set(steps.slice(0, i).map(x => x.concept))).map(l => `<li>${esc(l)}</li>`).join("")}</ul>
-        <p style="margin:8px 0 0">${i + 1 < steps.length ? `After this: <b>${esc(weekOf(steps[i + 1].label))}</b>.` : "This is the last step shown."}</p>
-      </div>
+
     </li>`).join("");
   return `<div class="block"><h3>${forStudent ? "Your path" : "Their path"}</h3>
-    <p class="muted small">Tap a step to see why it comes next. Each step after the first assumes the ones before it are finished.</p>
+    <p class="muted small">Open a step to see why it comes next, what to revise and what it opens up. Each step after the first assumes the ones before it are finished.</p>
     <ol class="path">${items}</ol></div>`;
 }
-function bindPath(root){
+/* One week, on its own, with everything known about it. Opened from the path list or
+   from the course strip, closed with Escape or the backdrop. */
+function weekSheet(step, t, forStudent, position){
+  let sheet = document.getElementById("sheet");
+  if(!sheet){
+    sheet = document.createElement("div");
+    sheet.id = "sheet";
+    sheet.className = "sheet";
+    sheet.hidden = true;
+    sheet.setAttribute("role", "dialog");
+    sheet.setAttribute("aria-modal", "true");
+    document.body.appendChild(sheet);
+    sheet.addEventListener("click", e => { if(e.target === sheet) closeSheet(); });
+    document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheet(); });
+  }
+  const ready = !step.gaps.length;
+  sheet.innerHTML = `<div class="sheet-card">
+    <div class="sheet-top">
+      <div><div class="eyebrow">${position ? esc(position) : "This week"}</div>
+        <h2>${esc(shortLabel(step.label))}</h2></div>
+      <button class="sheet-close" id="sheet-close" aria-label="Close">&times;</button>
+    </div>
+    <p class="meta"><span class="pill-lvl">Level now: ${LEVEL(step.mastery, t)}</span> ·
+      ${ready ? "Ready to start" : "Revise earlier weeks first"}</p>
+    <ul class="plain">${reasonsFor(step, t, forStudent).map(l => `<li>${esc(l)}</li>`).join("")}</ul>
+    ${step.gaps.length ? `<div class="block" style="margin:14px 0 0"><h3>Revise first</h3>
+      <ul class="plain">${step.gaps.slice(0, 4).map(g =>
+        `<li>${esc(weekOf(g.label))} <span class="caption">at ${pct(g.mastery)}%</span></li>`).join("")}</ul></div>` : ""}
+    ${step.unlocks.length ? `<div class="block" style="margin:12px 0 0"><h3>Opens up</h3>
+      <ul class="plain">${step.unlocks.slice(0, 4).map(u => `<li>${esc(weekOf(u.label))}</li>`).join("")}</ul></div>` : ""}
+    ${forStudent ? `<div class="actions">
+      <button class="act" data-c="${step.concept}" data-k="study">I studied this</button>
+      <button class="act" data-c="${step.concept}" data-k="pass">I passed the test</button>
+      <button class="act" data-c="${step.concept}" data-k="fail">I found it hard</button>
+    </div>` : ""}
+    <details class="working"><summary>Show the model's working</summary>
+      <p class="prose">${esc(step.text)}</p></details>
+  </div>`;
+  sheet.hidden = false;
+  $("#sheet-close").onclick = closeSheet;
+  $("#sheet-close").focus();
+  if(forStudent) bindActions(sheet);
+}
+function closeSheet(){
+  const sheet = document.getElementById("sheet");
+  if(sheet) sheet.hidden = true;
+}
+function bindActions(root){
+  root.querySelectorAll(".act").forEach(b => b.onclick = async () => {
+    const kind = b.dataset.k === "study" ? "study" : "assessment";
+    const correct = b.dataset.k === "pass" ? true : b.dataset.k === "fail" ? false : null;
+    root.querySelectorAll(".act").forEach(x => x.disabled = true);
+    b.textContent = "Saving";
+    await post("/api/me/study", {concept_id:+b.dataset.c, kind, correct});
+    toast(kind === "study" ? "Marked as studied" : correct ? "Test marked as passed" : "Marked as hard");
+    closeSheet();
+    renderStudent();
+  });
+}
+
+function bindPath(root, steps, t, forStudent){
   root.querySelectorAll(".path-step").forEach(b => b.onclick = () => {
-    const open = b.getAttribute("aria-expanded") === "true";
-    b.setAttribute("aria-expanded", String(!open));
-    b.parentElement.querySelector(".path-detail").hidden = open;
+    const step = steps[+b.dataset.i];
+    if(step) weekSheet(step, t, forStudent, `Step ${+b.dataset.i + 1} of ${steps.length}`);
   });
 }
 function courseStrip(concepts, t, forStudent, clickable){
@@ -1046,6 +1307,9 @@ function studiesForm(){
         `<option value="${esc(s.value)}"${s.value === me.stage ? " selected" : ""}>${esc(s.label)}</option>`).join("")}</select></div>
       <div id="st-module-wrap"><label for="st-module">Course</label><select id="st-module" name="module">${(window.MODULES || []).map(m =>
         `<option value="${esc(m)}"${m === me.module ? " selected" : ""}>${esc(modName(m))}</option>`).join("")}</select></div>
+      <div id="st-stream-wrap"><label for="st-stream">Your class 12 stream</label><select id="st-stream" name="stream">${
+        ((finderOptions && finderOptions.streams) || []).map(s =>
+          `<option value="${esc(s.value)}"${s.value === me.stream ? " selected" : ""}>${esc(s.label)}</option>`).join("")}</select></div>
     </div>
     <div style="margin-top:18px;max-width:320px"><button class="primary" type="submit">Save my studies</button></div>
     <div id="studies-msg" class="caption" style="margin:8px 0 0"></div>
@@ -1055,12 +1319,17 @@ function bindStudies(){
   const f = $("#studies-form");
   if(!f) return;
   const stage = f.querySelector('[name="stage"]'), module = f.querySelector('[name="module"]');
-  const sync = () => { $("#st-module-wrap").style.display = courseStage(stage.value) ? "block" : "none"; };
+  const stream = f.querySelector('[name="stream"]');
+  const sync = () => {
+    $("#st-module-wrap").style.display = courseStage(stage.value) ? "block" : "none";
+    $("#st-stream-wrap").style.display = stage.value === "class_12" ? "block" : "none";
+  };
   stage.onchange = sync;
   sync();
   f.onsubmit = async e => {
     e.preventDefault();
-    const body = {stage: stage.value, module: courseStage(stage.value) ? module.value : null};
+    const body = {stage: stage.value, module: courseStage(stage.value) ? module.value : null,
+                  stream: stage.value === "class_12" ? stream.value : null};
     try{
       me = {...me, ...(await api("/api/me/studies", {method:"PUT", headers:{"content-type":"application/json"}, body: JSON.stringify(body)}))};
     }catch(err){ $("#studies-msg").textContent = err.message; return; }
@@ -1071,22 +1340,59 @@ function bindStudies(){
     renderStudent();
   };
 }
-function renderSchoolStudent(root){
-  const o = finderOptions || {next_levels:{}, levels:[]};
-  const next = (o.next_levels[me.stage] || []).map(l => (o.levels.find(x => x.value === l) || {}).label).filter(Boolean);
+const subjectList = items => `<ul class="plain">${items.map(s =>
+  `<li>${esc(s.name)}${linkRow(s.links)}</li>`).join("")}</ul>`;
+
+function studyNowBlock(plan){
+  const now = plan.now;
+  if(!now.subjects.length) return `<div class="block"><h3>What you are studying now</h3>
+    <p class="muted small">Tell us your class 12 stream below and your subjects appear here, each with free study links.</p></div>`;
+  return `<div class="block"><h3>What you are studying now</h3>
+    <p class="muted small">${esc(now.label)}. Every subject links to free material you can study today.</p>
+    ${subjectList(now.subjects)}
+    ${now.optional.length ? `<details class="working" style="margin-top:10px">
+      <summary>Optional subjects schools also offer</summary>${subjectList(now.optional)}</details>` : ""}
+    <p class="caption" style="margin:10px 0 0">${esc(now.note)}</p></div>`;
+}
+
+function nextStepsBlock(plan){
+  const n = plan.next, levels = n.levels.map(l => l.label).join(" or ");
+  const line = n.leads_to ? `Your stream leads to ${n.leads_to}.`
+    : `After ${n.label} you can go on to ${levels || "a course of your choice"}.`;
+  return `<div class="block"><h3>What you can study next</h3>
+    <p class="muted small">${esc(line)}</p>
+    <div class="row"><button class="small" id="see-next">See the courses I can choose</button></div>
+    <div id="next-list" hidden style="margin-top:14px">
+      ${n.streams.map(st => streamCard(st)).join("")}
+      ${n.streams.length ? `<p class="caption" style="margin:4px 0 10px">Pick a stream in class 11, or take a diploma straight after class 10.</p>` : ""}
+      <button class="small" data-go="finder">Open the Course Finder</button>
+    </div></div>`;
+}
+
+async function renderSchoolStudent(root){
+  root.innerHTML = `<div class="page">${skeleton()}</div>`;
+  await loadSaved();
+  let plan;
+  try{ plan = await api("/api/me/study-plan"); }
+  catch(e){ root.innerHTML = `<div class="page"><div class="err">${esc(e.message || e)}</div></div>`; return; }
+  const sub = [stageLabel(me.stage), me.stream ? (finderOptions.streams.find(s => s.value === me.stream) || {}).label : ""]
+    .filter(Boolean).join(" · ");
   root.innerHTML = `<div class="page">
-    <div class="dash-head"><div><h1>Hi ${esc(me.display_name)}</h1>
-      <p class="muted">${esc(stageLabel(me.stage) || "Student")}</p></div></div>
-    <div class="next">
-      <div class="eyebrow">Your next step</div>
-      <h2>Choose your next course</h2>
-      ${next.length ? `<p class="meta">After ${esc(stageLabel(me.stage))} you can look at: ${esc(next.join(" or "))}.</p>` : ""}
-      <p class="prose">The Course Finder matches your subjects and what you enjoy to courses you usually qualify for. Your week-by-week path starts once you join a diploma or degree course: update your studies below when you do.</p>
-      <div class="actions"><button class="primary" style="width:auto;padding:10px 18px" data-go="finder">Open the Course Finder</button></div>
-    </div>
+    ${pageHead(`Hi ${me.display_name}`, sub)}
+    ${studyNowBlock(plan)}
+    ${nextStepsBlock(plan)}
+    ${shortlistBlock(savedCourses)}
     ${studiesForm()}
   </div>`;
+  const see = $("#see-next"), list = $("#next-list");
+  see.onclick = () => {
+    if(plan.next.streams.length){ list.hidden = false; see.hidden = true; }
+    else nav("finder");
+  };
   bindStudies();
+  bindSave(root);
+  bindPlans(root);
+  bindAhead(root);
 }
 
 async function renderStudent(){
@@ -1102,6 +1408,7 @@ async function renderStudent(){
       api("/api/profile/options"),
       api("/api/me/profile"),
       api("/api/me/progress").then(humanize).catch(() => null)]);
+    await loadSaved();
   }catch(e){
     root.innerHTML = `<div class="page"><div class="err">Could not load your learning plan: ${esc(e.message || e)}</div></div>`;
     return;
@@ -1112,7 +1419,7 @@ async function renderStudent(){
     ? state.history.slice().reverse().slice(0, 8).map(h =>
         `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}</li>`).join("")
     : "<li>Nothing recorded yet.</li>";
-  const tabs = [["path", "My path"], ["progress", "Progress"], ["details", "My details"]];
+  const tabs = [["path", "My path"], ["details", "My details"]];
 
   root.innerHTML = `<div class="page">
     <div class="dash-head">
@@ -1122,30 +1429,32 @@ async function renderStudent(){
     </div>
 
     <div data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
+      <div class="tiles">
+        <div class="tile"><div class="v">${path.n_done} of ${path.n_weeks}</div><div class="k">weeks done</div></div>
+        <div class="tile"><div class="v">${progress ? progress.streak.current : 0}</div><div class="k">day streak</div></div>
+        <div class="tile"><div class="v text">${path.steps.length ? esc(weekOf(path.steps[0].label)) : "All done"}</div><div class="k">next step</div></div>
+      </div>
       ${state.n_events === 0 ? `<div class="callout">Welcome. Your path follows your course week by week, starting at Week 1. Press "I studied this" or "I passed the test" and it moves on to the next week.</div>` : ""}
       ${nextStepCard(path.steps[0], t, true)}
       ${pathList(path.steps, t, true)}
       ${courseStrip(state.concepts, t, true, false)}
     </div>
 
-    <div data-tabpanel="progress" ${studentTab === "progress" ? "" : "hidden"}>
-      ${progressBlock(progress)}
-      <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
-      ${weekChart(state.concepts, t, true)}
-      <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
-        ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
-    </div>
 
     <div data-tabpanel="details" ${studentTab === "details" ? "" : "hidden"}>
       ${studiesForm()}
+      ${savedCourses.length ? shortlistBlock(savedCourses) : ""}
       ${profileForm(form.fields, mine.profile || {}, mine.module)}
     </div>
   </div>`;
 
   bindTabs(root, "stab", v => { studentTab = v; hideTip(); });
   bindViz(root, null);
-  bindPath(root);
+  bindPath(root, path.steps, t, true);
   bindStudies();
+  bindSave(root);
+  bindPlans(root);
+  bindAhead(root);
   $("#profile-form").onsubmit = async e => {
     e.preventDefault();
     const profile = {};
@@ -1157,16 +1466,46 @@ async function renderStudent(){
     studentTab = "path";
     renderStudent();
   };
-  root.querySelectorAll(".act").forEach(b => b.onclick = async () => {
-    const kind = b.dataset.k === "study" ? "study" : "assessment";
-    const correct = b.dataset.k === "pass" ? true : b.dataset.k === "fail" ? false : null;
-    root.querySelectorAll(".act").forEach(x => x.disabled = true);
-    b.textContent = "Saving";
-    await post("/api/me/study", {concept_id:+b.dataset.c, kind, correct});
-    toast(kind === "study" ? "Marked as studied" : correct ? "Test marked as passed" : "Marked as hard");
-    renderStudent();
-  });
+  bindActions(root);
   const u = $("#undo"); if(u) u.onclick = async () => { await post("/api/me/undo"); toast("Last activity undone"); renderStudent(); };
+}
+
+/* ---------------- progress: its own page, not a tab ---------------- */
+async function renderProgress(){
+  const root = $("#view-progress");
+  if(!me || me.role !== "student"){ nav("dashboard"); return; }
+  if(!me.module){
+    root.innerHTML = `<div class="page">${pageHead("Progress", "Your progress starts once you join a diploma or degree course.")}
+      <div class="block"><p class="muted small">Until then, the Course Finder is where to look.</p>
+      <button class="small" data-go="finder">Find a course</button></div></div>`;
+    return;
+  }
+  root.innerHTML = `<div class="page">${skeleton()}</div>`;
+  let state, progress, path;
+  try{
+    [state, progress, path] = await Promise.all([
+      api("/api/me/state?known=").then(humanize),
+      api("/api/me/progress").then(humanize).catch(() => null),
+      api("/api/me/path?steps=1&known=").then(humanize)]);
+  }catch(e){ root.innerHTML = `<div class="page"><div class="err">${esc(e.message || e)}</div></div>`; return; }
+  const t = state.thresholds;
+  const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
+  const hist = state.history.length
+    ? state.history.slice().reverse().slice(0, 12).map(h =>
+        `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}</li>`).join("")
+    : "<li>Nothing recorded yet.</li>";
+  root.innerHTML = `<div class="page">
+    ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`,
+      `<button class="small" data-go="dashboard">Back to my path</button>`)}
+    ${progressBlock(progress)}
+    <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
+    ${weekChart(state.concepts, t, true)}
+    <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
+      ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
+  </div>`;
+  bindViz(root, null);
+  const u = $("#undo");
+  if(u) u.onclick = async () => { await post("/api/me/undo"); toast("Last activity undone"); renderProgress(); };
 }
 
 /* ---------------- adviser dashboard ---------------- */
@@ -1187,8 +1526,11 @@ async function renderAdviser(){
 
 async function showOverview(){
   const o = await api("/api/adviser/overview");
-  const rows = o.registered.map(r=>`<tr>
-      <td>${esc(r.display_name)}</td><td class="n">${r.student_id}</td>
+  // students who have gone quiet first: they are the ones worth chasing
+  const ordered = o.registered.slice().sort((a, b) => (b.quiet_days || 0) - (a.quiet_days || 0));
+  const quiet = ordered.filter(r => r.quiet);
+  const rows = ordered.map(r=>`<tr>
+      <td>${esc(r.display_name)} ${quietChip(r)}</td><td class="n">${r.student_id}</td>
       <td>${esc(modName(r.module))}</td><td class="n">${r.n_events||0}</td>
       <td class="n">${r.n_assessments||0}</td>
       <td class="n">${r.last_active? new Date(r.last_active*1000).toLocaleString() : "never"}</td></tr>`).join("");
@@ -1198,10 +1540,12 @@ async function showOverview(){
     <div class="tiles">
       <div class="tile"><div class="v">${o.stats.n_students}</div><div class="k">registered students</div></div>
       <div class="tile"><div class="v">${o.stats.n_events}</div><div class="k">activities recorded</div></div>
+      <div class="tile"><div class="v">${quiet.length}</div><div class="k">quiet ${o.quiet_after_days}+ days</div></div>
       <div class="tile"><div class="v">25,101</div><div class="k">dataset learners</div></div>
     </div>
     <div class="block"><h3>Registered students</h3>
-      <p class="muted small">Learners who created an account. Their activity is live.</p>
+      <p class="muted small">Learners who created an account, the quietest first. "Quiet" means
+        nothing recorded for ${o.quiet_after_days} days or more.</p>
       ${o.registered.length?`<div class="scroll"><table><thead><tr><th>Name</th><th class="n">ID</th>
         <th>Course</th><th class="n">Activities</th><th class="n">Tests</th><th class="n">Last active</th>
         </tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">No students have registered yet.</div>'}
@@ -1214,6 +1558,7 @@ async function loadList(q){
   const item = r => `<div class="learner${current===r.id_student?" on":""}${r.registered?" new":""}" data-id="${r.id_student}">
       <div class="id">${r.registered? esc(r.display_name) : r.id_student}</div>
       <div class="meta">${r.registered? `id ${r.id_student} · ` : ""}${esc(modName(r.module))} · ${r.n_events} events · ${esc(r.outcome)}</div>
+      ${r.quiet ? `<div class="meta">${quietChip(r)}</div>` : ""}
     </div>`;
   $("#list").innerHTML =
     (d.registered.length? `<div class="grouphead">Registered students</div>` + d.registered.map(item).join("") : "") +
@@ -1221,6 +1566,46 @@ async function loadList(q){
   document.querySelectorAll(".learner").forEach(el=>
     el.onclick = ()=>{ current=+el.dataset.id; known.clear(); learnerTab="path"; showLearner(); loadList(q); });
 }
+
+/* An adviser's own notes on a learner. Students never see these. */
+function notesBlock(notes){
+  const when = at => new Date(at * 1000).toLocaleString();
+  return `<div class="block"><h3>Your notes</h3>
+    <p class="muted small">Private to advisers. The learner never sees them.</p>
+    <form id="note-form" class="row" style="align-items:flex-start">
+      <input id="note-text" placeholder="What did you agree with this learner?" autocomplete="off" style="flex:1" />
+      <button class="small" type="submit">Add note</button>
+    </form>
+    <div id="note-msg" class="caption" style="margin:6px 0 0"></div>
+    ${notes.length ? `<ul class="plain" style="margin-top:12px">${notes.map(n => `<li>
+        ${esc(n.text)}
+        <span class="caption"> ${esc(n.author || "someone")}, ${esc(when(n.at))}</span>
+        <button class="small note-del" data-id="${n.id}" style="margin-left:8px">Delete</button>
+      </li>`).join("")}</ul>`
+      : `<p class="muted small" style="margin-top:12px">No notes yet.</p>`}</div>`;
+}
+function bindNotes(root, student, refresh){
+  const form = root.querySelector("#note-form");
+  if(!form) return;
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const text = $("#note-text").value.trim();
+    if(!text){ $("#note-msg").textContent = "Write something first."; return; }
+    try{ await post(`/api/students/${student}/notes`, {text}); }
+    catch(err){ $("#note-msg").textContent = err.message; return; }
+    toast("Note added");
+    refresh();
+  };
+  root.querySelectorAll(".note-del").forEach(b => b.onclick = async () => {
+    try{ await api(`/api/students/${student}/notes/${b.dataset.id}`, {method:"DELETE"}); }
+    catch(err){ toast(err.message); return; }
+    toast("Note deleted");
+    refresh();
+  });
+}
+const quietChip = r => r.quiet
+  ? `<span class="chip" title="No activity recorded">${r.never_started ? "Never started" : "Quiet"} ${r.quiet_days} days</span>`
+  : "";
 
 function planCards(recs, t){
   if(!recs.length) return '<div class="empty">Nothing to recommend right now.</div>';
@@ -1238,19 +1623,21 @@ async function showLearner(){
   detail.classList.remove("empty");
   detail.innerHTML = skeleton();
   const k=[...known].join(",");
-  let mastery, path, rec;
+  let mastery, path, rec, noteList;
   try{
-    [mastery, path, rec] = await Promise.all([
+    [mastery, path, rec, noteList] = await Promise.all([
       api(`/api/students/${current}/mastery?known=${k}`).then(humanize),
       api(`/api/students/${current}/path?steps=5&known=${k}`).then(humanize),
-      api(`/api/recommend?student=${current}&k=3&planner=${planner}&known=${k}`).then(humanize)]);
+      api(`/api/recommend?student=${current}&k=3&planner=${planner}&known=${k}`).then(humanize),
+      api(`/api/students/${current}/notes`).then(r => r.notes).catch(() => [])]);
   }catch(e){
     detail.innerHTML = `<div class="err">Could not load this learner: ${esc(e.message || e)}</div>`;
     return;
   }
   const t = mastery.thresholds ?? rec.thresholds;
   const PLANS = {greedy:"Best next step", beam:"Plan a few steps ahead", curriculum:"Follow the course order", weakest:"Fix the weakest week first"};
-  const tabs = [["path", "Path"], ["progress", "Progress"], ["compare", "Compare plans"]];
+  const tabs = [["path", "Path"], ["progress", "Progress"], ["compare", "Compare plans"],
+                ["notes", `Notes${noteList.length ? " (" + noteList.length + ")" : ""}`]];
 
   detail.innerHTML = `
     <div class="dash-head">
@@ -1267,6 +1654,9 @@ async function showLearner(){
       <div class="viz-row">${levelChart(mastery.concepts, t, false)}${partChart(mastery.concepts, false)}</div>
       ${weekChart(mastery.concepts, t, false)}
     </div>
+    <div data-tabpanel="notes" ${learnerTab === "notes" ? "" : "hidden"}>
+      ${notesBlock(noteList)}
+    </div>
     <div data-tabpanel="compare" ${learnerTab === "compare" ? "" : "hidden"}>
       <div class="block"><h3>Compare planning strategies</h3>
         <p class="muted small">The path uses "Best next step". Try the others to see how the top three choices change.</p>
@@ -1276,10 +1666,11 @@ async function showLearner(){
     </div>`;
 
   bindTabs(detail, "ltab", v => { learnerTab = v; hideTip(); });
+  bindNotes(detail, current, () => { learnerTab = "notes"; showLearner(); });
   detail.querySelectorAll(".pl").forEach(b => b.onclick = () => { planner = b.dataset.p; learnerTab = "compare"; showLearner(); });
   $("#back").onclick = () => { current = null; showOverview(); loadList($("#q").value); };
   bindViz(detail, id => { known.has(id) ? known.delete(id) : known.add(id); learnerTab = "path"; showLearner(); });
-  bindPath(detail);
+  bindPath(detail, path.steps, t, false);
 }
 
 const renderHome = () => me.role === "student" ? renderStudent() : renderAdviser();
@@ -1306,10 +1697,30 @@ async function renderAdmin(){
           <td><code>${esc(a.username)}</code></td><td>${esc(a.display_name)}</td>
           <td>${esc(a.role)}</td><td>${esc(stageLabel(a.stage) || (a.role === "student" && a.module ? "Undergraduate" : ""))}</td><td>${esc(modName(a.module))}</td>
           <td class="n">${a.n_events}</td><td>${when(a.last_active)}</td>
-          <td>${a.username===me.username ? "" : `<button class="small del" data-u="${esc(a.username)}">Delete</button>`}</td>
+          <td><div class="row"><button class="small log" data-u="${esc(a.username)}">Log</button>
+            ${a.username===me.username ? "" : `<button class="small del" data-u="${esc(a.username)}">Delete</button>`}</div></td>
         </tr>`).join("")}
       </tbody></table>
-      <p class="caption">Deleting an account also removes its study history. This cannot be undone. Passwords are never shown here and are not recoverable: reset one with <code>python scripts/08_admin.py passwd USERNAME</code>.</p></div>`;
+      <p class="caption">Deleting an account also removes its study history and its log. This cannot be undone. Passwords are never shown here and are not recoverable: reset one with <code>python scripts/08_admin.py passwd USERNAME</code>.</p></div>
+      <div class="block" id="admin-log" hidden></div>`;
+    el.querySelectorAll(".log").forEach(b => b.onclick = async () => {
+      const box = $("#admin-log");
+      box.hidden = false;
+      box.innerHTML = `<h3>Activity on ${esc(b.dataset.u)}</h3><p class="muted small">Loading</p>`;
+      let out;
+      try{ out = await api(`/api/admin/accounts/${encodeURIComponent(b.dataset.u)}/log`); }
+      catch(err){ box.innerHTML = `<div class="err">${esc(err.message)}</div>`; return; }
+      box.innerHTML = `<h3>Activity on ${esc(out.username)}</h3>
+        <p class="muted small">Newest first, the last ${out.entries.length}
+          ${out.entries.length === 1 ? "entry" : "entries"}. Passwords and answers are never recorded.</p>
+        ${out.entries.length ? `<div class="scroll"><table><thead><tr><th>When</th><th>What</th><th>Detail</th></tr></thead>
+          <tbody>${out.entries.map(e => `<tr><td>${when(e.at)}</td><td>${esc(e.kind)}</td>
+            <td>${esc(e.detail)}</td></tr>`).join("")}</tbody></table></div>`
+          : `<div class="empty">Nothing recorded for this account yet.</div>`}
+        <div style="margin-top:12px"><button class="small" id="admin-log-close">Close</button></div>`;
+      $("#admin-log-close").onclick = () => { box.hidden = true; };
+      box.scrollIntoView({behavior: "smooth", block: "nearest"});
+    });
     el.querySelectorAll(".del").forEach(b => b.onclick = async () => {
       if(!confirm(`Delete "${b.dataset.u}" and all of their study history?`)) return;
       await api("/api/admin/accounts/"+encodeURIComponent(b.dataset.u), {method:"DELETE"});
