@@ -210,7 +210,10 @@
   .path-step .t{font-weight:600}
   .path-step .s{font-size:13px;color:var(--ink-soft)}
   .path-detail{margin:8px 0 12px;padding:12px 14px;background:var(--ground);border-radius:8px;font-size:14px;color:var(--ink-soft)}
-  .strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(18px,1fr);gap:3px;margin:6px 0 10px}
+  /* 35 weeks at 18px each is wider than a phone, so the strip scrolls inside itself
+     rather than dragging the whole page sideways. */
+  .strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(18px,1fr);gap:3px;
+    margin:6px 0 10px;overflow-x:auto;padding-bottom:3px}
   .strip span{height:30px;border-radius:5px;display:block}
   .strip span.known{outline:2px solid var(--ink);outline-offset:-2px}
   .strip .hit[data-concept]{cursor:pointer}
@@ -301,6 +304,46 @@
   ul.plain{margin:8px 0 0;padding-left:18px;color:var(--ink-soft)}
   ul.plain li{margin:3px 0}
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  /* Three pane workspace: the course in a rail, the work in the middle, the things
+     a student does often on the right. Both rails fall away on a narrow screen, where
+     the middle column is the whole page. */
+  .page.wide{max-width:1280px}
+  .workspace{display:grid;grid-template-columns:224px minmax(0,1fr) 296px;gap:16px;align-items:start}
+  .workspace.two{grid-template-columns:224px minmax(0,1fr)}
+  .workspace.two .wsmain{max-width:860px}
+  .rail{position:sticky;top:78px;background:var(--surface);border:1px solid var(--rule);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 12px;
+    display:flex;flex-direction:column;gap:20px}
+  .rail .grouphead{margin:0 0 6px;padding:0 8px}
+  .railnav{display:flex;flex-direction:column;gap:2px}
+  .railitem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-size:14px;
+    font-weight:500;padding:9px 11px;border:0;border-radius:8px;background:none;color:var(--ink-soft)}
+  .railitem:hover{background:var(--surface-alt);color:var(--ink)}
+  .railitem.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .railitem svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .railcourse{padding:0 8px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-soft)}
+  .bar{height:7px;background:var(--surface-alt);border-radius:4px;overflow:hidden}
+  .bar > span{display:block;height:100%;background:var(--accent);border-radius:4px}
+  .railside{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .railside .block{margin:0;padding:16px 18px}
+  .railside .block h3{font-size:15px}
+  .scorerow{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:13px}
+  .scorerow .n{text-align:right;font-variant-numeric:tabular-nums}
+  .wsmain{display:flex;flex-direction:column;min-width:0}
+  @media (max-width:1090px){
+    .workspace{grid-template-columns:208px minmax(0,1fr)}
+    .railside{grid-column:2}
+  }
+  .score-inline{display:none}
+  @media (max-width:860px){
+    .score-inline{display:flex}
+    p.score-inline{display:block}
+    .railside .quizbox{display:none}
+    .workspace{grid-template-columns:minmax(0,1fr)}
+    .rail{display:none}
+    .railside{grid-column:1}
+  }
   .tile{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
   .tile .v{font-size:24px;font-weight:700;color:var(--accent);letter-spacing:-.02em}
   .tile .k{font-size:12px;color:var(--ink-faint);margin-top:2px}
@@ -1287,12 +1330,13 @@ function nextStepCard(r, t, forStudent){
       <button class="act" data-c="${r.concept}" data-k="pass">I passed the test</button>
       <button class="act" data-c="${r.concept}" data-k="fail">I found it hard</button>
     </div>
-    <form class="row score-form" style="margin-top:12px;align-items:center">
-      <label for="score-input" style="margin:0">Took a quiz? Enter your score</label>
-      <input id="score-input" type="number" min="0" max="100" step="1" placeholder="out of 100" style="width:120px" />
+    <form class="row score-form score-inline" style="margin-top:12px;align-items:center">
+      <label for="inline-score-${r.concept}" style="margin:0">Took a quiz? Enter your score</label>
+      <input id="inline-score-${r.concept}" type="number" min="0" max="100" step="1"
+        placeholder="out of 100" style="width:120px">
       <button class="small" type="submit" data-c="${r.concept}">Save score</button>
     </form>
-    <p class="caption" style="margin:6px 0 0">40 out of 100 or more counts as a pass.</p>` : ""}
+    <p class="caption score-inline" style="margin:6px 0 0">40 out of 100 or more counts as a pass.</p>` : ""}
     <details class="working"><summary>Show the model's working</summary><p class="prose">${esc(r.text)}</p></details>
   </div>`;
 }
@@ -1350,8 +1394,8 @@ function weekSheet(step, t, forStudent, position){
       <button class="act" data-c="${step.concept}" data-k="fail">I found it hard</button>
     </div>
     <form class="row score-form" style="margin-top:12px;align-items:center">
-      <label for="score-input" style="margin:0">Took a quiz? Enter your score</label>
-      <input id="score-input" type="number" min="0" max="100" step="1" placeholder="out of 100"
+      <label for="sheet-score" style="margin:0">Took a quiz? Enter your score</label>
+      <input id="sheet-score" type="number" min="0" max="100" step="1" placeholder="out of 100"
         style="width:120px" />
       <button class="small" type="submit" data-c="${step.concept}">Save score</button>
     </form>
@@ -1372,7 +1416,7 @@ function closeSheet(){
 function bindActions(root){
   root.querySelectorAll(".score-form").forEach(form => form.onsubmit = async e => {
     e.preventDefault();
-    const input = form.querySelector("#score-input"), score = Number(input.value);
+    const input = form.querySelector("input"), score = Number(input.value);
     if(input.value === "" || Number.isNaN(score) || score < 0 || score > 100){
       toast("Enter a score between 0 and 100");
       return;
@@ -1526,6 +1570,27 @@ function nextStepsBlock(plan){
     </div></div>`;
 }
 
+function schoolRail(plan, where){
+  return `<aside class="rail">
+    <div>
+      <div class="grouphead">Workspace</div>
+      <div class="railnav">
+        <button class="railitem on" aria-current="page">${RAIL_ICON.learning}<span>My learning</span></button>
+        ${railGo("finder", "Course Finder", "finder")}
+      </div>
+    </div>
+    <div>
+      <div class="grouphead">Where you are</div>
+      <div class="railcourse">
+        <div>${esc(where || "Level not set")}</div>
+        <div class="caption">${plan.now.subjects.length
+          ? `${plan.now.subjects.length} ${plan.now.subjects.length === 1 ? "subject" : "subjects"} with study links`
+          : "Add your stream to see your subjects"}</div>
+      </div>
+    </div>
+  </aside>`;
+}
+
 async function renderSchoolStudent(root){
   root.innerHTML = `<div class="page">${skeleton()}</div>`;
   await loadSaved();
@@ -1534,12 +1599,17 @@ async function renderSchoolStudent(root){
   catch(e){ root.innerHTML = `<div class="page"><div class="err">${esc(e.message || e)}</div></div>`; return; }
   const sub = [stageLabel(me.stage), me.stream ? (finderOptions.streams.find(s => s.value === me.stream) || {}).label : ""]
     .filter(Boolean).join(" · ");
-  root.innerHTML = `<div class="page">
-    ${pageHead(`Hi ${me.display_name}`, sub)}
-    ${studyNowBlock(plan)}
-    ${nextStepsBlock(plan)}
-    ${shortlistBlock(savedCourses)}
-    ${studiesForm()}
+  root.innerHTML = `<div class="page wide">
+    <div class="workspace two">
+      ${schoolRail(plan, sub)}
+      <div class="wsmain">
+        ${pageHead(`Hi ${me.display_name}`, sub)}
+        ${studyNowBlock(plan)}
+        ${nextStepsBlock(plan)}
+        ${shortlistBlock(savedCourses)}
+        ${studiesForm()}
+      </div>
+    </div>
   </div>`;
   const see = $("#see-next"), list = $("#next-list");
   see.onclick = () => {
@@ -1550,6 +1620,89 @@ async function renderSchoolStudent(root){
   bindSave(root);
   bindPlans(root);
   bindAhead(root);
+}
+
+/* ---------------- the workspace rails ----------------
+   The left rail says where you are in the site and where you are in your course, so
+   the middle column can be the work and nothing else. The right rail holds the two
+   things a student does most: entering a mark and checking the last few. Both are
+   hidden on a phone, where the header nav and the tiles already carry the same facts. */
+const RAIL_ICON = {
+  learning: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect></svg>`,
+  progress: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"></path></svg>`,
+  finder: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>`,
+  record: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path><path d="M16 3v6h5"></path></svg>`,
+  details: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></svg>`,
+};
+const railTab = (icon, label, tab, active) =>
+  `<button class="railitem stab${tab === active ? " on" : ""}" data-t="${tab}" role="tab"
+    aria-selected="${tab === active}">${RAIL_ICON[icon]}<span>${label}</span></button>`;
+const railGo = (icon, label, to) =>
+  `<button class="railitem" data-go="${to}">${RAIL_ICON[icon]}<span>${label}</span></button>`;
+
+function studentRail(path, course, tab){
+  const pc = path.n_weeks ? Math.round(path.n_done / path.n_weeks * 100) : 0;
+  return `<aside class="rail">
+    <div>
+      <div class="grouphead">Workspace</div>
+      <div class="railnav" role="tablist">
+        ${railTab("learning", "My learning", "path", tab)}
+        ${railGo("progress", "Progress", "progress")}
+        ${railGo("finder", "Course Finder", "finder")}
+        ${railGo("record", "Record of study", "record")}
+      </div>
+    </div>
+    <div>
+      <div class="grouphead">Your course</div>
+      <div class="railcourse">
+        <div>${esc(course)}</div>
+        <div class="bar"><span style="width:${pc}%"></span></div>
+        <div class="caption">${path.n_done} of ${path.n_weeks} weeks done</div>
+      </div>
+    </div>
+    <div class="railnav" style="margin-top:auto">${railTab("details", "My details", "details", tab)}</div>
+  </aside>`;
+}
+
+/* Marks the student typed in, newest first. Nothing is inferred: a week with no mark
+   is simply absent. */
+function markList(history, names){
+  return history.filter(h => h.score !== null && h.score !== undefined).reverse()
+    .map(h => ({week: names[h.concept_id] || "a week outside your course",
+                score: h.score, pass: h.score >= 40}));
+}
+function recentScores(marks){
+  const rows = marks.slice(0, 5).map(m => `<div class="scorerow">
+      <div><div>${esc(m.week)}${m.pass ? "" : ` <span class="caption">not passed</span>`}</div>
+        <div class="bar" style="margin-top:5px"><span style="width:${m.score}%${
+          m.pass ? "" : ";background:var(--warn)"}"></span></div></div>
+      <span class="n">${m.score}</span>
+    </div>`).join("");
+  return `<div class="block"><h3>Recent scores</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">${rows}</div></div>`;
+}
+function quizBlock(step){
+  const id = "score-" + step.concept;
+  return `<div class="block quizbox"><h3>Record a quiz</h3>
+    <p class="muted small">For ${esc(weekOf(step.label))}. 40 out of 100 or more counts as a pass.</p>
+    <form class="score-form">
+      <label for="${id}">Your score</label>
+      <input id="${id}" type="number" min="0" max="100" step="1" placeholder="out of 100">
+      <button class="primary small" type="submit" data-c="${step.concept}" style="margin-top:10px">Save score</button>
+    </form></div>`;
+}
+function shortlistRail(courses){
+  if(!courses.length) return "";
+  return `<div class="block"><h3>Your shortlist</h3>
+    <p class="muted small">Saved in the Course Finder.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+      ${courses.slice(0, 4).map(c => `<div style="border:1px solid var(--rule);border-radius:8px;padding:10px 12px">
+        <div style="font-size:13px;font-weight:600">${esc(c.name)}</div>
+        <div class="caption">${[c.level_label, c.duration].filter(Boolean).map(esc).join(" · ")}</div>
+      </div>`).join("")}
+    </div>
+    ${courses.length > 4 ? `<p class="caption" style="margin:10px 0 0">${courses.length - 4} more in the Course Finder.</p>` : ""}
+    </div>`;
 }
 
 async function renderStudent(){
@@ -1572,40 +1725,58 @@ async function renderStudent(){
   }
   const t = state.thresholds;
   const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
-  const hist = state.history.length
-    ? state.history.slice().reverse().slice(0, 8).map(h =>
-        `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}${h.score === null || h.score === undefined ? "" : ` <span class="caption">scored ${h.score} out of 100</span>`}</li>`).join("")
-    : "<li>Nothing recorded yet.</li>";
-  const tabs = [["path", "My path"], ["details", "My details"]];
+  const marks = markList(state.history, names);
+  const passed = marks.filter(m => m.pass).length;
+  const step = path.steps[0];
+  const avg = marks.length ? Math.round(marks.reduce((a, m) => a + m.score, 0) / marks.length) : null;
 
-  root.innerHTML = `<div class="page">
-    <div class="dash-head">
-      <div><h1>Hi ${esc(me.display_name)}</h1>
-        <p class="muted">${[stageLabel(me.stage), modName(state.module)].filter(Boolean).map(esc).join(" · ")} · ${path.n_done} of ${path.n_weeks} weeks done</p></div>
-      ${segButtons(tabs, studentTab, "stab")}
-    </div>
+  root.innerHTML = `<div class="page wide">
+    <div class="workspace">
+      ${studentRail(path, modName(state.module), studentTab)}
 
-    <div data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
-      <div class="tiles">
-        <div class="tile"><div class="v">${path.n_done} of ${path.n_weeks}</div><div class="k">weeks done</div></div>
-        <div class="tile"><div class="v">${progress ? progress.streak.current : 0}</div><div class="k">day streak</div></div>
-        <div class="tile"><div class="v text">${path.steps.length ? esc(weekOf(path.steps[0].label)) : "All done"}</div><div class="k">next step</div></div>
+      <div class="wsmain">
+        <div class="dash-head">
+          <div><h1>Hi ${esc(me.display_name)}</h1>
+            <p class="muted">${[stageLabel(me.stage), modName(state.module)].filter(Boolean).map(esc).join(" · ")} · ${path.n_done} of ${path.n_weeks} weeks done</p></div>
+          ${step ? `<button class="primary" id="open-week" ${studentTab === "path" ? "" : "hidden"}
+            style="width:auto;padding:11px 18px">Open ${esc(weekOf(step.label))}</button>` : ""}
+        </div>
+
+        <div data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
+          <div class="tiles">
+            <div class="tile"><div class="v">${path.n_done} of ${path.n_weeks}</div><div class="k">weeks done</div></div>
+            <div class="tile"><div class="v">${progress ? progress.streak.current : 0}</div><div class="k">day streak</div></div>
+            ${avg === null
+              ? `<div class="tile"><div class="v text">${step ? esc(weekOf(step.label)) : "All done"}</div><div class="k">next step</div></div>`
+              : `<div class="tile"><div class="v">${avg}</div><div class="k">average of your ${marks.length} ${marks.length === 1 ? "mark" : "marks"}${marks.length - passed ? `, ${marks.length - passed} below the pass mark` : ""}</div></div>`}
+          </div>
+          ${state.n_events === 0 ? `<div class="callout">Welcome. Your path follows your course week by week, starting at Week 1. Press "I studied this" or "I passed the test" and it moves on to the next week.</div>` : ""}
+          ${nextStepCard(step, t, true)}
+          ${pathList(path.steps, t, true)}
+          ${courseStrip(state.concepts, t, true, false)}
+        </div>
+
+        <div data-tabpanel="details" ${studentTab === "details" ? "" : "hidden"}>
+          ${studiesForm()}
+          ${savedCourses.length ? shortlistBlock(savedCourses) : ""}
+          ${profileForm(form.fields, mine.profile || {}, mine.module, form.note)}
+        </div>
       </div>
-      ${state.n_events === 0 ? `<div class="callout">Welcome. Your path follows your course week by week, starting at Week 1. Press "I studied this" or "I passed the test" and it moves on to the next week.</div>` : ""}
-      ${nextStepCard(path.steps[0], t, true)}
-      ${pathList(path.steps, t, true)}
-      ${courseStrip(state.concepts, t, true, false)}
-    </div>
 
-
-    <div data-tabpanel="details" ${studentTab === "details" ? "" : "hidden"}>
-      ${studiesForm()}
-      ${savedCourses.length ? shortlistBlock(savedCourses) : ""}
-      ${profileForm(form.fields, mine.profile || {}, mine.module, form.note)}
+      <aside class="railside">
+        ${step ? quizBlock(step) : ""}
+        ${marks.length ? recentScores(marks) : ""}
+        ${shortlistRail(savedCourses)}
+      </aside>
     </div>
   </div>`;
 
-  bindTabs(root, "stab", v => { studentTab = v; hideTip(); });
+  bindTabs(root, "stab", v => {
+    studentTab = v; hideTip();
+    const o = $("#open-week"); if(o) o.hidden = v !== "path";
+  });
+  const open = $("#open-week");
+  if(open) open.onclick = () => weekSheet(path.steps[0], t, true, `Step 1 of ${path.steps.length}`);
   bindViz(root, null);
   bindPath(root, path.steps, t, true);
   bindStudies();

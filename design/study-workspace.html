@@ -1,0 +1,494 @@
+<title>Study Workspace</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --page:#F4F5F3; --page-ink:#14181B; --page-soft:#59626A; --page-rule:#DFE2DE; --page-card:#FFF;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page:#0D1114; --page-ink:#EDF0F2; --page-soft:#A9B3BA; --page-rule:#262E34; --page-card:#141A1E;
+    }
+  }
+  :root[data-theme="dark"]{
+    --page:#0D1114; --page-ink:#EDF0F2; --page-soft:#A9B3BA; --page-rule:#262E34; --page-card:#141A1E;
+  }
+  body{margin:0;background:var(--page);color:var(--page-ink);
+    font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+  .wrap{max-width:1240px;margin:0 auto;padding-block:40px;padding-left:20px;padding-right:20px}
+  h1{margin:0;font-size:clamp(26px,4vw,34px);font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+  .lede{margin:10px 0 0;color:var(--page-soft);font-size:16px;line-height:1.65;max-width:64ch}
+  section{margin-top:40px}
+  .sechead{display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;
+    border-bottom:1px solid var(--page-rule);padding-bottom:10px;margin-bottom:8px}
+  .sechead h2{margin:0;font-size:19px;font-weight:700}
+  .sechead span{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--page-soft)}
+  section > p{margin:8px 0 16px;color:var(--page-soft);font-size:14.5px;line-height:1.7;max-width:70ch}
+  .frame{border:1px solid var(--page-rule);border-radius:16px;overflow-x:auto;background:var(--mk-ground)}
+  .frame.phone{max-width:390px;overflow-x:hidden}
+  ul.took{margin:0;padding:0;list-style:none;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  ul.took li{border:1px solid var(--page-rule);border-radius:12px;padding:14px 16px;background:var(--page-card)}
+  ul.took b{display:block;font-size:14px;margin-bottom:4px}
+  ul.took span{font-size:13px;color:var(--page-soft);line-height:1.6}
+  footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--page-rule);
+    color:var(--page-soft);font-size:13.5px;line-height:1.7}
+
+  /* ---- the mockup itself, tokenised so light and dark are one markup ---- */
+  .mk{--accent:#1F5E7A; --accent-soft:#E5F0F5; --ground:#F6F8FA; --surface:#fff; --alt:#EDF1F5;
+      --ink:#101828; --soft:#475467; --faint:#7A8696; --rule:#E1E6EC;
+      --good:#2A6350; --good-soft:#E3F1EB; --warnc:#9E3A2C; --warn-soft:#F9E9E6;
+      --l1:#86b6ef; --l2:#3987e5; --l3:#1c5cab;
+      --mk-ground:var(--ground);
+      background:var(--ground);color:var(--ink);font-size:13px;min-width:1180px}
+  .mk.dark{--accent:#7FC4DE; --accent-soft:#16323F; --ground:#0F1418; --surface:#161C21; --alt:#212A31;
+      --ink:#E9EDF0; --soft:#AEB9C1; --faint:#88949E; --rule:#2A343B;
+      --good:#8FD3BA; --good-soft:#12302A; --warnc:#F0A79B; --warn-soft:#3A211D;
+      --l1:#2F4C6B; --l2:#3D82CE; --l3:#8FC4F7}
+  .mk.narrow{min-width:0}
+  .mk .topbar{display:flex;align-items:center;gap:18px;padding:0 18px;height:56px;
+    background:var(--surface);border-bottom:1px solid var(--rule)}
+  .mk .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px;white-space:nowrap}
+  .mk .tabs{display:flex;gap:2px}
+  .mk .tab{padding:7px 11px;border-radius:9px;color:var(--soft);font-size:13px;white-space:nowrap}
+  .mk .tab.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .mk .topright{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--soft);font-size:12px}
+  .mk .iconbtn{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--rule);
+    border-radius:9px;color:var(--soft)}
+  .mk .chip{font-size:11px;border-radius:999px;padding:3px 9px;background:var(--alt);color:var(--soft);
+    white-space:nowrap}
+  .mk .chip.solid{background:var(--accent-soft);color:var(--accent);font-weight:700;
+    text-transform:uppercase;letter-spacing:.05em}
+  .mk .chip.good{background:var(--good-soft);color:var(--good);font-weight:600}
+  .mk .chip.warn{background:var(--warn-soft);color:var(--warnc);font-weight:600}
+  .mk .panes{display:grid;grid-template-columns:212px 1fr 262px;gap:14px;padding:14px}
+  .mk.narrow .panes{grid-template-columns:1fr}
+  .mk .rail,.mk .side{display:flex;flex-direction:column;gap:12px}
+  .mk .rail{background:var(--surface);border:1px solid var(--rule);border-radius:16px;padding:14px}
+  .mk .railhead{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .mk .days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .mk .day{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:8px;
+    background:var(--alt);font-size:10px;color:var(--faint)}
+  .mk .day i{font-style:normal;font-size:12px;font-weight:700;color:var(--soft)}
+  .mk .day.on{background:var(--accent);color:var(--surface)}
+  .mk .day.on i{color:var(--surface)}
+  .mk .bar{height:7px;border-radius:4px;background:var(--alt);overflow:hidden}
+  .mk .bar span{display:block;height:100%;background:var(--accent);border-radius:4px}
+  .mk .bar span.dim{background:var(--rule)}
+  .mk .bar.sm{height:6px}
+  .mk .muted{color:var(--soft);font-size:12px}
+  .mk .tiny{font-size:11px}
+  .mk .warn{color:var(--warnc)}
+  .mk .raillist{display:flex;flex-direction:column;gap:5px}
+  .mk .railitem{font-size:12px;padding:8px 10px;border-radius:9px;border:1px solid var(--rule);color:var(--soft)}
+  .mk .railitem.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .mk .railitem.warn{border-color:var(--warnc);color:var(--warnc)}
+  .mk .work{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .mk .greet{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:4px 2px}
+  .mk .greet h2{margin:0;font-size:21px;font-weight:700;letter-spacing:-.02em}
+  .mk .greet p{margin:5px 0 0}
+  .mk .btn{border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:11px;
+    padding:9px 14px;font-size:12.5px;white-space:nowrap}
+  .mk .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:700}
+  .mk .btn.wide{display:block;text-align:center;margin-top:10px}
+  .mk .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .mk .tile{background:var(--surface);border:1px solid var(--rule);border-radius:16px;padding:14px 16px;
+    display:flex;flex-direction:column;gap:5px}
+  .mk .tile b{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .mk .tile b em{font-style:normal;font-size:14px;color:var(--faint);font-weight:500}
+  .mk .tile.fill{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .mk .panel{background:var(--surface);border:1px solid var(--rule);border-radius:16px;padding:16px 18px}
+  .mk .panel h3{margin:4px 0 0;font-size:17px;font-weight:700}
+  .mk .panel h4{margin:0 0 4px;font-size:13px;font-weight:700}
+  .mk .panelhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .mk .panelhead h3{margin:0}
+  .mk .eyebrow{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+  .mk .next{border-left:3px solid var(--accent)}
+  .mk .reasons{margin:10px 0 0;padding-left:17px;color:var(--soft);font-size:12.5px;line-height:1.8}
+  .mk .row{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
+  .mk .score{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:13px;padding-top:13px;
+    border-top:1px solid var(--rule)}
+  .mk .field{border:1px solid var(--rule);border-radius:11px;padding:8px 11px;color:var(--faint);
+    font-size:12.5px;min-width:96px}
+  .mk .steps{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+  .mk .step{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:11px;
+    border:1px solid var(--rule);border-radius:13px;padding:10px 12px}
+  .mk .step.on{border-color:var(--accent);background:var(--accent-soft)}
+  .mk .step .num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+    background:var(--alt);color:var(--soft);font-size:12px;font-weight:700}
+  .mk .step.on .num{background:var(--accent);color:var(--surface)}
+  .mk .step b{display:block;font-size:13px}
+  .mk .step .tiny{display:block;margin-top:2px}
+  .mk .recordrow,.mk .scorerow{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    font-size:12.5px;padding:5px 0}
+  .mk .scorerow{display:grid;grid-template-columns:52px 1fr 30px;align-items:center}
+  .mk .scorerow b{text-align:right;font-size:12.5px}
+  .mk .saved{border:1px solid var(--rule);border-radius:12px;padding:10px 12px;margin-top:7px;
+    display:flex;flex-direction:column;gap:3px;font-size:13px}
+</style>
+
+<div class="wrap">
+  <h1>Study workspace</h1>
+  <p class="lede">The design I would build, taking what survived from the education dashboards you
+    liked. Three panes on a wide screen, one column on a phone, and every number on it is
+    something the site already knows: dates from the planner, marks from the quiz field,
+    the streak from recorded activity.</p>
+
+  <section>
+    <div class="sechead"><h2>Wide screen, light</h2><span>1280px and up</span></div>
+    <p>The rail carries the week and the course, the middle carries the work, the right carries
+      the things a student does in ten seconds: record a quiz, check scores, open the record.</p>
+    <div class="frame"><div class="mk">
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"></rect><path d="M7 24 L16 16 L25 8" stroke="var(--surface)" stroke-width="2.4" fill="none" stroke-linecap="round"></path></svg>
+      Learning Path
+    </div>
+    <nav class="tabs">
+      <span class="tab on">My learning</span><span class="tab">Progress</span>
+      <span class="tab">Course Finder</span><span class="tab">Record</span>
+    </nav>
+    <div class="topright">
+      <span class="iconbtn" title="Theme"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path></svg></span>
+      <span class="who">Gursimar</span><span class="chip solid">Student</span>
+    </div>
+  </div>
+
+  <div class="panes">
+    <aside class="rail">
+      <div class="railhead">This week</div>
+      <div class="days">
+        <span class="day"><b>M</b><i>2</i></span><span class="day"><b>T</b><i>1</i></span>
+        <span class="day on"><b>W</b><i>3</i></span><span class="day"><b>T</b><i>0</i></span>
+        <span class="day"><b>F</b><i>0</i></span><span class="day"><b>S</b><i>1</i></span>
+        <span class="day"><b>S</b><i>0</i></span>
+      </div>
+      <div class="railhead">Computer Science</div>
+      <div class="bar"><span style="width:11%"></span></div>
+      <div class="muted">4 of 35 weeks · ends 12 Jun 2027</div>
+      <div class="railhead">Jump to</div>
+      <div class="raillist">
+        <span class="railitem on">Week 5 · now</span>
+        <span class="railitem">Week 6 · 28 Sep</span>
+        <span class="railitem warn">Week 3 · retake</span>
+      </div>
+    </aside>
+
+    <main class="work">
+      <div class="greet">
+        <div>
+          <h2>Good morning, Gursimar</h2>
+          <p class="muted">Week 5 runs 21 to 27 September. One quiz is waiting to be retaken.</p>
+        </div>
+        <span class="btn primary">Add to my calendar</span>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><span class="muted">Weeks done</span><b>4 <em>/ 35</em></b><div class="bar sm"><span style="width:11%"></span></div></div>
+        <div class="tile fill"><span>Day streak</span><b>4</b><span class="tiny">longest 6</span></div>
+        <div class="tile"><span class="muted">Average score</span><b>64</b><span class="tiny warn">2 below the pass mark</span></div>
+      </div>
+
+      <div class="panel next">
+        <div class="panelhead">
+          <div><span class="eyebrow">Your next step</span><h3>Computer Science · Week 5</h3></div>
+          <span class="chip good">Ready · 21 Sep</span>
+        </div>
+        <ul class="reasons">
+          <li>Builds on Week 4 and Week 1, which you already have.</li>
+          <li>Finishing it opens up Week 6.</li>
+        </ul>
+        <div class="row">
+          <span class="btn primary">I studied this</span>
+          <span class="btn">I passed the test</span>
+          <span class="btn">I found it hard</span>
+        </div>
+        <div class="score">
+          <span class="muted">Took a quiz?</span>
+          <span class="field">out of 100</span>
+          <span class="btn">Save score</span>
+          <span class="tiny muted">40 or more counts as a pass</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panelhead"><h3>The weeks ahead</h3><span class="tiny muted">dates from your plan</span></div>
+        <div class="steps">
+          <div class="step on"><span class="num">5</span><div><b>Week 5</b><span class="tiny muted">21 to 27 Sep · ready</span></div><span class="chip">Now</span></div>
+          <div class="step"><span class="num">6</span><div><b>Week 6</b><span class="tiny muted">28 Sep to 4 Oct</span></div><span></span></div>
+          <div class="step"><span class="num">7</span><div><b>Week 7</b><span class="tiny muted">5 to 11 Oct · revise Week 3 first</span></div><span class="chip warn">34 / 100</span></div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="side">
+      <div class="panel">
+        <h4>Record of study</h4>
+        <p class="tiny muted">Weeks finished, marks and dates. Printable.</p>
+        <div class="recordrow"><span>Weeks finished</span><b>4</b></div>
+        <div class="recordrow"><span>Quizzes recorded</span><b>6</b></div>
+        <div class="recordrow"><span>Since</span><b>2 Sep 2026</b></div>
+        <span class="btn wide">Open record</span>
+      </div>
+      <div class="panel">
+        <h4>Recent scores</h4>
+        <div class="scorerow"><span>Week 4</span><div class="bar sm"><span style="width:88%"></span></div><b>88</b></div>
+        <div class="scorerow"><span>Week 3</span><div class="bar sm"><span class="dim" style="width:34%"></span></div><b class="warn">34</b></div>
+        <div class="scorerow"><span>Week 2</span><div class="bar sm"><span style="width:71%"></span></div><b>71</b></div>
+      </div>
+      <div class="panel">
+        <h4>Saved courses</h4>
+        <div class="saved"><b>MCA</b><span class="tiny muted">Postgraduate · 2 years</span></div>
+        <div class="saved"><b>Data Analytics Associate</b><span class="tiny muted">Skill path · 6 months</span></div>
+      </div>
+    </aside>
+  </div>
+</div>
+</div></div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>Wide screen, dark</h2><span>same markup, swapped tokens</span></div>
+    <p>The level colours are re-cut for a dark ground: brightness carries the order, because the
+      darkest blue would otherwise read as the weakest week rather than the strongest.</p>
+    <div class="frame"><div class="mk dark">
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"></rect><path d="M7 24 L16 16 L25 8" stroke="var(--surface)" stroke-width="2.4" fill="none" stroke-linecap="round"></path></svg>
+      Learning Path
+    </div>
+    <nav class="tabs">
+      <span class="tab on">My learning</span><span class="tab">Progress</span>
+      <span class="tab">Course Finder</span><span class="tab">Record</span>
+    </nav>
+    <div class="topright">
+      <span class="iconbtn" title="Theme"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4"></path></svg></span>
+      <span class="who">Gursimar</span><span class="chip solid">Student</span>
+    </div>
+  </div>
+
+  <div class="panes">
+    <aside class="rail">
+      <div class="railhead">This week</div>
+      <div class="days">
+        <span class="day"><b>M</b><i>2</i></span><span class="day"><b>T</b><i>1</i></span>
+        <span class="day on"><b>W</b><i>3</i></span><span class="day"><b>T</b><i>0</i></span>
+        <span class="day"><b>F</b><i>0</i></span><span class="day"><b>S</b><i>1</i></span>
+        <span class="day"><b>S</b><i>0</i></span>
+      </div>
+      <div class="railhead">Computer Science</div>
+      <div class="bar"><span style="width:11%"></span></div>
+      <div class="muted">4 of 35 weeks · ends 12 Jun 2027</div>
+      <div class="railhead">Jump to</div>
+      <div class="raillist">
+        <span class="railitem on">Week 5 · now</span>
+        <span class="railitem">Week 6 · 28 Sep</span>
+        <span class="railitem warn">Week 3 · retake</span>
+      </div>
+    </aside>
+
+    <main class="work">
+      <div class="greet">
+        <div>
+          <h2>Good morning, Gursimar</h2>
+          <p class="muted">Week 5 runs 21 to 27 September. One quiz is waiting to be retaken.</p>
+        </div>
+        <span class="btn primary">Add to my calendar</span>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><span class="muted">Weeks done</span><b>4 <em>/ 35</em></b><div class="bar sm"><span style="width:11%"></span></div></div>
+        <div class="tile fill"><span>Day streak</span><b>4</b><span class="tiny">longest 6</span></div>
+        <div class="tile"><span class="muted">Average score</span><b>64</b><span class="tiny warn">2 below the pass mark</span></div>
+      </div>
+
+      <div class="panel next">
+        <div class="panelhead">
+          <div><span class="eyebrow">Your next step</span><h3>Computer Science · Week 5</h3></div>
+          <span class="chip good">Ready · 21 Sep</span>
+        </div>
+        <ul class="reasons">
+          <li>Builds on Week 4 and Week 1, which you already have.</li>
+          <li>Finishing it opens up Week 6.</li>
+        </ul>
+        <div class="row">
+          <span class="btn primary">I studied this</span>
+          <span class="btn">I passed the test</span>
+          <span class="btn">I found it hard</span>
+        </div>
+        <div class="score">
+          <span class="muted">Took a quiz?</span>
+          <span class="field">out of 100</span>
+          <span class="btn">Save score</span>
+          <span class="tiny muted">40 or more counts as a pass</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panelhead"><h3>The weeks ahead</h3><span class="tiny muted">dates from your plan</span></div>
+        <div class="steps">
+          <div class="step on"><span class="num">5</span><div><b>Week 5</b><span class="tiny muted">21 to 27 Sep · ready</span></div><span class="chip">Now</span></div>
+          <div class="step"><span class="num">6</span><div><b>Week 6</b><span class="tiny muted">28 Sep to 4 Oct</span></div><span></span></div>
+          <div class="step"><span class="num">7</span><div><b>Week 7</b><span class="tiny muted">5 to 11 Oct · revise Week 3 first</span></div><span class="chip warn">34 / 100</span></div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="side">
+      <div class="panel">
+        <h4>Record of study</h4>
+        <p class="tiny muted">Weeks finished, marks and dates. Printable.</p>
+        <div class="recordrow"><span>Weeks finished</span><b>4</b></div>
+        <div class="recordrow"><span>Quizzes recorded</span><b>6</b></div>
+        <div class="recordrow"><span>Since</span><b>2 Sep 2026</b></div>
+        <span class="btn wide">Open record</span>
+      </div>
+      <div class="panel">
+        <h4>Recent scores</h4>
+        <div class="scorerow"><span>Week 4</span><div class="bar sm"><span style="width:88%"></span></div><b>88</b></div>
+        <div class="scorerow"><span>Week 3</span><div class="bar sm"><span class="dim" style="width:34%"></span></div><b class="warn">34</b></div>
+        <div class="scorerow"><span>Week 2</span><div class="bar sm"><span style="width:71%"></span></div><b>71</b></div>
+      </div>
+      <div class="panel">
+        <h4>Saved courses</h4>
+        <div class="saved"><b>MCA</b><span class="tiny muted">Postgraduate · 2 years</span></div>
+        <div class="saved"><b>Data Analytics Associate</b><span class="tiny muted">Skill path · 6 months</span></div>
+      </div>
+    </aside>
+  </div>
+</div>
+</div></div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>Phone</h2><span>390px</span></div>
+    <p>The rails stack under the work, so the next step and its buttons stay first. This is the
+      layout most of your students will actually see.</p>
+    <div class="frame phone"><div class="mk narrow">
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"></rect><path d="M7 24 L16 16 L25 8" stroke="var(--surface)" stroke-width="2.4" fill="none" stroke-linecap="round"></path></svg>
+      Learning Path
+    </div>
+    <nav class="tabs">
+      <span class="tab on">My learning</span><span class="tab">Progress</span>
+      <span class="tab">Course Finder</span><span class="tab">Record</span>
+    </nav>
+    <div class="topright">
+      <span class="iconbtn" title="Theme"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path></svg></span>
+      <span class="who">Gursimar</span><span class="chip solid">Student</span>
+    </div>
+  </div>
+
+  <div class="panes">
+    <aside class="rail">
+      <div class="railhead">This week</div>
+      <div class="days">
+        <span class="day"><b>M</b><i>2</i></span><span class="day"><b>T</b><i>1</i></span>
+        <span class="day on"><b>W</b><i>3</i></span><span class="day"><b>T</b><i>0</i></span>
+        <span class="day"><b>F</b><i>0</i></span><span class="day"><b>S</b><i>1</i></span>
+        <span class="day"><b>S</b><i>0</i></span>
+      </div>
+      <div class="railhead">Computer Science</div>
+      <div class="bar"><span style="width:11%"></span></div>
+      <div class="muted">4 of 35 weeks · ends 12 Jun 2027</div>
+      <div class="railhead">Jump to</div>
+      <div class="raillist">
+        <span class="railitem on">Week 5 · now</span>
+        <span class="railitem">Week 6 · 28 Sep</span>
+        <span class="railitem warn">Week 3 · retake</span>
+      </div>
+    </aside>
+
+    <main class="work">
+      <div class="greet">
+        <div>
+          <h2>Good morning, Gursimar</h2>
+          <p class="muted">Week 5 runs 21 to 27 September. One quiz is waiting to be retaken.</p>
+        </div>
+        <span class="btn primary">Add to my calendar</span>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><span class="muted">Weeks done</span><b>4 <em>/ 35</em></b><div class="bar sm"><span style="width:11%"></span></div></div>
+        <div class="tile fill"><span>Day streak</span><b>4</b><span class="tiny">longest 6</span></div>
+        <div class="tile"><span class="muted">Average score</span><b>64</b><span class="tiny warn">2 below the pass mark</span></div>
+      </div>
+
+      <div class="panel next">
+        <div class="panelhead">
+          <div><span class="eyebrow">Your next step</span><h3>Computer Science · Week 5</h3></div>
+          <span class="chip good">Ready · 21 Sep</span>
+        </div>
+        <ul class="reasons">
+          <li>Builds on Week 4 and Week 1, which you already have.</li>
+          <li>Finishing it opens up Week 6.</li>
+        </ul>
+        <div class="row">
+          <span class="btn primary">I studied this</span>
+          <span class="btn">I passed the test</span>
+          <span class="btn">I found it hard</span>
+        </div>
+        <div class="score">
+          <span class="muted">Took a quiz?</span>
+          <span class="field">out of 100</span>
+          <span class="btn">Save score</span>
+          <span class="tiny muted">40 or more counts as a pass</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panelhead"><h3>The weeks ahead</h3><span class="tiny muted">dates from your plan</span></div>
+        <div class="steps">
+          <div class="step on"><span class="num">5</span><div><b>Week 5</b><span class="tiny muted">21 to 27 Sep · ready</span></div><span class="chip">Now</span></div>
+          <div class="step"><span class="num">6</span><div><b>Week 6</b><span class="tiny muted">28 Sep to 4 Oct</span></div><span></span></div>
+          <div class="step"><span class="num">7</span><div><b>Week 7</b><span class="tiny muted">5 to 11 Oct · revise Week 3 first</span></div><span class="chip warn">34 / 100</span></div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="side">
+      <div class="panel">
+        <h4>Record of study</h4>
+        <p class="tiny muted">Weeks finished, marks and dates. Printable.</p>
+        <div class="recordrow"><span>Weeks finished</span><b>4</b></div>
+        <div class="recordrow"><span>Quizzes recorded</span><b>6</b></div>
+        <div class="recordrow"><span>Since</span><b>2 Sep 2026</b></div>
+        <span class="btn wide">Open record</span>
+      </div>
+      <div class="panel">
+        <h4>Recent scores</h4>
+        <div class="scorerow"><span>Week 4</span><div class="bar sm"><span style="width:88%"></span></div><b>88</b></div>
+        <div class="scorerow"><span>Week 3</span><div class="bar sm"><span class="dim" style="width:34%"></span></div><b class="warn">34</b></div>
+        <div class="scorerow"><span>Week 2</span><div class="bar sm"><span style="width:71%"></span></div><b>71</b></div>
+      </div>
+      <div class="panel">
+        <h4>Saved courses</h4>
+        <div class="saved"><b>MCA</b><span class="tiny muted">Postgraduate · 2 years</span></div>
+        <div class="saved"><b>Data Analytics Associate</b><span class="tiny muted">Skill path · 6 months</span></div>
+      </div>
+    </aside>
+  </div>
+</div>
+</div></div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>What came from where</h2><span>and what I left out</span></div>
+    <ul class="took">
+      <li><b>Three panes</b><span>Edu.ai. Quick actions get a permanent home instead of hiding inside a card.</span></li>
+      <li><b>Week strip</b><span>Edu.ai's week at a glance, built from activity you actually recorded.</span></li>
+      <li><b>Status pills</b><span>Every shot uses them. "Ready · 21 Sep" reads faster than a sentence.</span></li>
+      <li><b>One filled tile</b><span>Learnova. A row of identical tiles gives the eye nowhere to land.</span></li>
+      <li><b>Dates on weeks</b><span>Every dashboard had a schedule; yours had none. Now the planner sets them.</span></li>
+      <li><b>Record of study</b><span>Their certificates, made honest: what you finished, marked as issued by nobody.</span></li>
+      <li><b>No ratings or counts</b><span>"12k enrolled", star ratings: invented numbers, so they are out.</span></li>
+      <li><b>No leaderboards</b><span>They lift the top few and discourage the students who need this most.</span></li>
+      <li><b>No AI confidence card</b><span>We would have to make the number up. Explanations trace to real values instead.</span></li>
+    </ul>
+  </section>
+
+  <footer>Mockup, not the live site. Dates, calendar export, dark mode and the record of study are
+    already built and running; this shows how they fit together on one screen.</footer>
+</div>
