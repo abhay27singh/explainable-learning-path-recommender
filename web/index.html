@@ -27,6 +27,40 @@
     --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
     --header:64px;
+    --footer:#101828; --footer-ink:#C7CED9; --veil:rgba(255,255,255,.96);
+  }
+  /* Dark theme. The level ramp keeps its meaning by brightness rather than depth:
+     on a dark ground the darkest blue would read as the weakest, which is backwards. */
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --ground:#0F1418; --surface:#161C21; --surface-alt:#212A31;
+      --ink:#E9EDF0; --ink-soft:#AEB9C1; --ink-faint:#88949E;
+      --rule:#2A343B; --accent:#7FC4DE; --accent-strong:#A8DBEC; --accent-soft:#16323F;
+      --warn:#F0A79B; --warn-soft:#3A211D; --good:#8FD3BA; --good-soft:#12302A;
+      --lvl-1:#2F4C6B; --lvl-2:#3D82CE; --lvl-3:#8FC4F7; --viz-bar:#5AA3E8;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+      --footer:#0A0E11; --footer-ink:#AEB9C1; --veil:rgba(22,28,33,.96);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --ground:#0F1418; --surface:#161C21; --surface-alt:#212A31;
+    --ink:#E9EDF0; --ink-soft:#AEB9C1; --ink-faint:#88949E;
+    --rule:#2A343B; --accent:#7FC4DE; --accent-strong:#A8DBEC; --accent-soft:#16323F;
+    --warn:#F0A79B; --warn-soft:#3A211D; --good:#8FD3BA; --good-soft:#12302A;
+    --lvl-1:#2F4C6B; --lvl-2:#3D82CE; --lvl-3:#8FC4F7; --viz-bar:#5AA3E8;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+    --footer:#0A0E11; --footer-ink:#AEB9C1; --veil:rgba(22,28,33,.96);
+  }
+  .theme-toggle{display:grid;place-items:center;width:36px;height:36px;padding:0;border-radius:8px}
+  .theme-toggle svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+  /* Printing a record: only the record, no chrome. */
+  @media print{
+    header.site, footer.site, .noprint{display:none!important}
+    body{background:#fff}
+    .block, .next, .card, .course{box-shadow:none!important;break-inside:avoid}
+    .page{max-width:none;padding:0}
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -58,7 +92,7 @@
   .err{background:var(--warn-soft);color:var(--warn);padding:10px 12px;border-radius:8px;font-size:13px;margin-top:14px}
 
   /* ---------- site header ---------- */
-  header.site{position:sticky;top:0;z-index:40;height:var(--header);background:rgba(255,255,255,.96);
+  header.site{position:sticky;top:0;z-index:40;height:var(--header);background:var(--veil);
     border-bottom:1px solid var(--rule);backdrop-filter:saturate(1.2) blur(6px)}
   header.site .in{max-width:1180px;margin:0 auto;height:100%;padding:0 22px;display:flex;align-items:center;gap:22px}
   .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--ink);text-decoration:none;white-space:nowrap}
@@ -118,13 +152,13 @@
   .research li b{color:var(--ink)}
   @media(max-width:860px){.facts,.steps3,.features,.research{grid-template-columns:1fr}.hero{padding:56px 18px 44px}}
 
-  footer.site{background:#101828;color:#C7CED9;margin-top:0}
+  footer.site{background:var(--footer);color:var(--footer-ink);margin-top:0}
   footer.site .in{max-width:1180px;margin:0 auto;padding:36px 22px;display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between}
   footer.site .brand{color:#fff}
   footer.site p{margin:8px 0 0;font-size:13px;max-width:380px}
   footer.site .cols{display:flex;gap:40px;flex-wrap:wrap}
   footer.site h4{margin:0 0 10px;font-size:13px;color:#fff}
-  footer.site a{display:block;color:#C7CED9;text-decoration:none;font-size:14px;margin:6px 0;cursor:pointer}
+  footer.site a{display:block;color:var(--footer-ink);text-decoration:none;font-size:14px;margin:6px 0;cursor:pointer}
   footer.site a:hover{color:#fff}
 
   /* ---------- auth ---------- */
@@ -300,6 +334,8 @@
       <button data-go="admin" id="nav-admin" style="display:none">Admin</button>
     </nav>
     <div class="right">
+      <button id="theme-toggle" class="small theme-toggle" type="button" aria-pressed="false"
+        title="Switch to dark mode"><span id="theme-icon"></span></button>
       <a class="btn ghost guest-only" data-go="login" href="#/login">Sign in</a>
       <a class="btn primary guest-only" data-go="signup" href="#/signup">Get started</a>
       <span class="auth-only" id="who"></span><span class="badge auth-only" id="rolebadge"></span>
@@ -421,6 +457,8 @@
 
 <div class="view" id="view-progress"></div>
 
+<div class="view" id="view-record"></div>
+
 <div class="view" id="view-finder">
   <main class="split">
     <aside id="finder-form-wrap"><div class="empty">loading</div></aside>
@@ -507,6 +545,33 @@ const post = (p, body) => api(p, {method:"POST", headers:{"content-type":"applic
 let me=null, metrics=null, current=null, known=new Set(), planner="greedy";
 let studentTab="path", learnerTab="path";
 
+/* Theme. Three states, like the page itself: the viewer's system setting until they
+   choose, then their choice, remembered per browser. */
+const THEME_KEY = "elpr-theme";
+const MOON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path></svg>`;
+const SUN = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>`;
+function readTheme(){
+  try{ return localStorage.getItem(THEME_KEY); }catch{ return null; }
+}
+function applyTheme(mode){
+  const root = document.documentElement;
+  if(mode) root.setAttribute("data-theme", mode); else root.removeAttribute("data-theme");
+  const dark = mode === "dark"
+    || (!mode && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const button = $("#theme-toggle");
+  button.setAttribute("aria-pressed", String(dark));
+  button.title = dark ? "Switch to light mode" : "Switch to dark mode";
+  $("#theme-icon").innerHTML = dark ? SUN : MOON;
+}
+$("#theme-toggle").onclick = () => {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  try{ localStorage.setItem(THEME_KEY, next); }catch{}
+  applyTheme(next);
+};
+applyTheme(readTheme());
+window.matchMedia("(prefers-color-scheme: dark)")
+  .addEventListener("change", () => { if(!readTheme()) applyTheme(null); });
+
 /* ---------------- routing ---------------- */
 const PUBLIC = new Set(["home","login","signup","finder","privacy","terms"]);
 function nav(name){
@@ -525,6 +590,7 @@ function show(name){
   document.querySelectorAll("nav.links button").forEach(b => b.classList.toggle("on", b.dataset.go === name));
   if(name === "dashboard") renderHome();
   if(name === "progress") renderProgress();
+  if(name === "record") renderRecord();
   if(name === "research") renderResults().then(renderAbout);
   if(name === "admin") renderAdmin();
   if(name === "finder") renderFinder();
@@ -704,25 +770,36 @@ const courseCard = (c, extra = "") => `<div class="course" data-key="${esc(c.key
 /* Spread a course over the weeks a student has. The server does the arithmetic so the
    page and the tests agree on what a week contains. */
 const planCache = {};
-async function loadPlan(card, weeks){
+async function loadPlan(card, weeks, start){
   const key = card.dataset.key, body = card.querySelector(".plan-body");
   if(!key) return;
-  const id = `${key}:${weeks || ""}`;
+  const id = `${key}:${weeks || ""}:${start || ""}`;
   body.innerHTML = `<p class="muted small">Working it out</p>`;
   try{
     planCache[id] = planCache[id] || await api(`/api/course-finder/plan?key=${encodeURIComponent(key)}`
-      + (weeks ? `&weeks=${weeks}` : ""));
+      + (weeks ? `&weeks=${weeks}` : "") + (start ? `&start=${encodeURIComponent(start)}` : `&start=${todayISO()}`));
   }catch(err){ body.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
   const p = planCache[id];
+  const dated = w => w.starts
+    ? `<span class="caption"> ${new Date(w.starts + "T00:00:00").toLocaleDateString(undefined, {day:"numeric", month:"short"})}
+       to ${new Date(w.ends + "T00:00:00").toLocaleDateString(undefined, {day:"numeric", month:"short"})}</span>` : "";
   body.innerHTML = `
     <p class="muted small">${p.n_subjects} subjects. Finish in
       <select class="plan-weeks">${p.options.map(w =>
         `<option value="${w}"${w === p.n_weeks ? " selected" : ""}>${w} weeks</option>`).join("")}</select>
+      starting <input type="date" class="plan-start" value="${esc(p.starts || todayISO())}" style="width:auto;display:inline-block" />
       and that is about ${p.per_week} ${p.per_week === 1 ? "subject" : "subjects"} a week.</p>
-    <ol class="plain plan-weeks-list">${p.weeks.map(w => `<li><b>Week ${w.week}</b>
+    <ol class="plain plan-weeks-list">${p.weeks.map(w => `<li><b>Week ${w.week}</b>${dated(w)}
       <ul class="plain">${w.subjects.map(s => `<li>${esc(s.name)}${linkRow(s.links)}</li>`).join("")}</ul></li>`).join("")}</ol>
-    <p class="caption" style="margin:8px 0 0">${esc(p.note)}</p>`;
-  body.querySelector(".plan-weeks").onchange = e => loadPlan(card, e.target.value);
+    <div class="row" style="margin-top:10px">
+      <a class="btn small" href="/api/course-finder/plan.ics?key=${encodeURIComponent(p.key)}&weeks=${p.n_weeks}&start=${encodeURIComponent(p.starts || todayISO())}">Add to my calendar</a>
+    </div>
+    <p class="caption" style="margin:8px 0 0">${esc(p.note)} The calendar file holds one all-day
+      event a week, which you can open in Google Calendar or Apple Calendar.</p>`;
+  body.querySelector(".plan-weeks").onchange = e =>
+    loadPlan(card, e.target.value, body.querySelector(".plan-start").value);
+  body.querySelector(".plan-start").onchange = e =>
+    loadPlan(card, body.querySelector(".plan-weeks").value, e.target.value);
 }
 /* A class 11 stream, with a look at the degrees it opens up two years later. */
 const streamCard = st => `<div class="course" data-stream="${esc(st.value)}">
@@ -758,6 +835,8 @@ function bindPlans(root){
       loadPlan(d.closest(".course"), null);
   });
 }
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 /* ---------------- shortlist: courses a student saves ---------------- */
 let saved = new Set(), savedCourses = [], savedLoaded = false;
@@ -1213,7 +1292,11 @@ function pathList(steps, t, forStudent){
       </button>
 
     </li>`).join("");
-  return `<div class="block"><h3>${forStudent ? "Your path" : "Their path"}</h3>
+  return `<div class="block">
+    <div class="row" style="justify-content:space-between;align-items:baseline">
+      <h3 style="margin:0">${forStudent ? "Your path" : "Their path"}</h3>
+      ${forStudent ? `<a class="btn small" href="/api/me/path.ics?weeks=${steps.length}&start=${todayISO()}">Add to my calendar</a>` : ""}
+    </div>
     <p class="muted small">Open a step to see why it comes next, what to revise and what it opens up. Each step after the first assumes the ones before it are finished.</p>
     <ol class="path">${items}</ol></div>`;
 }
@@ -1592,7 +1675,8 @@ async function renderProgress(){
     : "<li>Nothing recorded yet.</li>";
   root.innerHTML = `<div class="page">
     ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`,
-      `<button class="small" data-go="dashboard">Back to my path</button>`)}
+      `<span class="row"><button class="small" data-go="record">Record of study</button>
+       <button class="small" data-go="dashboard">Back to my path</button></span>`)}
     ${progressBlock(progress)}
     ${scoreChart(state.history, names)}
     <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
@@ -1603,6 +1687,67 @@ async function renderProgress(){
   bindViz(root, null);
   const u = $("#undo");
   if(u) u.onclick = async () => { await post("/api/me/undo"); toast("Last activity undone"); renderProgress(); };
+}
+
+/* A record of what actually happened: weeks finished, marks entered, dates. Not a
+   certificate from an institution, and it says so on the page and on the print. */
+async function renderRecord(){
+  const root = $("#view-record");
+  if(!me || me.role !== "student"){ nav("dashboard"); return; }
+  if(!me.module){ nav("dashboard"); return; }
+  root.innerHTML = `<div class="page">${skeleton()}</div>`;
+  let state, path, progress;
+  try{
+    [state, path, progress] = await Promise.all([
+      api("/api/me/state?known=").then(humanize),
+      api("/api/me/path?steps=1&known=").then(humanize),
+      api("/api/me/progress").then(humanize).catch(() => null)]);
+  }catch(e){ root.innerHTML = `<div class="page"><div class="err">${esc(e.message || e)}</div></div>`; return; }
+
+  const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
+  const when = at => new Date(at * 1000).toLocaleDateString(undefined, {day:"numeric", month:"short", year:"numeric"});
+  const done = state.history.filter(h => h.kind === "study" || h.correct);
+  const marks = state.history.filter(h => h.score !== null && h.score !== undefined);
+  const average = marks.length
+    ? Math.round(marks.reduce((sum, h) => sum + h.score, 0) / marks.length) : null;
+  const first = state.history.length ? when(state.history[0].created_at) : null;
+  const last = state.history.length ? when(state.history[state.history.length - 1].created_at) : null;
+
+  root.innerHTML = `<div class="page">
+    ${pageHead("Record of study", `${esc(me.display_name)} · ${esc(modName(state.module))}`,
+      `<span class="row noprint"><button class="small" id="print-record">Print or save as PDF</button>
+       <button class="small" data-go="progress">Back to progress</button></span>`)}
+    <div class="block">
+      <div class="tiles">
+        <div class="tile"><div class="v">${path.n_done} of ${path.n_weeks}</div><div class="k">weeks finished</div></div>
+        <div class="tile"><div class="v">${marks.length}</div><div class="k">quizzes recorded</div></div>
+        <div class="tile"><div class="v">${average === null ? "n/a" : average}</div><div class="k">average score</div></div>
+        <div class="tile"><div class="v">${progress ? progress.streak.longest : 0}</div><div class="k">longest streak, days</div></div>
+      </div>
+      <p class="muted small" style="margin:0">${first ? `Activity recorded from ${esc(first)} to ${esc(last)}.`
+        : "No activity recorded yet."}</p>
+    </div>
+
+    <div class="block"><h3>Weeks finished</h3>
+      ${done.length ? `<div class="scroll"><table><thead><tr><th>Week</th><th>What was recorded</th>
+        <th class="n">Score</th><th class="n">Date</th></tr></thead><tbody>
+        ${done.map(h => `<tr><td>${esc(names[h.concept_id] || "a week outside this course")}</td>
+          <td>${h.kind === "assessment" ? "Passed the test" : "Studied"}</td>
+          <td class="n">${h.score === null || h.score === undefined ? "" : h.score}</td>
+          <td class="n">${esc(when(h.created_at))}</td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="muted small" style="margin:0">Nothing finished yet.</p>`}
+    </div>
+
+    ${progress && progress.badges.some(b => b.earned) ? `<div class="block"><h3>Milestones</h3>
+      <div class="badges">${progress.badges.filter(b => b.earned).map(b =>
+        `<span class="badge-chip earned">${esc(b.name)}</span>`).join("")}</div></div>` : ""}
+
+    <p class="caption">This is a record of the activity this student entered on this site, generated on
+      ${esc(new Date().toLocaleDateString(undefined, {day:"numeric", month:"long", year:"numeric"}))}.
+      It is not a certificate, and it is not issued or verified by any school, university or examining body.</p>
+  </div>`;
+  const print = $("#print-record");
+  if(print) print.onclick = () => window.print();
 }
 
 /* ---------------- adviser dashboard ---------------- */

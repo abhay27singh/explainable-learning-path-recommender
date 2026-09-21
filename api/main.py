@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse
 
 from elpr.modules import module_display_map, subject_area
 from elpr.profile import clean as clean_profile, options as profile_options
-from elpr import course_finder
+from elpr import course_finder, ics
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -467,14 +467,77 @@ def course_finder_ahead(stream: str, level: str = "ug") -> dict:
 
 
 @app.get("/api/course-finder/plan")
-def course_finder_plan(key: str, weeks: int = Query(24, ge=1, le=260)) -> dict:
-    """One course's subjects spread over the number of weeks the student chooses."""
+def course_finder_plan(key: str, weeks: int = Query(24, ge=1, le=260),
+                       start: str | None = None) -> dict:
+    """One course's subjects spread over the number of weeks the student chooses.
+
+    With a start date every week carries real dates, which is what makes the plan
+    something a calendar can hold."""
     try:
-        return course_finder.weekly_plan(key, weeks)
+        return course_finder.weekly_plan(key, weeks, start)
     except KeyError:
         raise HTTPException(404, "no such course")
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/course-finder/plan.ics")
+def course_finder_plan_ics(key: str, weeks: int = Query(24, ge=1, le=260),
+                           start: str | None = None) -> Response:
+    """The same plan as a calendar file: one all-day event per week."""
+    from datetime import date as _date
+
+    try:
+        plan = course_finder.weekly_plan(key, weeks, start or _date.today().isoformat())
+    except KeyError:
+        raise HTTPException(404, "no such course")
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    events = [{
+        "uid": f"{plan['key']}-w{week['week']}@learning-path",
+        "start": _date.fromisoformat(week["starts"]),
+        "days": 7,
+        "summary": f"{plan['name']} · Week {week['week']}",
+        "description": "Study this week: "
+                       + ", ".join(s["name"] for s in week["subjects"]),
+    } for week in plan["weeks"]]
+    body = ics.calendar(f"{plan['name']} study plan", events)
+    return Response(content=body, media_type="text/calendar; charset=utf-8",
+                    headers={"Content-Disposition":
+                             f'attachment; filename="{plan["key"]}-study-plan.ics"'})
+
+
+@app.get("/api/me/path.ics")
+def my_path_ics(weeks: int = Query(8, ge=1, le=52), start: str | None = None,
+                elpr_session: str | None = Cookie(None)) -> Response:
+    """A student's own course path as a calendar: the next weeks, one event each."""
+    from datetime import date as _date, timedelta
+
+    user = _require(elpr_session)
+    s = _service()
+    if user.role != "student":
+        raise HTTPException(400, "advisers have no learning record of their own")
+    if not user.module:
+        raise HTTPException(400, "choose your course first")
+    try:
+        begin = _date.fromisoformat(start) if start else _date.today()
+    except ValueError:
+        raise HTTPException(400, "give the start date as YYYY-MM-DD")
+    begin -= timedelta(days=begin.weekday())         # weeks run Monday to Sunday
+
+    path = s.course_path(user, min(weeks, 8))
+    events = [{
+        "uid": f"{user.student_id}-c{step['concept']}@learning-path",
+        "start": begin + timedelta(weeks=index),
+        "days": 7,
+        "summary": f"{module_display_map(s.modules).get(path['module'], path['module'])} · "
+                   f"{step['label'].split('·')[-1].strip().split(' (')[0]}",
+        "description": step["text"],
+    } for index, step in enumerate(path["steps"])]
+    body = ics.calendar("My study path", events)
+    return Response(content=body, media_type="text/calendar; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="my-study-path.ics"'})
 
 
 @app.get("/api/course-finder/explore")

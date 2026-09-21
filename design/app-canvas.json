@@ -1,29 +1,185 @@
 {
   "pages": [
-    { "id": "page-1", "name": "A · Quiet document" },
-    { "id": "page-2", "name": "B · Focus band" },
-    { "id": "page-3", "name": "C · Console" }
+    {
+      "id": "page-1",
+      "name": "A \u00b7 Quiet document"
+    },
+    {
+      "id": "page-2",
+      "name": "B \u00b7 Focus band"
+    },
+    {
+      "id": "page-3",
+      "name": "C \u00b7 Console"
+    },
+    {
+      "id": "page-4",
+      "name": "D \u00b7 Workspace (Dribbble reference)"
+    }
   ],
   "artboards": [
-    { "file": "HomeA.dc.html", "page": "page-1", "x": 0, "y": 0, "w": 1280, "h": 940, "title": "A · Home" },
-    { "file": "Main.dc.html", "page": "page-1", "x": 1400, "y": 0, "w": 1280, "h": 940, "title": "A · Student dashboard" },
-    { "file": "FinderLadder.dc.html", "page": "page-1", "x": 2800, "y": 0, "w": 1280, "h": 940, "title": "A · Course Finder" },
-    { "file": "ProgressA.dc.html", "page": "page-1", "x": 0, "y": 1100, "w": 1280, "h": 940, "title": "A · Progress" },
-    { "file": "WeekPanel.dc.html", "page": "page-1", "x": 1400, "y": 1100, "w": 760, "h": 660, "title": "A · Week panel" },
-
-    { "file": "HomeB.dc.html", "page": "page-2", "x": 0, "y": 0, "w": 1280, "h": 940, "title": "B · Home" },
-    { "file": "DirectionB.dc.html", "page": "page-2", "x": 1400, "y": 0, "w": 1280, "h": 940, "title": "B · Student dashboard" },
-    { "file": "FinderB.dc.html", "page": "page-2", "x": 2800, "y": 0, "w": 1280, "h": 940, "title": "B · Course Finder" },
-
-    { "file": "HomeC.dc.html", "page": "page-3", "x": 0, "y": 0, "w": 1280, "h": 940, "title": "C · Home" },
-    { "file": "DirectionC.dc.html", "page": "page-3", "x": 1400, "y": 0, "w": 1280, "h": 900, "title": "C · Student dashboard" },
-    { "file": "AdviserC.dc.html", "page": "page-3", "x": 2800, "y": 0, "w": 1280, "h": 900, "title": "C · Adviser view" }
+    {
+      "file": "HomeA.dc.html",
+      "page": "page-1",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 940,
+      "title": "A \u00b7 Home"
+    },
+    {
+      "file": "Main.dc.html",
+      "page": "page-1",
+      "x": 1400,
+      "y": 0,
+      "w": 1280,
+      "h": 940,
+      "title": "A \u00b7 Student dashboard"
+    },
+    {
+      "file": "FinderLadder.dc.html",
+      "page": "page-1",
+      "x": 2800,
+      "y": 0,
+      "w": 1280,
+      "h": 940,
+      "title": "A \u00b7 Course Finder"
+    },
+    {
+      "file": "ProgressA.dc.html",
+      "page": "page-1",
+      "x": 0,
+      "y": 1100,
+      "w": 1280,
+      "h": 940,
+      "title": "A \u00b7 Progress"
+    },
+    {
+      "file": "WeekPanel.dc.html",
+      "page": "page-1",
+      "x": 1400,
+      "y": 1100,
+      "w": 760,
+      "h": 660,
+      "title": "A \u00b7 Week panel"
+    },
+    {
+      "file": "HomeB.dc.html",
+      "page": "page-2",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 940,
+      "title": "B \u00b7 Home"
+    },
+    {
+      "file": "DirectionB.dc.html",
+      "page": "page-2",
+      "x": 1400,
+      "y": 0,
+      "w": 1280,
+      "h": 940,
+      "title": "B \u00b7 Student dashboard"
+    },
+    {
+      "file": "FinderB.dc.html",
+      "page": "page-2",
+      "x": 2800,
+      "y": 0,
+      "w": 1280,
+      "h": 940,
+      "title": "B \u00b7 Course Finder"
+    },
+    {
+      "file": "HomeC.dc.html",
+      "page": "page-3",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 940,
+      "title": "C \u00b7 Home"
+    },
+    {
+      "file": "DirectionC.dc.html",
+      "page": "page-3",
+      "x": 1400,
+      "y": 0,
+      "w": 1280,
+      "h": 900,
+      "title": "C \u00b7 Student dashboard"
+    },
+    {
+      "file": "AdviserC.dc.html",
+      "page": "page-3",
+      "x": 2800,
+      "y": 0,
+      "w": 1280,
+      "h": 900,
+      "title": "C \u00b7 Adviser view"
+    },
+    {
+      "file": "WorkspaceTeal.dc.html",
+      "page": "page-4",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 940,
+      "title": "D1 \u00b7 Workspace, our colours"
+    },
+    {
+      "file": "WorkspaceLime.dc.html",
+      "page": "page-4",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 940,
+      "title": "D2 \u00b7 Workspace, reference colours"
+    }
   ],
   "annotations": [
-    { "id": "a-note", "page": "page-1", "x": 0, "y": -150, "w": 620, "text": "A · Quiet document\nSerif headings, one column, thin rules. Reads like a well-set page and stays calm on a phone.\n\nBest for: students who feel behind and want one clear instruction.\nTradeoff: more scrolling, less like software." },
-    { "id": "b-note", "page": "page-2", "x": 0, "y": -150, "w": 620, "text": "B · Focus band\nA dark band carries the next step and its buttons; everything else sits in cards below.\n\nBest for: looking like a real product, and for demos where the next action must be unmissable.\nTradeoff: the band eats vertical space and commits you to a heavy header." },
-    { "id": "c-note", "page": "page-3", "x": 0, "y": -150, "w": 620, "text": "C · Console\nAll weeks in a rail, numbers in tables, monospace figures. The model's reasoning is on screen rather than hidden.\n\nBest for: advisers, teachers and your paper demo.\nTradeoff: dense and technical for a nervous class 12 student." },
-    { "id": "mix", "page": "page-1", "x": 2800, "y": -150, "w": 620, "text": "You can mix these: A for the student side, C for advisers and admin. Say which screens you want from which page and I will build only those." }
+    {
+      "id": "a-note",
+      "page": "page-1",
+      "x": 0,
+      "y": -150,
+      "w": 620,
+      "text": "A \u00b7 Quiet document\nSerif headings, one column, thin rules. Reads like a well-set page and stays calm on a phone.\n\nBest for: students who feel behind and want one clear instruction.\nTradeoff: more scrolling, less like software."
+    },
+    {
+      "id": "b-note",
+      "page": "page-2",
+      "x": 0,
+      "y": -150,
+      "w": 620,
+      "text": "B \u00b7 Focus band\nA dark band carries the next step and its buttons; everything else sits in cards below.\n\nBest for: looking like a real product, and for demos where the next action must be unmissable.\nTradeoff: the band eats vertical space and commits you to a heavy header."
+    },
+    {
+      "id": "c-note",
+      "page": "page-3",
+      "x": 0,
+      "y": -150,
+      "w": 620,
+      "text": "C \u00b7 Console\nAll weeks in a rail, numbers in tables, monospace figures. The model's reasoning is on screen rather than hidden.\n\nBest for: advisers, teachers and your paper demo.\nTradeoff: dense and technical for a nervous class 12 student."
+    },
+    {
+      "id": "mix",
+      "page": "page-1",
+      "x": 2800,
+      "y": -150,
+      "w": 620,
+      "text": "You can mix these: A for the student side, C for advisers and admin. Say which screens you want from which page and I will build only those."
+    },
+    {
+      "id": "d-note",
+      "page": "page-4",
+      "x": 0,
+      "y": -170,
+      "w": 700,
+      "text": "D \u00b7 Workspace, after the Edu.ai shot you sent.\n\nThree panes: a rail with your course and progress, the work in the middle, quick actions on the right. Rounded 18px cards, soft shadows, status pills, one loud action per screen.\n\nD1 keeps our teal. D2 uses the shot's own palette: #F5F6FD ground, #090089 indigo, #B5F54D lime for the one action that matters.\n\nTradeoff: three panes need a wide screen. On a phone the rails stack under the main column, so the quick actions fall below the fold."
+    }
   ],
-  "launch": { "view": "canvas", "page": "page-1" }
+  "launch": {
+    "view": "canvas",
+    "page": "page-4"
+  }
 }

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import date, timedelta
 from urllib.parse import quote_plus
 
 METHOD = "Rule-based matching, not the machine-learning model"
@@ -963,12 +964,25 @@ PLAN_NOTE = ("A study plan, not the official course timetable. Subjects keep the
              "order, so earlier years come first.")
 
 
-def weekly_plan(key: str, weeks: int = 24) -> dict:
+def _monday_of(day: str) -> date:
+    """The Monday of that week. A plan that starts mid-week reads as a short first
+    week, which is not what "finish in 8 weeks" means to anyone."""
+    try:
+        chosen = date.fromisoformat(day)
+    except ValueError as exc:
+        raise ValueError("give the start date as YYYY-MM-DD") from exc
+    return chosen - timedelta(days=chosen.weekday())
+
+
+def weekly_plan(key: str, weeks: int = 24, start: str | None = None) -> dict:
     """Spread a course's subjects over however many weeks the student wants.
 
     Subjects are dealt out in order, so the load per week is as even as the list allows:
     26 subjects over 12 weeks gives weeks of 3 and weeks of 2, never 5 and then 1. Weeks
-    are never empty, so asking for more weeks than there are subjects is refused."""
+    are never empty, so asking for more weeks than there are subjects is refused.
+
+    With a start date the weeks get real dates, Monday to Sunday, which is what makes a
+    plan something you can put in a calendar and be late for."""
     course = _BY_KEY.get(key)
     if course is None:
         raise KeyError(key)
@@ -980,20 +994,27 @@ def weekly_plan(key: str, weeks: int = 24) -> dict:
         raise ValueError("this course has no subjects to plan")
     weeks = min(int(weeks), len(subjects))
 
+    begin = _monday_of(start) if start else None
     base, extra = divmod(len(subjects), weeks)
     out, at = [], 0
     for index in range(weeks):
         take = base + (1 if index < extra else 0)
         block = subjects[at:at + take]
         at += take
-        out.append({
+        week = {
             "week": index + 1,
             "years": sorted({year for year, _ in block}),
             "subjects": [{"name": name, "links": study_links(name)} for _, name in block],
-        })
+        }
+        if begin is not None:
+            first = begin + timedelta(weeks=index)
+            week["starts"] = first.isoformat()
+            week["ends"] = (first + timedelta(days=6)).isoformat()
+        out.append(week)
     return {
         "key": course.key, "name": course.name, "level_label": LEVELS[course.level],
         "weeks": out, "n_weeks": weeks, "n_subjects": len(subjects),
+        "starts": out[0].get("starts"), "ends": out[-1].get("ends"),
         "per_week": round(len(subjects) / weeks, 1),
         # The plan actually shown must be one of the choices, or the dropdown claims a
         # length the page is not showing and picking it changes nothing.
