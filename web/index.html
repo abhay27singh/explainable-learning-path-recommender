@@ -18,7 +18,7 @@
   }
   :root{
     color-scheme:light;
-    --ground:#F6F8FA; --surface:#fff; --surface-alt:#EDF1F5;
+    --ground:#F6F8FA; --surface:#fff; --surface-alt:#EDF1F5; --seg-on:#fff;
     --ink:#101828; --ink-soft:#475467; --ink-faint:#7A8696;
     --rule:#E1E6EC; --accent:#1F5E7A; --accent-strong:#174A61; --accent-soft:#E5F0F5;
     --warn:#9E3A2C; --warn-soft:#F9E9E6; --good:#2A6350; --good-soft:#E3F1EB;
@@ -34,7 +34,7 @@
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme:dark;
-      --ground:#0F1418; --surface:#161C21; --surface-alt:#212A31;
+      --ground:#0F1418; --surface:#161C21; --surface-alt:#212A31 --seg-on:#2E3A43;
       --ink:#E9EDF0; --ink-soft:#AEB9C1; --ink-faint:#88949E;
       --rule:#2A343B; --accent:#7FC4DE; --accent-strong:#A8DBEC; --accent-soft:#16323F;
       --warn:#F0A79B; --warn-soft:#3A211D; --good:#8FD3BA; --good-soft:#12302A;
@@ -45,7 +45,7 @@
   }
   :root[data-theme="dark"]{
     color-scheme:dark;
-    --ground:#0F1418; --surface:#161C21; --surface-alt:#212A31;
+    --ground:#0F1418; --surface:#161C21; --surface-alt:#212A31 --seg-on:#2E3A43;
     --ink:#E9EDF0; --ink-soft:#AEB9C1; --ink-faint:#88949E;
     --rule:#2A343B; --accent:#7FC4DE; --accent-strong:#A8DBEC; --accent-soft:#16323F;
     --warn:#F0A79B; --warn-soft:#3A211D; --good:#8FD3BA; --good-soft:#12302A;
@@ -53,8 +53,16 @@
     --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
     --footer:#0A0E11; --footer-ink:#AEB9C1; --veil:rgba(22,28,33,.96);
   }
-  .theme-toggle{display:grid;place-items:center;width:36px;height:36px;padding:0;border-radius:8px}
-  .theme-toggle svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+  .themeseg{display:inline-flex;align-items:center;gap:2px;background:var(--surface-alt);
+    border-radius:999px;padding:3px;border:1px solid var(--rule)}
+  .themeseg button{width:30px;height:26px;padding:0;border:0;background:none;border-radius:999px;
+    color:var(--ink-faint);display:grid;place-items:center;transition:background .15s,color .15s}
+  .themeseg button:hover{color:var(--ink)}
+  .themeseg button.on{background:var(--seg-on);color:var(--accent);box-shadow:var(--shadow)}
+  .themeseg svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+  .themeseg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  header.site .right{gap:12px}
+  header.site .right #who{font-weight:600;color:var(--ink)}
   /* Printing a record: only the record, no chrome. */
   @media print{
     header.site, footer.site, .noprint{display:none!important}
@@ -178,7 +186,7 @@
   .dash-head p{margin:4px 0 0}
   .seg{display:inline-flex;background:var(--surface-alt);border-radius:9px;padding:3px;gap:2px}
   .seg button{border:0;background:none;padding:7px 14px;border-radius:7px;color:var(--ink-soft);font-weight:500}
-  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .seg button.on{background:var(--seg-on);color:var(--ink);box-shadow:var(--shadow)}
   .block{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:20px 22px;
     box-shadow:var(--shadow);margin-bottom:18px}
   .block > h3{margin:0 0 4px;font-size:17px}
@@ -334,8 +342,10 @@
       <button data-go="admin" id="nav-admin" style="display:none">Admin</button>
     </nav>
     <div class="right">
-      <button id="theme-toggle" class="small theme-toggle" type="button" aria-pressed="false"
-        title="Switch to dark mode"><span id="theme-icon"></span></button>
+      <span class="themeseg" role="group" aria-label="Colour theme">
+        <button type="button" class="theme-pick" data-mode="light" title="Light mode" aria-label="Light mode"></button>
+        <button type="button" class="theme-pick" data-mode="dark" title="Dark mode" aria-label="Dark mode"></button>
+      </span>
       <a class="btn ghost guest-only" data-go="login" href="#/login">Sign in</a>
       <a class="btn primary guest-only" data-go="signup" href="#/signup">Get started</a>
       <span class="auth-only" id="who"></span><span class="badge auth-only" id="rolebadge"></span>
@@ -545,11 +555,14 @@ const post = (p, body) => api(p, {method:"POST", headers:{"content-type":"applic
 let me=null, metrics=null, current=null, known=new Set(), planner="greedy";
 let studentTab="path", learnerTab="path";
 
-/* Theme. Three states, like the page itself: the viewer's system setting until they
-   choose, then their choice, remembered per browser. */
+/* Theme. The system setting until the viewer picks one, then their pick, remembered
+   per browser. A two-option switch, because a single icon never says whether it shows
+   the mode you are in or the one you would get. */
 const THEME_KEY = "elpr-theme";
-const MOON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path></svg>`;
-const SUN = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>`;
+const THEME_ICON = {
+  light: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M5.6 5.6 7 7M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4"></path></svg>`,
+  dark: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path></svg>`,
+};
 function readTheme(){
   try{ return localStorage.getItem(THEME_KEY); }catch{ return null; }
 }
@@ -558,16 +571,17 @@ function applyTheme(mode){
   if(mode) root.setAttribute("data-theme", mode); else root.removeAttribute("data-theme");
   const dark = mode === "dark"
     || (!mode && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  const button = $("#theme-toggle");
-  button.setAttribute("aria-pressed", String(dark));
-  button.title = dark ? "Switch to light mode" : "Switch to dark mode";
-  $("#theme-icon").innerHTML = dark ? SUN : MOON;
+  document.querySelectorAll(".theme-pick").forEach(b => {
+    const isOn = b.dataset.mode === (dark ? "dark" : "light");
+    b.innerHTML = THEME_ICON[b.dataset.mode];
+    b.classList.toggle("on", isOn);
+    b.setAttribute("aria-pressed", String(isOn));
+  });
 }
-$("#theme-toggle").onclick = () => {
-  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-  try{ localStorage.setItem(THEME_KEY, next); }catch{}
-  applyTheme(next);
-};
+document.querySelectorAll(".theme-pick").forEach(b => b.onclick = () => {
+  try{ localStorage.setItem(THEME_KEY, b.dataset.mode); }catch{}
+  applyTheme(b.dataset.mode);
+});
 applyTheme(readTheme());
 window.matchMedia("(prefers-color-scheme: dark)")
   .addEventListener("change", () => { if(!readTheme()) applyTheme(null); });
