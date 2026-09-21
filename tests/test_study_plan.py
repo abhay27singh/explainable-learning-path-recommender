@@ -89,11 +89,11 @@ def _status(call) -> int:
 def test_stream_is_stored_at_signup_and_drives_the_study_plan(main):
     from fastapi import Response
 
-    body = main.Registration(username="pcbstudent", password="pass", role="student",
+    body = main.Registration(username="pcbstudent", password="passw0rd", role="student",
                              stage="class_12", stream="pcb")
     assert main.register(body, Response())["stream"] == "pcb"
     token = main.service.store.create_session(
-        main.service.store.authenticate("pcbstudent", "pass").id)
+        main.service.store.authenticate("pcbstudent", "passw0rd").id)
 
     plan = main.my_study_plan(token)
     assert names(plan["now"]["subjects"]) == ["English", "Physics", "Chemistry", "Biology"]
@@ -108,6 +108,6 @@ def test_stream_is_stored_at_signup_and_drives_the_study_plan(main):
 def test_a_bad_stream_is_rejected(main):
     from fastapi import Response
 
-    body = main.Registration(username="badstream", password="pass", role="student",
+    body = main.Registration(username="badstream", password="passw0rd", role="student",
                              stage="class_12", stream="nope")
     assert _status(lambda: main.register(body, Response())) == 400

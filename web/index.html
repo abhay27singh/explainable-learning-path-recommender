@@ -391,7 +391,8 @@
     <form id="form-register">
       <label for="su-user">Username</label><input id="su-user" name="username" autocomplete="username" required minlength="3" />
       <label for="su-name">Your name</label><input id="su-name" name="display_name" placeholder="How you want to be addressed" />
-      <label for="su-pass">Password</label><input id="su-pass" name="password" type="password" autocomplete="new-password" required minlength="4" />
+      <label for="su-pass">Password</label><input id="su-pass" name="password" type="password" autocomplete="new-password" required minlength="8" />
+      <p class="caption" style="margin:6px 0 0">At least 8 characters. Do not reuse a password from anywhere else.</p>
       <label for="reg-role">I am a</label>
       <select name="role" id="reg-role">
         <option value="student">Student</option>
@@ -552,12 +553,15 @@ const showErr = (form, m) => { form.closest(".auth-card").querySelector(".auth-e
 
 $("#form-login").onsubmit = async e => {
   e.preventDefault();
+  e.target.dataset.busy = "1";
   const f = Object.fromEntries(new FormData(e.target));
   try { me = await post("/api/auth/login", f); enter(); nav("dashboard"); }
   catch(err){ showErr(e.target, err.message); }
+  finally { e.target.dataset.busy = ""; }
 };
 $("#form-register").onsubmit = async e => {
   e.preventDefault();
+  e.target.dataset.busy = "1";
   const f = Object.fromEntries(new FormData(e.target));
   if(f.role !== "student"){ delete f.module; delete f.stage; delete f.stream; }
   else{
@@ -566,6 +570,7 @@ $("#form-register").onsubmit = async e => {
   }
   try { me = await post("/api/auth/register", f); enter(); nav("dashboard"); toast("Welcome, your account is ready"); }
   catch(err){ showErr(e.target, err.message); }
+  finally { e.target.dataset.busy = ""; }
 };
 $("#signout").onclick = async () => {
   await post("/api/auth/logout");
@@ -577,6 +582,26 @@ $("#signout").onclick = async () => {
   $("#nav-progress").style.display = "none";
   nav("home");
 };
+
+/* Enter submits. Browsers do this for a form with a submit button, but several
+   fields here sit outside one (the explore filter, the plan length), and a double
+   submit would fire two requests, so the guard matters. */
+document.addEventListener("keydown", e => {
+  if(e.key !== "Enter" || e.defaultPrevented) return;
+  const el = e.target;
+  if(!el || el.tagName !== "INPUT" || el.type === "checkbox" || el.type === "radio") return;
+  const form = el.form;
+  if(form){
+    if(form.dataset.busy === "1"){ e.preventDefault(); return; }
+    if(!form.querySelector('button[type="submit"], button:not([type])')){
+      e.preventDefault();
+      form.dispatchEvent(new Event("submit", {cancelable: true, bubbles: true}));
+    }
+    return;                                   // the browser submits the rest itself
+  }
+  const button = el.closest(".block, .course, .page, aside, form")?.querySelector("button");
+  if(button){ e.preventDefault(); button.click(); }
+});
 
 async function bootstrap(){
   // The server answers straight away but the model warms in the background, so wait
@@ -1168,7 +1193,13 @@ function nextStepCard(r, t, forStudent){
       <button class="act" data-c="${r.concept}" data-k="study">I studied this</button>
       <button class="act" data-c="${r.concept}" data-k="pass">I passed the test</button>
       <button class="act" data-c="${r.concept}" data-k="fail">I found it hard</button>
-    </div>` : ""}
+    </div>
+    <form class="row score-form" style="margin-top:12px;align-items:center">
+      <label for="score-input" style="margin:0">Took a quiz? Enter your score</label>
+      <input id="score-input" type="number" min="0" max="100" step="1" placeholder="out of 100" style="width:120px" />
+      <button class="small" type="submit" data-c="${r.concept}">Save score</button>
+    </form>
+    <p class="caption" style="margin:6px 0 0">40 out of 100 or more counts as a pass.</p>` : ""}
     <details class="working"><summary>Show the model's working</summary><p class="prose">${esc(r.text)}</p></details>
   </div>`;
 }
@@ -1242,8 +1273,7 @@ function closeSheet(){
   if(sheet) sheet.hidden = true;
 }
 function bindActions(root){
-  const form = root.querySelector(".score-form");
-  if(form) form.onsubmit = async e => {
+  root.querySelectorAll(".score-form").forEach(form => form.onsubmit = async e => {
     e.preventDefault();
     const input = form.querySelector("#score-input"), score = Number(input.value);
     if(input.value === "" || Number.isNaN(score) || score < 0 || score > 100){
@@ -1260,7 +1290,7 @@ function bindActions(root){
     toast(score >= 40 ? `Scored ${score}, counted as a pass` : `Scored ${score}, counted as not passed yet`);
     closeSheet();
     renderStudent();
-  };
+  });
   root.querySelectorAll(".act").forEach(b => b.onclick = async () => {
     const kind = b.dataset.k === "study" ? "study" : "assessment";
     const correct = b.dataset.k === "pass" ? true : b.dataset.k === "fail" ? false : null;
@@ -1500,6 +1530,42 @@ async function renderStudent(){
   const u = $("#undo"); if(u) u.onclick = async () => { await post("/api/me/undo"); toast("Last activity undone"); renderStudent(); };
 }
 
+/* 9. Quiz scores over time. Only marks the student actually typed, with the pass
+   mark drawn in, so a fail is visibly a fail rather than a colour. */
+function scoreChart(history, names){
+  const marks = history.filter(h => h.score !== null && h.score !== undefined)
+    .map(h => ({week: names[h.concept_id] || "a week", score: h.score, pass: h.score >= 40}));
+  if(!marks.length) return "";
+  const W = 720, H = 220, padL = 38, padR = 12, padT = 16, padB = 42;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const band = plotW / marks.length, bw = Math.min(46, band * 0.55);
+  const y = v => padT + (1 - v / 100) * plotH, base = padT + plotH;
+  const grid = [0, 40, 100].map(v => `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}"
+      stroke="${v === 40 ? "var(--warn)" : "var(--rule)"}" stroke-width="1"
+      ${v === 40 ? 'stroke-dasharray="4 4"' : ""}/>
+    <text x="${padL - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink-faint)">${v}</text>`).join("");
+  const bars = marks.map((m, i) => {
+    const x = padL + band * i + (band - bw) / 2, top = y(m.score);
+    const tip = {v: `${m.score} out of 100`, l: [m.week, m.pass ? "counted as a pass" : "below the pass mark"]};
+    return `<rect x="${x}" y="${top}" width="${bw}" height="${Math.max(base - top, 1)}" rx="4"
+        fill="${m.pass ? "var(--viz-bar)" : "var(--surface-alt)"}" stroke="${m.pass ? "none" : "var(--rule)"}"/>
+      <rect class="hit" x="${padL + band * i}" y="${padT}" width="${band}" height="${plotH}" fill="transparent"
+        tabindex="0" role="img" aria-label="${esc(m.week)}: ${m.score} out of 100"
+        data-tip="${esc(JSON.stringify(tip))}"/>
+      <text x="${x + bw / 2}" y="${base + 16}" text-anchor="middle" font-size="11" fill="var(--ink-faint)">${esc(m.week)}</text>`;
+  }).join("");
+  const failed = marks.filter(m => !m.pass).length;
+  return `<figure class="viz"><h3>Quiz scores</h3>
+    <p class="sub">Every mark you entered. The dashed line is the pass mark of 40.</p>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="group" aria-label="Quiz scores">
+      ${grid}${bars}
+    </svg>
+    ${failed ? `<p class="caption" style="margin:8px 0 0">${failed} ${failed === 1 ? "week is" : "weeks are"}
+      below the pass mark, so ${failed === 1 ? "it stays" : "they stay"} in your path until you retake ${failed === 1 ? "it" : "them"}.</p>` : ""}
+    ${vizTable(["Week", "Score", "Counted as"], marks.map(m => [m.week, m.score, m.pass ? "pass" : "not passed"]))}
+  </figure>`;
+}
+
 /* ---------------- progress: its own page, not a tab ---------------- */
 async function renderProgress(){
   const root = $("#view-progress");
@@ -1528,6 +1594,7 @@ async function renderProgress(){
     ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`,
       `<button class="small" data-go="dashboard">Back to my path</button>`)}
     ${progressBlock(progress)}
+    ${scoreChart(state.history, names)}
     <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
     ${weekChart(state.concepts, t, true)}
     <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>

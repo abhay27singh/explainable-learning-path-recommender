@@ -19,7 +19,7 @@ def store(tmp_path):
 
 
 def test_saving_is_idempotent_and_newest_first(store):
-    user = store.register("saver", "pass", "S", "student", stage="class_12")
+    user = store.register("saver", "passw0rd", "S", "student", stage="class_12")
     store.save_course(user.id, "btech_cse")
     store.save_course(user.id, "bsc_cs")
     store.save_course(user.id, "btech_cse")           # saving twice changes nothing
@@ -31,14 +31,14 @@ def test_saving_is_idempotent_and_newest_first(store):
 
 
 def test_shortlists_are_private_to_each_student(store):
-    one = store.register("one", "pass", "O", "student", stage="class_12")
-    two = store.register("two", "pass", "T", "student", stage="class_10")
+    one = store.register("one", "passw0rd", "O", "student", stage="class_12")
+    two = store.register("two", "passw0rd", "T", "student", stage="class_10")
     store.save_course(one.id, "btech_cse")
     assert store.saved_courses(two.id) == []
 
 
 def test_deleting_an_account_deletes_its_shortlist(store):
-    user = store.register("leaver", "pass", "L", "student", stage="ug", module="CCC")
+    user = store.register("leaver", "passw0rd", "L", "student", stage="ug", module="CCC")
     store.save_course(user.id, "mba")
     assert store.delete_account("leaver") is True
     assert store.saved_courses(user.id) == []
@@ -76,8 +76,8 @@ def _status(call) -> int:
 
 def test_api_saves_reads_and_removes(main):
     store = main.service.store
-    student = store.register("apisaver", "pass", "A", "student", stage="class_12")
-    adviser = store.register("apiadviser", "pass", "V", "adviser")
+    student = store.register("apisaver", "passw0rd", "A", "student", stage="class_12")
+    adviser = store.register("apiadviser", "passw0rd", "V", "adviser")
     token = store.create_session(student.id)
 
     assert main.save_course(main.SaveCourseBody(key="btech_cse"), token) == {"saved": "btech_cse"}

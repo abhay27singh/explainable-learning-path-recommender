@@ -107,7 +107,7 @@ def test_unanswered_fields_stay_at_the_dataset_average(training):
 
 def test_profile_is_stored_updated_and_removed_with_the_account(tmp_path):
     store = AppStore(tmp_path / "app.db")
-    user = store.register("learner", "pass", "L", "student", module="DDD")
+    user = store.register("learner", "passw0rd", "L", "student", module="DDD")
     assert store.get_profile(user.id) == {}
 
     store.set_profile(user.id, {"gender": "F"})
@@ -126,7 +126,7 @@ def test_answers_actually_change_the_prediction(tmp_path):
 
     service = Service()
     service.store = AppStore(tmp_path / "app.db")
-    user = service.store.register("learner", "pass", "L", "student", module="DDD")
+    user = service.store.register("learner", "passw0rd", "L", "student", module="DDD")
 
     before = service.engine.mastery(service.registered_sequence(user))
     service.store.set_profile(user.id, {

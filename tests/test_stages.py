@@ -40,11 +40,11 @@ def test_stage_is_added_to_old_databases_stored_and_changed(tmp_path):
     con.close()
 
     store = AppStore(path)
-    user = store.register("school", "pass", "S", "student", stage="class_12")
-    signed_in = store.authenticate("school", "pass")
+    user = store.register("school", "passw0rd", "S", "student", stage="class_12")
+    signed_in = store.authenticate("school", "passw0rd")
     assert (signed_in.stage, signed_in.module) == ("class_12", None)
     store.set_studies(user.id, "ug", "CCC")
-    again = store.authenticate("school", "pass")
+    again = store.authenticate("school", "passw0rd")
     assert (again.stage, again.module) == ("ug", "CCC")
 
 
@@ -74,12 +74,12 @@ def _status(call) -> int:
 def _register(main, username, **extra):
     from fastapi import Response
 
-    body = main.Registration(username=username, password="pass", role="student", **extra)
+    body = main.Registration(username=username, password="passw0rd", role="student", **extra)
     return main.register(body, Response())
 
 
 def _token(main, username):
-    user = main.service.store.authenticate(username, "pass")
+    user = main.service.store.authenticate(username, "passw0rd")
     return main.service.store.create_session(user.id)
 
 
@@ -109,5 +109,5 @@ def test_research_results_are_for_the_admin_only(main):
     assert _status(lambda: main.metrics(None)) == 401
     _register(main, "curious", stage="ug", module="CCC")
     assert _status(lambda: main.metrics(_token(main, "curious"))) == 403
-    main.service.store.create_admin("boss", "pass")
+    main.service.store.create_admin("boss", "passw0rd")
     assert _status(lambda: main.metrics(_token(main, "boss"))) == 200

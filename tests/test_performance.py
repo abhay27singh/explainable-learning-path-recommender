@@ -21,7 +21,7 @@ def student(service, tmp_path):
     from elpr.db.app_store import AppStore
 
     service.store = AppStore(tmp_path / "app.db")
-    return service.store.register("speedy", "pass", "S", "student", module="CCC", stage="ug")
+    return service.store.register("speedy", "passw0rd", "S", "student", module="CCC", stage="ug")
 
 
 def counting(service, monkeypatch):

@@ -184,6 +184,9 @@ def register(body: Registration, response: Response) -> dict:
 @app.post("/api/auth/login")
 def login(body: Credentials, response: Response) -> dict:
     s = _service()
+    wait = s.store.locked_out(body.username)
+    if wait:
+        raise HTTPException(429, f"too many sign-in attempts, try again in {wait // 60 + 1} minutes")
     user = s.store.authenticate(body.username, body.password)
     if user is None:
         # Same message either way — never reveal whether the username exists.

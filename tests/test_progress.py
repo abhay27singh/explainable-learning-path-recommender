@@ -65,7 +65,7 @@ def test_weekly_summary_counts_only_the_last_seven_days(tmp_path):
 
     service = Service()
     service.store = AppStore(tmp_path / "app.db")
-    user = service.store.register("learner", "pass", "L", "student", module="DDD")
+    user = service.store.register("learner", "passw0rd", "L", "student", module="DDD")
     weeks = [n["concept"] for n in service.module_graph("DDD")["nodes"]]
     for concept in weeks[:3]:
         service.store.add_event(user.id, concept, "study")
@@ -102,7 +102,7 @@ def test_first_week_makes_no_claims_about_change(tmp_path):
 
     service = Service()
     service.store = AppStore(tmp_path / "app.db")
-    user = service.store.register("newbie", "pass", "N", "student", module="DDD")
+    user = service.store.register("newbie", "passw0rd", "N", "student", module="DDD")
     weeks = [n["concept"] for n in service.module_graph("DDD")["nodes"]]
     service.store.add_event(user.id, weeks[0], "study")
     service.store.add_event(user.id, weeks[1], "assessment", True)
@@ -122,7 +122,7 @@ def test_new_student_gets_an_honest_empty_summary(tmp_path):
 
     service = Service()
     service.store = AppStore(tmp_path / "app.db")
-    user = service.store.register("fresh", "pass", "F", "student", module="DDD")
+    user = service.store.register("fresh", "passw0rd", "F", "student", module="DDD")
     p = service.progress_for(user)
     assert p["streak"]["current"] == 0
     assert p["week"]["activities"] == 0

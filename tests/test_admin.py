@@ -46,25 +46,25 @@ def test_password_minimum_is_the_same_for_every_role(store):
 
 def test_listing_accounts_never_exposes_credentials(store):
     store.create_admin("root", "a-sufficiently-long-pw", "Root")
-    store.register("learner", "pass", "Learner", "student", module="DDD")
+    store.register("learner", "passw0rd", "Learner", "student", module="DDD")
     for account in store.list_accounts():
         assert "salt" not in account
         assert "password_hash" not in account
 
 
 def test_deleting_an_account_removes_its_study_history(store):
-    user = store.register("learner", "pass", "Learner", "student", module="DDD")
+    user = store.register("learner", "passw0rd", "Learner", "student", module="DDD")
     store.add_event(user.id, concept_id=3, kind="study", correct=True)
     assert store.stats()["n_events"] == 1
 
     assert store.delete_account("learner") is True
     assert store.stats()["n_events"] == 0
-    assert store.authenticate("learner", "pass") is None
+    assert store.authenticate("learner", "passw0rd") is None
     assert store.delete_account("learner") is False, "second delete is a no-op"
 
 
 def test_password_reset_invalidates_existing_sessions(store):
-    user = store.register("learner", "pass", "Learner", "student", module="DDD")
+    user = store.register("learner", "passw0rd", "Learner", "student", module="DDD")
     token = store.create_session(user.id)
     assert store.user_for_session(token) is not None
 
@@ -108,11 +108,11 @@ def test_role_guards_separate_adviser_from_admin(tmp_path, monkeypatch):
     import api.main as main
 
     store = AppStore(tmp_path / "app.db")
-    store.register("adv", "pass", "Adviser", "adviser")
+    store.register("adv", "passw0rd", "Adviser", "adviser")
     store.create_admin("root", "a-sufficiently-long-pw", "Root")
     monkeypatch.setattr(main, "_current", lambda token: store.user_for_session(token))
 
-    adviser_token = store.create_session(store.authenticate("adv", "pass").id)
+    adviser_token = store.create_session(store.authenticate("adv", "passw0rd").id)
     admin_token = store.create_session(
         store.authenticate("root", "a-sufficiently-long-pw").id)
 
@@ -126,7 +126,7 @@ def test_role_guards_separate_adviser_from_admin(tmp_path, monkeypatch):
     assert main._require_adviser(admin_token).role == "admin"
 
     # and a student is refused both
-    student = store.register("kid", "pass", "Kid", "student", module="DDD")
+    student = store.register("kid", "passw0rd", "Kid", "student", module="DDD")
     student_token = store.create_session(student.id)
     for guard in (main._require_admin, main._require_adviser):
         with pytest.raises(HTTPException):
@@ -178,3 +178,48 @@ def test_staff_can_open_any_learner_record_but_students_only_their_own(monkeypat
     assert gate("admin") == {"mastery": "allowed", "recommend": "allowed"}
     assert gate("adviser") == {"mastery": "allowed", "recommend": "allowed"}
     assert gate("student", student_id=90000099) == {"mastery": 403, "recommend": 403}
+
+
+def test_a_weak_password_is_refused_at_the_new_floor(tmp_path):
+    """Four characters was a classroom setting. Eight is the floor for a real site."""
+    from elpr.db.app_store import MIN_PASSWORD, AppStore
+
+    store = AppStore(tmp_path / "app.db")
+    assert MIN_PASSWORD == 8
+    with pytest.raises(ValueError):
+        store.register("shorty", "pass", "S", "student", stage="ug", module="CCC")
+    assert store.register("longer", "passw0rd", "L", "student", stage="ug", module="CCC")
+
+
+def test_sign_in_attempts_are_throttled_per_username(tmp_path):
+    """Without account recovery, guessing in a loop is the obvious attack."""
+    from elpr.db.app_store import SIGNIN_MAX_FAILURES, AppStore
+
+    store = AppStore(tmp_path / "app.db")
+    store.register("target", "passw0rd", "T", "student", stage="ug", module="CCC")
+    now = 1_000_000.0
+
+    for _ in range(SIGNIN_MAX_FAILURES):
+        assert store.authenticate("target", "wrongpass", now=now) is None
+    assert store.locked_out("target", now) > 0
+    # even the right password is refused while locked out
+    assert store.authenticate("target", "passw0rd", now=now) is None
+
+    later = now + 16 * 60                       # the window has passed
+    assert store.locked_out("target", later) == 0
+    assert store.authenticate("target", "passw0rd", now=later) is not None
+    assert store.locked_out("target", later) == 0, "a good password clears the count"
+
+
+def test_throttling_is_per_username_not_global(tmp_path):
+    from elpr.db.app_store import SIGNIN_MAX_FAILURES, AppStore
+
+    store = AppStore(tmp_path / "app.db")
+    store.register("victim", "passw0rd", "V", "student", stage="ug", module="CCC")
+    store.register("bystander", "passw0rd", "B", "student", stage="ug", module="CCC")
+    now = 2_000_000.0
+    for _ in range(SIGNIN_MAX_FAILURES + 2):
+        store.authenticate("victim", "nope", now=now)
+    assert store.locked_out("victim", now) > 0
+    assert store.locked_out("bystander", now) == 0
+    assert store.authenticate("bystander", "passw0rd", now=now) is not None

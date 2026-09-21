@@ -18,7 +18,7 @@ def store(tmp_path):
 
 @pytest.fixture
 def student(store):
-    return store.register("scorer", "pass", "S", "student", module="CCC", stage="ug")
+    return store.register("scorer", "passw0rd", "S", "student", module="CCC", stage="ug")
 
 
 def test_a_score_at_or_above_the_pass_mark_counts_as_a_pass(store, student):
@@ -56,7 +56,7 @@ def test_a_score_moves_the_path_on_like_any_pass(tmp_path):
 
     service = Service()
     service.store = AppStore(tmp_path / "app.db")
-    user = service.store.register("mover", "pass", "M", "student", module="DDD", stage="ug")
+    user = service.store.register("mover", "passw0rd", "M", "student", module="DDD", stage="ug")
     weeks = [n["concept"] for n in service.module_graph("DDD")["nodes"]]
 
     service.store.add_event(user.id, weeks[0], "assessment", score=75)
@@ -84,13 +84,13 @@ def test_the_api_takes_a_score_and_refuses_a_silly_one(main):
     from pydantic import ValidationError
 
     store = main.service.store
-    main.register(main.Registration(username="apiscore", password="pass", role="student",
+    main.register(main.Registration(username="apiscore", password="passw0rd", role="student",
                                     stage="ug", module="CCC"), Response())
-    token = store.create_session(store.authenticate("apiscore", "pass").id)
+    token = store.create_session(store.authenticate("apiscore", "passw0rd").id)
 
     out = main.record_study(main.StudyEvent(concept_id=3, kind="assessment", score=68), token)
     assert out["ok"] and out["pass_mark"] == 40
-    assert store.events(store.authenticate("apiscore", "pass").id)[0]["score"] == 68
+    assert store.events(store.authenticate("apiscore", "passw0rd").id)[0]["score"] == 68
 
     with pytest.raises(ValidationError):
         main.StudyEvent(concept_id=3, kind="assessment", score=140)
@@ -101,7 +101,7 @@ def test_the_api_takes_a_score_and_refuses_a_silly_one(main):
 
 def test_the_score_is_written_to_the_support_log(main):
     store = main.service.store
-    user = store.authenticate("apiscore", "pass")
+    user = store.authenticate("apiscore", "passw0rd")
     token = store.create_session(user.id)
     main.record_study(main.StudyEvent(concept_id=4, kind="assessment", score=55), token)
     assert any("scored 55 out of 100" in e["detail"] for e in store.logs("apiscore"))

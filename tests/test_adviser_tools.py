@@ -22,7 +22,7 @@ DAY = 86400
 
 
 def test_notes_are_kept_newest_first_with_their_author(store):
-    adviser = store.register("adv", "pass", "Dr Adviser", "adviser")
+    adviser = store.register("adv", "passw0rd", "Dr Adviser", "adviser")
     store.add_note(599577, adviser.id, "Called about missed assessments.")
     store.add_note(599577, adviser.id, "Agreed to restart at week 12.")
     notes = store.notes(599577)
@@ -33,7 +33,7 @@ def test_notes_are_kept_newest_first_with_their_author(store):
 
 
 def test_an_empty_note_is_refused_and_a_long_one_is_trimmed(store):
-    adviser = store.register("adv2", "pass", "A", "adviser")
+    adviser = store.register("adv2", "passw0rd", "A", "adviser")
     with pytest.raises(ValueError):
         store.add_note(1, adviser.id, "   ")
     store.add_note(1, adviser.id, "x" * 5000)
@@ -41,8 +41,8 @@ def test_an_empty_note_is_refused_and_a_long_one_is_trimmed(store):
 
 
 def test_an_adviser_can_only_delete_their_own_note(store):
-    one = store.register("adv3", "pass", "One", "adviser")
-    two = store.register("adv4", "pass", "Two", "adviser")
+    one = store.register("adv3", "passw0rd", "One", "adviser")
+    two = store.register("adv4", "passw0rd", "Two", "adviser")
     note = store.add_note(42, one.id, "Mine.")
     assert store.delete_note(note, two.id) is False, "not yours to delete"
     assert store.delete_note(note, one.id) is True
@@ -51,8 +51,8 @@ def test_an_adviser_can_only_delete_their_own_note(store):
 
 def test_a_student_is_quiet_after_a_week_without_activity(store):
     now = time.time()
-    active = store.register("busy", "pass", "Busy", "student", module="CCC", stage="ug")
-    silent = store.register("silent", "pass", "Silent", "student", module="CCC", stage="ug")
+    active = store.register("busy", "passw0rd", "Busy", "student", module="CCC", stage="ug")
+    silent = store.register("silent", "passw0rd", "Silent", "student", module="CCC", stage="ug")
     store.add_event(active.id, 3, "study")
     store.add_event(silent.id, 3, "study")
 
@@ -71,7 +71,7 @@ def test_a_student_is_quiet_after_a_week_without_activity(store):
 
 def test_a_student_who_never_started_is_counted_from_sign_up(store):
     now = time.time()
-    user = store.register("newbie", "pass", "New", "student", module="CCC", stage="ug")
+    user = store.register("newbie", "passw0rd", "New", "student", module="CCC", stage="ug")
     import sqlite3
     con = sqlite3.connect(store.path)
     con.execute("UPDATE users SET created_at = ? WHERE id = ?", (now - 10 * DAY, user.id))
@@ -107,11 +107,11 @@ def test_notes_are_for_advisers_and_admins_only(main):
     from fastapi import Response
 
     store = main.service.store
-    adviser = store.register("apiadv", "pass", "Dr API", "adviser")
+    adviser = store.register("apiadv", "passw0rd", "Dr API", "adviser")
     adviser_token = store.create_session(adviser.id)
-    main.register(main.Registration(username="pupil", password="pass", role="student",
+    main.register(main.Registration(username="pupil", password="passw0rd", role="student",
                                     stage="ug", module="CCC"), Response())
-    pupil_token = store.create_session(store.authenticate("pupil", "pass").id)
+    pupil_token = store.create_session(store.authenticate("pupil", "passw0rd").id)
 
     out = main.add_learner_note(599577, main.NoteBody(text="Follow up next week"), adviser_token)
     assert out["notes"][0]["text"] == "Follow up next week"

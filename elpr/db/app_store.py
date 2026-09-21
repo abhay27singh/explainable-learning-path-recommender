@@ -9,8 +9,11 @@ Passwords are hashed with scrypt and a per-user random salt; the plaintext is ne
 stored and never logged. Session tokens are 32 bytes from `secrets` and are held in
 httpOnly cookies. That much is done properly.
 
-What this is NOT: there is no TLS on localhost, no rate limiting, no account recovery,
-no email verification, no audit log. It is adequate for a research demonstration on a
+Sign-in attempts are throttled per username in memory, which stops a guessing loop
+but resets on restart and is not shared across processes.
+
+What this is NOT: there is no TLS on localhost, no account recovery, no email
+verification. It is adequate for a research demonstration on a
 single machine and is not adequate for real student data. Anyone registering should be
 told not to reuse a password they use elsewhere.
 """
@@ -32,11 +35,16 @@ DB_PATH = ROOT / "data" / "app.db"
 # student id (those are all well below 10 million).
 SYNTHETIC_ID_BASE = 90_000_000
 
-# Minimum password length, for every role. Set low deliberately: this is a classroom
-# demonstration that people sign into once, in front of an audience, and a long password
-# is friction with no benefit here. It is NOT a defensible value for a deployed system.
-# Raise it before this is ever served beyond localhost. See docs in the privacy page.
-MIN_PASSWORD = 4
+# Minimum password length. Eight characters is the floor for anything a real student
+# signs up to; the old value of four was set for a classroom demonstration and is not
+# defensible once the site is reachable from outside this machine.
+MIN_PASSWORD = 8
+
+# Sign-in throttling. Counted per username and per account, in memory: enough to stop
+# someone guessing passwords in a loop, and honest about what it is not (a shared
+# store across processes, or protection against a distributed attempt).
+SIGNIN_WINDOW_SECONDS = 15 * 60
+SIGNIN_MAX_FAILURES = 8
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -150,6 +158,9 @@ class AppStore:
         self._connect().executescript(SCHEMA)
         self._migrate_roles()
         self._migrate_stage()
+        # failed sign-ins per username, in memory only: cleared by a restart, which is
+        # acceptable for a single-process deployment and stated as such.
+        self._failures: dict[str, list[float]] = {}
 
     def _migrate_stage(self) -> None:
         """Add the study-level and stream columns to databases created before them."""
@@ -251,18 +262,45 @@ class AppStore:
             con.execute("UPDATE users SET stage = ?, module = ?, stream = ? WHERE id = ?",
                         (stage, module, stream, user_id))
 
-    def authenticate(self, username: str, password: str) -> User | None:
+    def locked_out(self, username: str, now: float | None = None) -> int:
+        """Seconds until this username may try again, 0 when it may try now."""
+        now = time.time() if now is None else now
+        tries = [t for t in self._failures.get(username.strip().lower(), [])
+                 if now - t < SIGNIN_WINDOW_SECONDS]
+        if len(tries) < SIGNIN_MAX_FAILURES:
+            return 0
+        return max(1, int(SIGNIN_WINDOW_SECONDS - (now - tries[-SIGNIN_MAX_FAILURES])))
+
+    def authenticate(self, username: str, password: str,
+                     now: float | None = None) -> User | None:
+        """Check a password, refusing to answer at all once attempts run out.
+
+        Guessing in a loop is the attack a site without account recovery invites, so
+        failures are counted per username over a rolling window and a locked-out name
+        is refused without the password ever being checked."""
+        username = username.strip().lower()
+        now = time.time() if now is None else now
+        if self.locked_out(username, now):
+            return None
         row = self._connect().execute(
-            "SELECT * FROM users WHERE username = ?", (username.strip().lower(),)
+            "SELECT * FROM users WHERE username = ?", (username,)
         ).fetchone()
         if row is None:
             # Hash anyway, so a missing username and a wrong password take the same
             # time and cannot be told apart by measuring the response.
             _hash(password, secrets.token_bytes(16))
+            self._record_failure(username, now)
             return None
         if not secrets.compare_digest(_hash(password, row["salt"]), row["password_hash"]):
+            self._record_failure(username, now)
             return None
+        self._failures.pop(username, None)     # a good password clears the count
         return _user(row)
+
+    def _record_failure(self, username: str, now: float) -> None:
+        tries = [t for t in self._failures.get(username, []) if now - t < SIGNIN_WINDOW_SECONDS]
+        tries.append(now)
+        self._failures[username] = tries[-SIGNIN_MAX_FAILURES:]
 
     # -- sessions ---------------------------------------------------------------
     def create_session(self, user_id: int, hours: int = 12) -> str:

@@ -24,7 +24,7 @@ def test_each_step_is_the_top_pick_once_earlier_steps_are_known(service, tmp_pat
     from elpr.db.app_store import AppStore
 
     service.store = AppStore(tmp_path / "app.db")
-    user = service.store.register("pathy", "pass", "P", "student", module="DDD")
+    user = service.store.register("pathy", "passw0rd", "P", "student", module="DDD")
     path = service.learning_path(lambda ov: service.registered_state(user, ov), 5)
     ids = [s["concept"] for s in path["steps"]]
 
@@ -41,7 +41,7 @@ def test_student_path_follows_the_course_from_its_first_week(service, tmp_path):
     from elpr.db.app_store import AppStore
 
     service.store = AppStore(tmp_path / "app.db")
-    user = service.store.register("orderly", "pass", "O", "student", module="CCC", stage="ug")
+    user = service.store.register("orderly", "passw0rd", "O", "student", module="CCC", stage="ug")
     weeks = [n["concept"] for n in service.module_graph("CCC")["nodes"]]
     path = service.course_path(user, 5)
     assert [s["concept"] for s in path["steps"]] == weeks[:5]
@@ -53,7 +53,7 @@ def test_studied_or_passed_weeks_are_done_and_a_later_hard_mark_reopens_them(ser
     from elpr.db.app_store import AppStore
 
     service.store = AppStore(tmp_path / "app.db")
-    user = service.store.register("doer", "pass", "D", "student", module="DDD", stage="ug")
+    user = service.store.register("doer", "passw0rd", "D", "student", module="DDD", stage="ug")
     weeks = [n["concept"] for n in service.module_graph("DDD")["nodes"]]
     service.store.add_event(user.id, weeks[0], "study")
     service.store.add_event(user.id, weeks[1], "assessment", True)

@@ -96,9 +96,9 @@ def test_a_degree_student_can_still_take_a_skill_course(main):
     from fastapi import Response
 
     store = main.service.store
-    main.register(main.Registration(username="ugskill", password="pass", role="student",
+    main.register(main.Registration(username="ugskill", password="passw0rd", role="student",
                                     stage="ug", module="CCC"), Response())
-    token = store.create_session(store.authenticate("ugskill", "pass").id)
+    token = store.create_session(store.authenticate("ugskill", "passw0rd").id)
     out = main.course_finder_suggest(
         main.FinderBody(level="skill", interests=["coding"]), token)
     assert out["courses"], "NEP 2020 allows a degree student to take a skill course"
