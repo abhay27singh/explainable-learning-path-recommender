@@ -65,6 +65,8 @@
   header.site .right #who{font-weight:600;color:var(--ink)}
   /* Printing a record: only the record, no chrome. */
   @media print{
+    .rail{display:none}
+    .workspace{display:block}
     header.site, footer.site, .noprint{display:none!important}
     body{background:#fff}
     .block, .next, .card, .course{box-shadow:none!important;break-inside:avoid}
@@ -219,10 +221,18 @@
   .strip .hit[data-concept]{cursor:pointer}
 
   /* ---------- shared, charts, finder, admin ---------- */
-  main.split{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - var(--header))}
-  main.split aside{border-right:1px solid var(--rule);background:var(--surface);padding:18px;overflow-y:auto;max-height:calc(100vh - var(--header));position:sticky;top:var(--header)}
-  main.split section.panel{padding:24px 28px;min-width:0}
-  @media(max-width:860px){main.split{grid-template-columns:1fr}main.split aside{max-height:none;position:static;border-right:0;border-bottom:1px solid var(--rule)}}
+  /* The Course Finder and the adviser view already had a left pane doing the rail's
+     job, so they use the same card and the same measurements as the workspace. */
+  main.split{display:grid;grid-template-columns:288px minmax(0,1fr);gap:16px;align-items:start;
+    max-width:1280px;margin:0 auto;padding:22px}
+  main.split aside{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:18px;position:sticky;top:78px;
+    max-height:calc(100vh - 100px);overflow-y:auto}
+  main.split section.panel{padding:0;min-width:0}
+  @media(max-width:860px){
+    main.split{grid-template-columns:minmax(0,1fr);padding:16px}
+    main.split aside{max-height:none;position:static}
+  }
   .learner{padding:10px 12px;border:1px solid var(--rule);border-radius:8px;margin-bottom:6px;cursor:pointer;background:var(--surface);transition:border-color .15s,background .15s}
   .learner:hover{border-color:var(--accent)}
   .learner.on{border-color:var(--accent);background:var(--accent-soft)}
@@ -310,7 +320,7 @@
   .page.wide{max-width:1280px}
   .workspace{display:grid;grid-template-columns:224px minmax(0,1fr) 296px;gap:16px;align-items:start}
   .workspace.two{grid-template-columns:224px minmax(0,1fr)}
-  .workspace.two .wsmain{max-width:860px}
+  .workspace.narrow .wsmain{max-width:860px}
   .rail{position:sticky;top:78px;background:var(--surface);border:1px solid var(--rule);
     border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 12px;
     display:flex;flex-direction:column;gap:20px}
@@ -335,9 +345,9 @@
     .workspace{grid-template-columns:208px minmax(0,1fr)}
     .railside{grid-column:2}
   }
-  .score-inline{display:none}
+  .score-form.score-inline,p.score-inline{display:none}
   @media (max-width:860px){
-    .score-inline{display:flex}
+    .score-form.score-inline{display:flex}
     p.score-inline{display:block}
     .railside .quizbox{display:none}
     .workspace{grid-template-columns:minmax(0,1fr)}
@@ -655,6 +665,7 @@ function show(name){
   window.scrollTo(0, 0);
 }
 document.addEventListener("click", e => {
+  if(e.target.closest("[data-details]")){ studentTab = "details"; nav("dashboard"); return; }
   const a = e.target.closest("[data-go]");
   if(!a) return;
   e.preventDefault();
@@ -1571,15 +1582,10 @@ function nextStepsBlock(plan){
 }
 
 function schoolRail(plan, where){
-  return `<aside class="rail">
-    <div>
-      <div class="grouphead">Workspace</div>
-      <div class="railnav">
-        <button class="railitem on" aria-current="page">${RAIL_ICON.learning}<span>My learning</span></button>
-        ${railGo("finder", "Course Finder", "finder")}
-      </div>
-    </div>
-    <div>
+  return railShell(
+    `<button class="railitem on" aria-current="page">${RAIL_ICON.learning}<span>My learning</span></button>
+     ${railGo("finder", "Course Finder", "finder")}`,
+    `<div>
       <div class="grouphead">Where you are</div>
       <div class="railcourse">
         <div>${esc(where || "Level not set")}</div>
@@ -1587,8 +1593,7 @@ function schoolRail(plan, where){
           ? `${plan.now.subjects.length} ${plan.now.subjects.length === 1 ? "subject" : "subjects"} with study links`
           : "Add your stream to see your subjects"}</div>
       </div>
-    </div>
-  </aside>`;
+    </div>`);
 }
 
 async function renderSchoolStudent(root){
@@ -1600,7 +1605,7 @@ async function renderSchoolStudent(root){
   const sub = [stageLabel(me.stage), me.stream ? (finderOptions.streams.find(s => s.value === me.stream) || {}).label : ""]
     .filter(Boolean).join(" · ");
   root.innerHTML = `<div class="page wide">
-    <div class="workspace two">
+    <div class="workspace two narrow">
       ${schoolRail(plan, sub)}
       <div class="wsmain">
         ${pageHead(`Hi ${me.display_name}`, sub)}
@@ -1639,29 +1644,40 @@ const railTab = (icon, label, tab, active) =>
     aria-selected="${tab === active}">${RAIL_ICON[icon]}<span>${label}</span></button>`;
 const railGo = (icon, label, to) =>
   `<button class="railitem" data-go="${to}">${RAIL_ICON[icon]}<span>${label}</span></button>`;
+const railHere = (icon, label) =>
+  `<button class="railitem on" aria-current="page">${RAIL_ICON[icon]}<span>${label}</span></button>`;
+const railShell = (nav, panel, foot = "") => `<aside class="rail">
+  <div><div class="grouphead">Workspace</div><div class="railnav" role="tablist">${nav}</div></div>
+  ${panel}
+  ${foot ? `<div class="railnav" style="margin-top:auto">${foot}</div>` : ""}
+</aside>`;
 
-function studentRail(path, course, tab){
-  const pc = path.n_weeks ? Math.round(path.n_done / path.n_weeks * 100) : 0;
-  return `<aside class="rail">
-    <div>
-      <div class="grouphead">Workspace</div>
-      <div class="railnav" role="tablist">
-        ${railTab("learning", "My learning", "path", tab)}
-        ${railGo("progress", "Progress", "progress")}
-        ${railGo("finder", "Course Finder", "finder")}
-        ${railGo("record", "Record of study", "record")}
-      </div>
+/* The same five places on every page, with the one you are on marked. On the
+   dashboard two of them are tabs in the page itself; elsewhere they lead back to it. */
+function studentRail(active, course){
+  const onDash = active === "path" || active === "details";
+  const go = (icon, label, to, key) => active === key ? railHere(icon, label) : railGo(icon, label, to);
+  const nav = [
+    onDash ? railTab("learning", "My learning", "path", active)
+           : railGo("learning", "My learning", "dashboard"),
+    me.module ? go("progress", "Progress", "progress", "progress") : "",
+    go("finder", "Course Finder", "finder", "finder"),
+    me.module ? go("record", "Record of study", "record", "record") : "",
+  ].join("");
+  const foot = onDash ? railTab("details", "My details", "details", active)
+    : `<button class="railitem" data-details="1">${RAIL_ICON.details}<span>My details</span></button>`;
+  return railShell(nav, course ? coursePanel(course) : "", foot);
+}
+function coursePanel(c){
+  const pc = c.weeks ? Math.round(c.done / c.weeks * 100) : 0;
+  return `<div>
+    <div class="grouphead">Your course</div>
+    <div class="railcourse">
+      <div>${esc(c.name)}</div>
+      <div class="bar"><span style="width:${pc}%"></span></div>
+      <div class="caption">${c.done} of ${c.weeks} weeks done</div>
     </div>
-    <div>
-      <div class="grouphead">Your course</div>
-      <div class="railcourse">
-        <div>${esc(course)}</div>
-        <div class="bar"><span style="width:${pc}%"></span></div>
-        <div class="caption">${path.n_done} of ${path.n_weeks} weeks done</div>
-      </div>
-    </div>
-    <div class="railnav" style="margin-top:auto">${railTab("details", "My details", "details", tab)}</div>
-  </aside>`;
+  </div>`;
 }
 
 /* Marks the student typed in, newest first. Nothing is inferred: a week with no mark
@@ -1732,7 +1748,7 @@ async function renderStudent(){
 
   root.innerHTML = `<div class="page wide">
     <div class="workspace">
-      ${studentRail(path, modName(state.module), studentTab)}
+      ${studentRail(studentTab, {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
 
       <div class="wsmain">
         <div class="dash-head">
@@ -1858,16 +1874,21 @@ async function renderProgress(){
     ? state.history.slice().reverse().slice(0, 12).map(h =>
         `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}${h.score === null || h.score === undefined ? "" : ` <span class="caption">scored ${h.score} out of 100</span>`}</li>`).join("")
     : "<li>Nothing recorded yet.</li>";
-  root.innerHTML = `<div class="page">
-    ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`,
-      `<span class="row"><button class="small" data-go="record">Record of study</button>
-       <button class="small" data-go="dashboard">Back to my path</button></span>`)}
-    ${progressBlock(progress)}
-    ${scoreChart(state.history, names)}
-    <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
-    ${weekChart(state.concepts, t, true)}
-    <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
-      ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
+  root.innerHTML = `<div class="page wide">
+    <div class="workspace two">
+      ${studentRail("progress", {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
+      <div class="wsmain">
+        ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`,
+          `<span class="row"><button class="small" data-go="record">Record of study</button>
+           <button class="small" data-go="dashboard">Back to my path</button></span>`)}
+        ${progressBlock(progress)}
+        ${scoreChart(state.history, names)}
+        <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
+        ${weekChart(state.concepts, t, true)}
+        <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
+          ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
+      </div>
+    </div>
   </div>`;
   bindViz(root, null);
   const u = $("#undo");
@@ -1898,38 +1919,43 @@ async function renderRecord(){
   const first = state.history.length ? when(state.history[0].created_at) : null;
   const last = state.history.length ? when(state.history[state.history.length - 1].created_at) : null;
 
-  root.innerHTML = `<div class="page">
-    ${pageHead("Record of study", `${esc(me.display_name)} · ${esc(modName(state.module))}`,
-      `<span class="row noprint"><button class="small" id="print-record">Print or save as PDF</button>
-       <button class="small" data-go="progress">Back to progress</button></span>`)}
-    <div class="block">
-      <div class="tiles">
-        <div class="tile"><div class="v">${path.n_done} of ${path.n_weeks}</div><div class="k">weeks finished</div></div>
-        <div class="tile"><div class="v">${marks.length}</div><div class="k">quizzes recorded</div></div>
-        <div class="tile"><div class="v">${average === null ? "n/a" : average}</div><div class="k">average score</div></div>
-        <div class="tile"><div class="v">${progress ? progress.streak.longest : 0}</div><div class="k">longest streak, days</div></div>
+  root.innerHTML = `<div class="page wide">
+    <div class="workspace two narrow">
+      ${studentRail("record", {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
+      <div class="wsmain">
+        ${pageHead("Record of study", `${esc(me.display_name)} · ${esc(modName(state.module))}`,
+          `<span class="row noprint"><button class="small" id="print-record">Print or save as PDF</button>
+           <button class="small" data-go="progress">Back to progress</button></span>`)}
+        <div class="block">
+          <div class="tiles">
+            <div class="tile"><div class="v">${path.n_done} of ${path.n_weeks}</div><div class="k">weeks finished</div></div>
+            <div class="tile"><div class="v">${marks.length}</div><div class="k">quizzes recorded</div></div>
+            <div class="tile"><div class="v">${average === null ? "n/a" : average}</div><div class="k">average score</div></div>
+            <div class="tile"><div class="v">${progress ? progress.streak.longest : 0}</div><div class="k">longest streak, days</div></div>
+          </div>
+          <p class="muted small" style="margin:0">${first ? `Activity recorded from ${esc(first)} to ${esc(last)}.`
+            : "No activity recorded yet."}</p>
+        </div>
+
+        <div class="block"><h3>Weeks finished</h3>
+          ${done.length ? `<div class="scroll"><table><thead><tr><th>Week</th><th>What was recorded</th>
+            <th class="n">Score</th><th class="n">Date</th></tr></thead><tbody>
+            ${done.map(h => `<tr><td>${esc(names[h.concept_id] || "a week outside this course")}</td>
+              <td>${h.kind === "assessment" ? "Passed the test" : "Studied"}</td>
+              <td class="n">${h.score === null || h.score === undefined ? "" : h.score}</td>
+              <td class="n">${esc(when(h.created_at))}</td></tr>`).join("")}
+          </tbody></table></div>` : `<p class="muted small" style="margin:0">Nothing finished yet.</p>`}
+        </div>
+
+        ${progress && progress.badges.some(b => b.earned) ? `<div class="block"><h3>Milestones</h3>
+          <div class="badges">${progress.badges.filter(b => b.earned).map(b =>
+            `<span class="badge-chip earned">${esc(b.name)}</span>`).join("")}</div></div>` : ""}
+
+        <p class="caption">This is a record of the activity this student entered on this site, generated on
+          ${esc(new Date().toLocaleDateString(undefined, {day:"numeric", month:"long", year:"numeric"}))}.
+          It is not a certificate, and it is not issued or verified by any school, university or examining body.</p>
       </div>
-      <p class="muted small" style="margin:0">${first ? `Activity recorded from ${esc(first)} to ${esc(last)}.`
-        : "No activity recorded yet."}</p>
     </div>
-
-    <div class="block"><h3>Weeks finished</h3>
-      ${done.length ? `<div class="scroll"><table><thead><tr><th>Week</th><th>What was recorded</th>
-        <th class="n">Score</th><th class="n">Date</th></tr></thead><tbody>
-        ${done.map(h => `<tr><td>${esc(names[h.concept_id] || "a week outside this course")}</td>
-          <td>${h.kind === "assessment" ? "Passed the test" : "Studied"}</td>
-          <td class="n">${h.score === null || h.score === undefined ? "" : h.score}</td>
-          <td class="n">${esc(when(h.created_at))}</td></tr>`).join("")}
-      </tbody></table></div>` : `<p class="muted small" style="margin:0">Nothing finished yet.</p>`}
-    </div>
-
-    ${progress && progress.badges.some(b => b.earned) ? `<div class="block"><h3>Milestones</h3>
-      <div class="badges">${progress.badges.filter(b => b.earned).map(b =>
-        `<span class="badge-chip earned">${esc(b.name)}</span>`).join("")}</div></div>` : ""}
-
-    <p class="caption">This is a record of the activity this student entered on this site, generated on
-      ${esc(new Date().toLocaleDateString(undefined, {day:"numeric", month:"long", year:"numeric"}))}.
-      It is not a certificate, and it is not issued or verified by any school, university or examining body.</p>
   </div>`;
   const print = $("#print-record");
   if(print) print.onclick = () => window.print();
