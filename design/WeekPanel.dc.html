@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body{margin:0;background:rgba(16,24,40,.45);color:#101828;
+      font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:#1F5E7A;text-decoration:none} a:hover{color:#174A61}
+    .serif{font-family:"Source Serif 4",Georgia,serif}
+  </style>
+</helmet>
+
+<div style="min-height:640px;display:grid;place-items:center;padding:28px">
+  <div style="background:#fff;border:1px solid #E1E6EC;border-radius:14px;box-shadow:0 20px 50px rgba(16,24,40,.22);width:100%;max-width:560px;padding:26px 28px">
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <p style="margin:0;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#1F5E7A">Step 1 of 5</p>
+        <h2 class="serif" style="margin:6px 0 0;font-size:25px;font-weight:600">Computer Science &middot; Week 2</h2>
+      </div>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#7A8696" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </div>
+
+    <div style="display:flex;gap:8px;margin:14px 0 18px;flex-wrap:wrap">
+      <span style="font-size:12px;color:#1F5E7A;background:#E5F0F5;border-radius:6px;padding:3px 9px;font-weight:600">Ready to start</span>
+      <span style="font-size:12px;color:#475467;background:#EDF1F5;border-radius:6px;padding:3px 9px">Level now: Getting there</span>
+    </div>
+
+    <ul style="margin:0;padding-left:18px;color:#475467;font-size:15px;line-height:1.75">
+      <li>It builds on Week 1, which you already have.</li>
+      <li>Finishing it opens up Week 3 and Week 5.</li>
+    </ul>
+
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:20px">
+      <div style="border:1px solid #E1E6EC;border-radius:10px;padding:14px 16px">
+        <h3 style="margin:0 0 10px;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:#7A8696">Revise first</h3>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0">
+          <span>Week 1</span><span style="color:#475467;font-variant-numeric:tabular-nums">82%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0">
+          <span>Week 0</span><span style="color:#475467;font-variant-numeric:tabular-nums">64%</span>
+        </div>
+      </div>
+      <div style="border:1px solid #E1E6EC;border-radius:10px;padding:14px 16px">
+        <h3 style="margin:0 0 10px;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:#7A8696">Opens up</h3>
+        <div style="font-size:14px;padding:4px 0">Week 3</div>
+        <div style="font-size:14px;padding:4px 0">Week 5</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap">
+      <span style="background:#1F5E7A;color:#fff;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600">I studied this</span>
+      <span style="border:1px solid #E1E6EC;border-radius:8px;padding:10px 16px;font-size:14px">I passed the test</span>
+      <span style="border:1px solid #E1E6EC;border-radius:8px;padding:10px 16px;font-size:14px">I found it hard</span>
+    </div>
+
+    <div style="margin-top:18px;padding-top:18px;border-top:1px solid #E1E6EC">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:14px;color:#475467">Took a quiz? Enter your score</span>
+        <span style="border:1px solid #E1E6EC;border-radius:8px;padding:9px 12px;font-size:14px;color:#7A8696;min-width:104px">out of 100</span>
+        <span style="border:1px solid #E1E6EC;border-radius:8px;padding:9px 14px;font-size:13px">Save score</span>
+      </div>
+      <p style="margin:8px 0 0;font-size:12px;color:#7A8696">40 out of 100 or more counts as a pass, the same mark the model was trained on.</p>
+    </div>
+
+    <p style="margin:16px 0 0;font-size:13px;color:#1F5E7A">Show the model's working</p>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

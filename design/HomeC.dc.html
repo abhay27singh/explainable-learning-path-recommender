@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body{margin:0;background:#F6F8FA;color:#101828;font-family:"IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:#1F5E7A;text-decoration:none} a:hover{color:#174A61}
+    .num{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  </style>
+</helmet>
+
+<div style="min-height:900px;background:#fff">
+  <div style="height:56px;border-bottom:1px solid #E1E6EC;display:flex;align-items:center;gap:18px;padding:0 28px">
+    <div style="display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px">
+      <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1F5E7A"></rect><path d="M7 24 L16 16 L25 8" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"></path></svg>
+      Learning Path Recommender
+    </div>
+    <div style="display:flex;gap:2px;font-size:13px;color:#475467">
+      <span style="padding:6px 10px">Course Finder</span>
+      <span style="padding:6px 10px">How it works</span>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+      <span style="font-size:13px;color:#475467;padding:7px 10px">Sign in</span>
+      <span style="background:#1F5E7A;color:#fff;border-radius:7px;padding:8px 15px;font-size:13px;font-weight:600">Get started</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;min-height:560px">
+    <div style="padding:64px 40px 64px 56px;display:flex;flex-direction:column;justify-content:center">
+      <p class="num" style="margin:0 0 14px;font-size:12px;letter-spacing:.06em;color:#7A8696">class_10 · class_12 · diploma · ug · pg</p>
+      <h1 style="margin:0;font-size:44px;line-height:1.12;font-weight:600;letter-spacing:-.02em;max-width:520px">The next thing to study, and the reason it comes next</h1>
+      <p style="margin:20px 0 28px;font-size:16px;line-height:1.7;color:#475467;max-width:480px">
+        Every recommendation traces to a number: what you have finished, what each week needs first, and what it opens up. No black box, no guessing.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <span style="background:#1F5E7A;color:#fff;border-radius:7px;padding:12px 20px;font-size:14px;font-weight:600">Get started</span>
+        <span style="border:1px solid #E1E6EC;border-radius:7px;padding:12px 20px;font-size:14px">Find a course</span>
+      </div>
+      <div style="display:flex;gap:26px;margin-top:40px;padding-top:24px;border-top:1px solid #E1E6EC">
+        <div><div class="num" style="font-size:22px;font-weight:600">59</div><div style="font-size:12px;color:#7A8696;margin-top:2px">courses</div></div>
+        <div><div class="num" style="font-size:22px;font-weight:600">237</div><div style="font-size:12px;color:#7A8696;margin-top:2px">course weeks mapped</div></div>
+        <div><div class="num" style="font-size:22px;font-weight:600">724</div><div style="font-size:12px;color:#7A8696;margin-top:2px">prerequisite links</div></div>
+      </div>
+    </div>
+
+    <div style="background:#F6F8FA;border-left:1px solid #E1E6EC;padding:44px 40px;display:flex;align-items:center">
+      <div style="background:#fff;border:1px solid #E1E6EC;border-radius:10px;width:100%;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid #E1E6EC;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:600">Why Week 2 comes next</span>
+          <span class="num" style="font-size:11px;color:#7A8696">computed in 160 ms</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="color:#7A8696;font-size:11px;letter-spacing:.05em;text-transform:uppercase">
+              <th style="text-align:left;padding:9px 18px;font-weight:600">Week</th>
+              <th style="text-align:left;padding:9px 18px;font-weight:600">Relationship</th>
+              <th style="text-align:right;padding:9px 18px;font-weight:600">Mastery</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #E1E6EC"><td class="num" style="padding:10px 18px">Week 01</td><td style="padding:10px 18px;color:#475467">Builds on</td><td class="num" style="padding:10px 18px;text-align:right">0.82</td></tr>
+            <tr style="border-top:1px solid #E1E6EC"><td class="num" style="padding:10px 18px">Week 00</td><td style="padding:10px 18px;color:#475467">Builds on</td><td class="num" style="padding:10px 18px;text-align:right">0.64</td></tr>
+            <tr style="border-top:1px solid #E1E6EC"><td class="num" style="padding:10px 18px">Week 03</td><td style="padding:10px 18px;color:#475467">Opens up</td><td class="num" style="padding:10px 18px;text-align:right">0.31</td></tr>
+            <tr style="border-top:1px solid #E1E6EC"><td class="num" style="padding:10px 18px">Week 05</td><td style="padding:10px 18px;color:#475467">Opens up</td><td class="num" style="padding:10px 18px;text-align:right">0.28</td></tr>
+          </tbody>
+        </table>
+        <div style="padding:12px 18px;border-top:1px solid #E1E6EC;background:#F6F8FA;font-size:12px;color:#475467">
+          Zero suggestions in testing skipped a week you needed first.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid #E1E6EC;padding:48px 56px">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;max-width:1160px">
+      <div style="border-left:2px solid #1F5E7A;padding-left:18px">
+        <h3 style="margin:0 0 6px;font-size:16px">Two paths, equal footing</h3>
+        <p style="margin:0;font-size:14px;color:#475467;line-height:1.65">Academic courses and NSQF skill courses side by side, as NEP 2020 intends. A degree student can take a skill course too.</p>
+      </div>
+      <div style="border-left:2px solid #E1E6EC;padding-left:18px">
+        <h3 style="margin:0 0 6px;font-size:16px">Plan it to fit your time</h3>
+        <p style="margin:0;font-size:14px;color:#475467;line-height:1.65">Say how many weeks you have. The subjects spread evenly across them, never five one week and one the next.</p>
+      </div>
+      <div style="border-left:2px solid #E1E6EC;padding-left:18px">
+        <h3 style="margin:0 0 6px;font-size:16px">Scores, not guesses</h3>
+        <p style="margin:0;font-size:14px;color:#475467;line-height:1.65">Enter a real quiz mark. Forty or more counts as a pass, the same threshold the model was trained on.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#101828;color:#C7CED9;padding:36px 56px">
+    <div style="display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;max-width:1160px">
+      <div>
+        <div style="color:#fff;font-weight:600;font-size:14px">Learning Path Recommender</div>
+        <p style="margin:8px 0 0;font-size:13px;max-width:400px;line-height:1.6">An independent project for students in India. Every recommendation is free to use and comes with a clear explanation.</p>
+      </div>
+      <div style="display:flex;gap:36px;font-size:13px">
+        <div><div style="color:#fff;margin-bottom:8px">Product</div><div style="margin:6px 0">Course Finder</div><div style="margin:6px 0">Get started</div></div>
+        <div><div style="color:#fff;margin-bottom:8px">Legal</div><div style="margin:6px 0">Privacy</div><div style="margin:6px 0">Terms</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

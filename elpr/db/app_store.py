@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS study_events (
     day        REAL NOT NULL,
     kind       TEXT NOT NULL CHECK (kind IN ('study', 'assessment')),
     correct    INTEGER,
+    score      REAL,          -- quiz mark out of 100, when the student typed one
     created_at REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_user ON study_events(user_id, day);
@@ -159,6 +160,10 @@ class AppStore:
                 con.execute("ALTER TABLE users ADD COLUMN stage TEXT")
             if "stream" not in columns:
                 con.execute("ALTER TABLE users ADD COLUMN stream TEXT")
+        events = {r["name"] for r in con.execute("PRAGMA table_info(study_events)")}
+        if "score" not in events:
+            with con:
+                con.execute("ALTER TABLE study_events ADD COLUMN score REAL")
 
     def _migrate_roles(self) -> None:
         """Widen the role CHECK constraint on databases created before admin existed.
@@ -288,8 +293,14 @@ class AppStore:
             con.execute("DELETE FROM sessions WHERE token = ?", (token,))
 
     # -- study activity ---------------------------------------------------------
+    # The mark a submitted assessment had to reach to count as a pass in the training
+    # data (sql/05_events.sql). A typed quiz score is judged the same way, so what the
+    # model sees from a student matches what it learned from.
+    PASS_MARK = 40
+
     def add_event(
-        self, user_id: int, concept_id: int, kind: str, correct: bool | None = None
+        self, user_id: int, concept_id: int, kind: str, correct: bool | None = None,
+        score: float | None = None,
     ) -> None:
         con = self._connect()
         with con:
@@ -297,16 +308,21 @@ class AppStore:
                 "SELECT MAX(day) AS d FROM study_events WHERE user_id = ?", (user_id,)
             ).fetchone()["d"]
             day = (last or 0.0) + 3.0     # each recorded activity advances the clock
+            # A typed quiz score decides pass or fail, on the same threshold the model
+            # was trained on. Without a score, the student's own pass or fail stands.
+            if score is not None:
+                score = float(min(max(score, 0.0), 100.0))
+                correct = score >= self.PASS_MARK
             con.execute(
-                "INSERT INTO study_events (user_id, concept_id, day, kind, correct, created_at)"
-                " VALUES (?,?,?,?,?,?)",
+                "INSERT INTO study_events (user_id, concept_id, day, kind, correct, score,"
+                " created_at) VALUES (?,?,?,?,?,?,?)",
                 (user_id, concept_id, day, kind,
-                 None if correct is None else int(correct), time.time()),
+                 None if correct is None else int(correct), score, time.time()),
             )
 
     def events(self, user_id: int) -> list[dict]:
         rows = self._connect().execute(
-            "SELECT concept_id, day, kind, correct, created_at FROM study_events "
+            "SELECT concept_id, day, kind, correct, score, created_at FROM study_events "
             "WHERE user_id = ? ORDER BY day, id", (user_id,)
         ).fetchall()
         return [dict(r) for r in rows]

@@ -1,0 +1,17 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1280, "h": 900, "title": "A · Quiet document" },
+    { "file": "DirectionB.dc.html", "x": 1400, "y": 0, "w": 1280, "h": 900, "title": "B · Focus band" },
+    { "file": "DirectionC.dc.html", "x": 2800, "y": 0, "w": 1280, "h": 900, "title": "C · Course console" },
+    { "file": "FinderLadder.dc.html", "x": 0, "y": 1120, "w": 1280, "h": 940, "title": "Course Finder ladder (direction A)" },
+    { "file": "WeekPanel.dc.html", "x": 1400, "y": 1120, "w": 760, "h": 660, "title": "Week panel (direction A)" }
+  ],
+  "annotations": [
+    { "id": "how-to-read", "x": 0, "y": -170, "w": 520, "text": "Three directions for the student dashboard, same data, same tokens as the live app (#1F5E7A accent, #F6F8FA ground, the blue level ramp).\n\nPick one, then I build it." },
+    { "id": "note-a", "x": 0, "y": 950, "w": 380, "text": "A · Quiet document\nOne column, serif headings, thin rules. Reads like a well-set page: calm, easy on a phone, nothing competes with the next step.\n\nTradeoff: you scroll to see the whole course, and it looks less like software." },
+    { "id": "note-b", "x": 1400, "y": 950, "w": 380, "text": "B · Focus band\nDark band puts the next step and its three buttons above everything; tiles, prerequisites and the shortlist sit below in a two-column body.\n\nTradeoff: the dark band is a strong commitment and eats vertical space on small screens." },
+    { "id": "note-c", "x": 2800, "y": 950, "w": 380, "text": "C · Course console\nAll 35 weeks live in a left rail with level dots; the right pane explains the current week as a table with real numbers.\n\nTradeoff: denser and more technical. Good for advisers and confident students, heavier for a nervous class 12 leaver." },
+    { "id": "note-support", "x": 0, "y": 2100, "w": 560, "text": "Both of these are drawn in direction A's language. If you pick B or C I redraw them to match before building anything." }
+  ],
+  "launch": { "view": "canvas" }
+}

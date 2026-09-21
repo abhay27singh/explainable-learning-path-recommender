@@ -57,6 +57,18 @@ def test_bad_input_is_refused():
         cf.weekly_plan("btech_cse", 0)
 
 
+def test_the_length_on_show_is_always_one_of_the_choices():
+    """Regression: a course with 11 subjects asked for 24 weeks got 11, but the choices
+    were only 4 and 8, so the dropdown showed "4 weeks" beside an 11 week plan and
+    picking 4 changed nothing."""
+    for key in ("dca", "btech_cse", "skill_retail", "mba"):
+        for asked in (4, 8, 24, 52, 200):
+            plan = cf.weekly_plan(key, asked)
+            assert plan["n_weeks"] in plan["options"], (key, asked, plan["options"])
+            assert plan["options"] == sorted(set(plan["options"]))
+            assert all(w <= plan["n_subjects"] for w in plan["options"])
+
+
 def test_the_plan_says_it_is_not_the_official_timetable():
     plan = cf.weekly_plan("bcom", 12)
     assert "not the official course timetable" in plan["note"]

@@ -24,6 +24,29 @@ from elpr.profile import (
 )
 
 
+def test_uk_only_questions_are_not_asked_of_indian_students():
+    """The model was trained in the UK; the students here are in India. A UK region,
+    deprivation decile or credit load cannot be answered honestly, so they are not
+    asked and stay at the dataset average."""
+    from elpr.profile import UK_ONLY, options as profile_options
+
+    asked = {f["field"] for f in profile_options()}
+    assert asked.isdisjoint(UK_ONLY), "no UK-only question reaches a student"
+    assert {"age_band", "gender", "highest_education", "disability"} <= asked
+    assert {f["field"] for f in profile_options(include_uk_only=True)} >= set(UK_ONLY)
+
+
+def test_education_options_read_as_indian_qualifications():
+    from elpr.profile import options as profile_options
+
+    labels = {o["label"] for f in profile_options()
+              if f["field"] == "highest_education" for o in f["options"]}
+    assert labels == {"No formal qualification", "Below class 12",
+                      "Class 12 (higher secondary)", "Bachelor's degree or diploma",
+                      "Postgraduate degree"}
+    assert not any("A Level" in l or "HE Qualification" in l for l in labels)
+
+
 def test_clean_keeps_only_valid_answers():
     out = clean({"gender": "F", "age_band": "not a band", "injected": "x",
                  "studied_credits": "9999", "num_of_prev_attempts": "abc"})

@@ -335,6 +335,9 @@ class StudyEvent(BaseModel):
     concept_id: int
     kind: str = Field(default="study")
     correct: bool | None = None
+    # A quiz mark out of 100. When given it decides pass or fail, on the same threshold
+    # the model was trained with, so a typed score means the same as a dataset one.
+    score: float | None = Field(default=None, ge=0, le=100)
 
 
 @app.post("/api/me/study")
@@ -347,11 +350,16 @@ def record_study(body: StudyEvent, elpr_session: str | None = Cookie(None)) -> d
         raise HTTPException(400, "unknown concept")
     if body.kind not in ("study", "assessment"):
         raise HTTPException(400, "kind must be study or assessment")
-    s.store.add_event(user.id, body.concept_id, body.kind, body.correct)
+    if body.score is not None and body.kind != "assessment":
+        raise HTTPException(400, "a score belongs to a test, not to reading")
+    s.store.add_event(user.id, body.concept_id, body.kind, body.correct, body.score)
+    outcome = ("" if body.score is not None else
+               "" if body.correct is None else
+               f", {'passed' if body.correct else 'found it hard'}")
     s.store.log(user.id, "recorded activity",
-                f"week concept {body.concept_id}, {body.kind}"
-                + ("" if body.correct is None else f", {'passed' if body.correct else 'found it hard'}"))
-    return {"ok": True, "n_events": len(s.store.events(user.id))}
+                f"week concept {body.concept_id}, {body.kind}" + outcome
+                + ("" if body.score is None else f", scored {body.score:g} out of 100"))
+    return {"ok": True, "pass_mark": s.store.PASS_MARK, "n_events": len(s.store.events(user.id))}
 
 
 @app.post("/api/me/undo")
@@ -489,7 +497,9 @@ def course_graph(module: str, elpr_session: str | None = Cookie(None)) -> dict:
 @app.get("/api/profile/options")
 def profile_form() -> dict:
     """The background questions and their allowed answers. Contains no personal data."""
-    return {"fields": profile_options()}
+    from elpr.profile import UK_ONLY_NOTE
+
+    return {"fields": profile_options(), "note": UK_ONLY_NOTE}
 
 
 class ProfileBody(BaseModel):

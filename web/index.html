@@ -469,7 +469,8 @@
     <h3>Licensing and attribution</h3>
     <p>The source code is released publicly for inspection and reproduction. The Open University Learning Analytics Dataset is used under CC-BY 4.0 and is attributed to Kuzilek, Hlosta and Zdrahal (2017). If you build on this work, cite the paper and the dataset.</p>
     <h3>Contact</h3>
-    <p>Department of Computer Science, Chandigarh University, Mohali, India.</p>
+    <p>This is an independently built project. Reach the maintainer through the issues page of
+      the public source repository: <code>github.com/abhay27singh/explainable-learning-path-recommender</code>.</p>
   </div>
 </div>
 
@@ -477,7 +478,8 @@
   <div class="in">
     <div>
       <a class="brand" data-go="home">Learning Path Recommender</a>
-      <p>A research project from the Department of Computer Science, Chandigarh University.</p>
+      <p>An independent project for students in India. Every recommendation is free to use
+        and comes with a clear explanation.</p>
     </div>
     <div class="cols">
       <div><h4>Product</h4><a data-go="finder">Course Finder</a><a data-go="signup" class="guest-only">Get started</a><a data-go="dashboard" class="auth-only">My learning</a></div>
@@ -1218,7 +1220,15 @@ function weekSheet(step, t, forStudent, position){
       <button class="act" data-c="${step.concept}" data-k="study">I studied this</button>
       <button class="act" data-c="${step.concept}" data-k="pass">I passed the test</button>
       <button class="act" data-c="${step.concept}" data-k="fail">I found it hard</button>
-    </div>` : ""}
+    </div>
+    <form class="row score-form" style="margin-top:12px;align-items:center">
+      <label for="score-input" style="margin:0">Took a quiz? Enter your score</label>
+      <input id="score-input" type="number" min="0" max="100" step="1" placeholder="out of 100"
+        style="width:120px" />
+      <button class="small" type="submit" data-c="${step.concept}">Save score</button>
+    </form>
+    <p class="caption" style="margin:6px 0 0">40 out of 100 or more counts as a pass, the
+      same mark the model was trained on.</p>` : ""}
     <details class="working"><summary>Show the model's working</summary>
       <p class="prose">${esc(step.text)}</p></details>
   </div>`;
@@ -1232,6 +1242,25 @@ function closeSheet(){
   if(sheet) sheet.hidden = true;
 }
 function bindActions(root){
+  const form = root.querySelector(".score-form");
+  if(form) form.onsubmit = async e => {
+    e.preventDefault();
+    const input = form.querySelector("#score-input"), score = Number(input.value);
+    if(input.value === "" || Number.isNaN(score) || score < 0 || score > 100){
+      toast("Enter a score between 0 and 100");
+      return;
+    }
+    const button = form.querySelector("button");
+    button.disabled = true;
+    button.textContent = "Saving";
+    try{
+      await post("/api/me/study",
+        {concept_id: +button.dataset.c, kind: "assessment", score});
+    }catch(err){ toast(err.message); button.disabled = false; button.textContent = "Save score"; return; }
+    toast(score >= 40 ? `Scored ${score}, counted as a pass` : `Scored ${score}, counted as not passed yet`);
+    closeSheet();
+    renderStudent();
+  };
   root.querySelectorAll(".act").forEach(b => b.onclick = async () => {
     const kind = b.dataset.k === "study" ? "study" : "assessment";
     const correct = b.dataset.k === "pass" ? true : b.dataset.k === "fail" ? false : null;
@@ -1280,7 +1309,7 @@ function bindTabs(root, cls, onPick){
 }
 
 /* ---------------- student dashboard ---------------- */
-function profileForm(fields, profile, module){
+function profileForm(fields, profile, module, note){
   const control = f => {
     const cur = profile[f.field];
     const opts = f.type === "choice" ? f.options.map(o => ({value:o.value, label:o.label}))
@@ -1291,6 +1320,7 @@ function profileForm(fields, profile, module){
   return `<form id="profile-form" class="block">
     <h3>Your details</h3>
     <p class="muted small">The model was trained on these. Leave any blank and it uses the average student instead.</p>
+    ${note ? `<p class="caption" style="margin:-6px 0 12px">${esc(note)}</p>` : ""}
     <div class="viz-row" style="gap:0 16px">${fields.map(f => `<div><label>${f.label}</label>${control(f)}</div>`).join("")}</div>
     <div style="margin-top:18px;max-width:320px"><button class="primary" type="submit">Save and update my path</button></div>
     <div id="profile-msg" class="caption" style="margin:8px 0 0"></div>
@@ -1417,7 +1447,7 @@ async function renderStudent(){
   const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
   const hist = state.history.length
     ? state.history.slice().reverse().slice(0, 8).map(h =>
-        `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}</li>`).join("")
+        `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}${h.score === null || h.score === undefined ? "" : ` <span class="caption">scored ${h.score} out of 100</span>`}</li>`).join("")
     : "<li>Nothing recorded yet.</li>";
   const tabs = [["path", "My path"], ["details", "My details"]];
 
@@ -1444,7 +1474,7 @@ async function renderStudent(){
     <div data-tabpanel="details" ${studentTab === "details" ? "" : "hidden"}>
       ${studiesForm()}
       ${savedCourses.length ? shortlistBlock(savedCourses) : ""}
-      ${profileForm(form.fields, mine.profile || {}, mine.module)}
+      ${profileForm(form.fields, mine.profile || {}, mine.module, form.note)}
     </div>
   </div>`;
 
@@ -1492,7 +1522,7 @@ async function renderProgress(){
   const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
   const hist = state.history.length
     ? state.history.slice().reverse().slice(0, 12).map(h =>
-        `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}</li>`).join("")
+        `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}${h.score === null || h.score === undefined ? "" : ` <span class="caption">scored ${h.score} out of 100</span>`}</li>`).join("")
     : "<li>Nothing recorded yet.</li>";
   root.innerHTML = `<div class="page">
     ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`,

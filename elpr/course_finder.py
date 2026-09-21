@@ -995,6 +995,8 @@ def weekly_plan(key: str, weeks: int = 24) -> dict:
         "key": course.key, "name": course.name, "level_label": LEVELS[course.level],
         "weeks": out, "n_weeks": weeks, "n_subjects": len(subjects),
         "per_week": round(len(subjects) / weeks, 1),
-        "options": [w for w in PLAN_WEEKS if w <= len(subjects)] or [len(subjects)],
+        # The plan actually shown must be one of the choices, or the dropdown claims a
+        # length the page is not showing and picking it changes nothing.
+        "options": sorted({w for w in PLAN_WEEKS if w <= len(subjects)} | {weeks}),
         "note": PLAN_NOTE,
     }

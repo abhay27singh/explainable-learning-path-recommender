@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body{margin:0;background:#F6F8FA;color:#101828;font-family:"IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:#1F5E7A;text-decoration:none} a:hover{color:#174A61}
+    .num{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  </style>
+</helmet>
+
+<div style="min-height:860px;display:grid;grid-template-rows:56px 1fr">
+  <div style="background:#fff;border-bottom:1px solid #E1E6EC;display:flex;align-items:center;gap:18px;padding:0 20px">
+    <div style="display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px">
+      <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1F5E7A"></rect><path d="M7 24 L16 16 L25 8" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"></path></svg>
+      Learning Path Recommender
+    </div>
+    <div style="display:flex;gap:2px;font-size:13px">
+      <span style="padding:6px 10px;border-radius:6px;background:#E5F0F5;color:#1F5E7A;font-weight:600">Learners</span>
+      <span style="padding:6px 10px;color:#475467">Course Finder</span>
+      <span style="padding:6px 10px;color:#475467">Research</span>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:#475467">
+      <span>Dr Demo</span>
+      <span style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:#E5F0F5;color:#1F5E7A;padding:3px 7px;border-radius:5px;font-weight:600">Adviser</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:280px 1fr">
+    <div style="border-right:1px solid #E1E6EC;background:#fff;padding:16px 14px">
+      <div style="border:1px solid #E1E6EC;border-radius:8px;padding:8px 11px;font-size:13px;color:#7A8696">Search learners</div>
+      <div style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#7A8696;margin:16px 0 8px">Needs attention</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="border:1px solid #9E3A2C;background:#F9E9E6;border-radius:8px;padding:10px 12px">
+          <div style="font-size:13px;font-weight:600">Demo Student</div>
+          <div class="num" style="font-size:11px;color:#9E3A2C;margin-top:3px">quiet 28 days · 5 events</div>
+        </div>
+        <div style="border:1px solid #E1E6EC;border-radius:8px;padding:10px 12px">
+          <div style="font-size:13px;font-weight:600">Abhay</div>
+          <div class="num" style="font-size:11px;color:#7A8696;margin-top:3px">never started · 0 events</div>
+        </div>
+      </div>
+      <div style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#7A8696;margin:18px 0 8px">Active</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="border:1px solid #1F5E7A;background:#E5F0F5;border-radius:8px;padding:10px 12px">
+          <div style="font-size:13px;font-weight:600;color:#1F5E7A">Gursimar</div>
+          <div class="num" style="font-size:11px;color:#475467;margin-top:3px">CCC · 2 of 35 weeks</div>
+        </div>
+        <div style="border:1px solid #E1E6EC;border-radius:8px;padding:10px 12px">
+          <div class="num" style="font-size:13px;font-weight:600">599577</div>
+          <div class="num" style="font-size:11px;color:#7A8696;margin-top:3px">dataset · 1849 events</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:20px 24px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
+        <div>
+          <h1 style="margin:0;font-size:21px">Gursimar</h1>
+          <div class="num" style="font-size:12px;color:#7A8696;margin-top:4px">id 90000018 · Computer Science · undergraduate</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="border:1px solid #E1E6EC;background:#fff;border-radius:7px;padding:7px 12px;font-size:12px">Path</span>
+          <span style="border:1px solid #E1E6EC;background:#fff;border-radius:7px;padding:7px 12px;font-size:12px">Progress</span>
+          <span style="background:#1F5E7A;color:#fff;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:600">Notes (2)</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px">
+        <div style="background:#fff;border:1px solid #E1E6EC;border-radius:8px;padding:12px 14px">
+          <div class="num" style="font-size:20px;font-weight:600;color:#1F5E7A">2/35</div><div style="font-size:11px;color:#7A8696;margin-top:2px">weeks done</div>
+        </div>
+        <div style="background:#fff;border:1px solid #E1E6EC;border-radius:8px;padding:12px 14px">
+          <div class="num" style="font-size:20px;font-weight:600;color:#1F5E7A">4</div><div style="font-size:11px;color:#7A8696;margin-top:2px">day streak</div>
+        </div>
+        <div style="background:#fff;border:1px solid #E1E6EC;border-radius:8px;padding:12px 14px">
+          <div class="num" style="font-size:20px;font-weight:600;color:#1F5E7A">72</div><div style="font-size:11px;color:#7A8696;margin-top:2px">last quiz</div>
+        </div>
+        <div style="background:#fff;border:1px solid #E1E6EC;border-radius:8px;padding:12px 14px">
+          <div class="num" style="font-size:20px;font-weight:600;color:#1F5E7A">0</div><div style="font-size:11px;color:#7A8696;margin-top:2px">days quiet</div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #E1E6EC;border-radius:10px;padding:18px 20px;margin-top:16px">
+        <h3 style="margin:0 0 4px;font-size:15px">Your notes</h3>
+        <p style="margin:0 0 14px;font-size:12px;color:#7A8696">Private to advisers. The learner never sees them.</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="flex:1;border:1px solid #E1E6EC;border-radius:8px;padding:9px 12px;font-size:13px;color:#7A8696">What did you agree with this learner?</span>
+          <span style="border:1px solid #E1E6EC;border-radius:8px;padding:9px 14px;font-size:13px">Add note</span>
+        </div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+          <div style="border-left:2px solid #E1E6EC;padding-left:12px">
+            <div style="font-size:14px">Agreed to restart at Week 3 after the exams.</div>
+            <div class="num" style="font-size:11px;color:#7A8696;margin-top:3px">Dr Demo · 15 Sep 2026, 22:05</div>
+          </div>
+          <div style="border-left:2px solid #E1E6EC;padding-left:12px">
+            <div style="font-size:14px">Struggling with Week 4; suggested the NPTEL lecture series.</div>
+            <div class="num" style="font-size:11px;color:#7A8696;margin-top:3px">Dr Demo · 12 Sep 2026, 10:41</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #E1E6EC;border-radius:10px;padding:18px 20px;margin-top:14px">
+        <h3 style="margin:0 0 12px;font-size:15px">Levels across the course</h3>
+        <div style="display:grid;grid-auto-flow:column;grid-auto-columns:minmax(10px,1fr);gap:2px">
+          <span style="height:26px;border-radius:3px;background:#1c5cab"></span><span style="height:26px;border-radius:3px;background:#1c5cab"></span>
+          <span style="height:26px;border-radius:3px;background:#3987e5"></span><span style="height:26px;border-radius:3px;background:#3987e5"></span>
+          <span style="height:26px;border-radius:3px;background:#86b6ef"></span><span style="height:26px;border-radius:3px;background:#86b6ef"></span>
+          <span style="height:26px;border-radius:3px;background:#3987e5"></span><span style="height:26px;border-radius:3px;background:#86b6ef"></span>
+          <span style="height:26px;border-radius:3px;background:#86b6ef"></span><span style="height:26px;border-radius:3px;background:#1c5cab"></span>
+          <span style="height:26px;border-radius:3px;background:#86b6ef"></span><span style="height:26px;border-radius:3px;background:#3987e5"></span>
+          <span style="height:26px;border-radius:3px;background:#86b6ef"></span><span style="height:26px;border-radius:3px;background:#86b6ef"></span>
+        </div>
+        <div class="num" style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:#475467">
+          <span>strong 4</span><span>getting there 6</span><span>needs work 8</span>
+          <span style="margin-left:auto;color:#7A8696">click a week to mark it known</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

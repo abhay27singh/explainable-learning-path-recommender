@@ -21,12 +21,16 @@ CATEGORICAL_FIELDS: dict[str, tuple[str, list[str], dict[str, str]]] = {
     "age_band": ("age_code", ["0-35", "35-55", "55<="],
                  {"0-35": "Under 35", "35-55": "35 to 55", "55<=": "55 and over"}),
     "gender": ("gender_code", ["F", "M"], {"F": "Female", "M": "Male"}),
+    # The dataset's British qualification names, shown as their nearest Indian
+    # equivalent. The value sent to the model is unchanged; only the label differs.
     "highest_education": ("education_code", [
         "A Level or Equivalent", "HE Qualification", "Lower Than A Level",
         "No Formal quals", "Post Graduate Qualification"], {
-        "No Formal quals": "No formal qualifications",
-        "HE Qualification": "Higher education qualification",
-        "Post Graduate Qualification": "Postgraduate qualification"}),
+        "No Formal quals": "No formal qualification",
+        "Lower Than A Level": "Below class 12",
+        "A Level or Equivalent": "Class 12 (higher secondary)",
+        "HE Qualification": "Bachelor's degree or diploma",
+        "Post Graduate Qualification": "Postgraduate degree"}),
     "region": ("region_code", [
         "East Anglian Region", "East Midlands Region", "Ireland", "London Region",
         "North Region", "North Western Region", "Scotland", "South East Region",
@@ -59,6 +63,16 @@ FIELD_LABELS = {
 
 MODULE_CODES = ["AAA", "BBB", "CCC", "DDD", "EEE", "FFF", "GGG"]
 
+# Questions only a British student could answer. The model was trained on a UK dataset,
+# but the people using this site are in India: a UK region, a UK deprivation decile and
+# a UK credit load are unanswerable here, and a guess would be worse than a blank. They
+# stay at the dataset average, the same honest no-information value used for everything
+# a learner cannot know about themselves.
+UK_ONLY: tuple[str, ...] = ("region", "imd_band", "studied_credits")
+UK_ONLY_NOTE = ("Three questions from the original UK study (region, deprivation band and "
+                "credit load) are not asked here, because they have no Indian equivalent. "
+                "The model uses the dataset average for them.")
+
 
 def clean(profile: dict | None) -> dict:
     """Keep only recognised fields with valid values. Unknown keys are dropped."""
@@ -78,15 +92,19 @@ def clean(profile: dict | None) -> dict:
     return out
 
 
-def options() -> list[dict]:
-    """Form definition for the front end."""
+def options(include_uk_only: bool = False) -> list[dict]:
+    """Form definition for the front end, without the UK-only questions by default."""
     fields = []
     for field, (_, values, labels) in CATEGORICAL_FIELDS.items():
+        if field in UK_ONLY and not include_uk_only:
+            continue
         fields.append({
             "field": field, "label": FIELD_LABELS[field], "type": "choice",
             "options": [{"value": v, "label": labels.get(v, v)} for v in values],
         })
     for field, (lo, hi, step) in NUMERIC_FIELDS.items():
+        if field in UK_ONLY and not include_uk_only:
+            continue
         fields.append({"field": field, "label": FIELD_LABELS[field], "type": "range",
                        "min": lo, "max": hi, "step": step})
     return fields

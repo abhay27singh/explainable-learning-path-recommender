@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <style>
+    body{margin:0;background:#F6F8FA;color:#101828;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:#1F5E7A;text-decoration:none} a:hover{color:#174A61}
+    .lnk{font-size:11px;color:#1F5E7A;margin-left:8px;border-bottom:1px solid #E5F0F5}
+  </style>
+</helmet>
+
+<div style="min-height:900px">
+
+  <div style="background:#101828;color:#fff;padding:0 40px 30px">
+    <div style="height:64px;display:flex;align-items:center;gap:22px">
+      <div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px">
+        <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#fff"></rect><path d="M7 24 L16 16 L25 8" stroke="#101828" stroke-width="2.2" fill="none" stroke-linecap="round"></path></svg>
+        Learning Path Recommender
+      </div>
+      <div style="display:flex;gap:4px;margin-left:8px;font-size:14px;color:#C7CED9">
+        <span style="padding:7px 12px">My learning</span>
+        <span style="padding:7px 12px">Progress</span>
+        <span style="padding:7px 12px;border-radius:7px;background:rgba(255,255,255,.12);color:#fff;font-weight:600">Course Finder</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding-top:16px">
+      <div>
+        <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#86b6ef">Class 12 &middot; Science with Mathematics</p>
+        <h1 style="margin:0;font-size:32px;letter-spacing:-.02em">After class 12</h1>
+        <p style="margin:10px 0 0;color:#C7CED9;font-size:15px;max-width:620px">Your stream leads to engineering, computer science, mathematics, statistics and architecture.</p>
+      </div>
+      <span style="border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:10px 16px;font-size:13px;color:#fff">Explore all courses</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:300px 1fr;gap:24px;max-width:1240px;margin:0 auto;padding:24px 40px 48px">
+
+    <div style="background:#fff;border:1px solid #E1E6EC;border-radius:10px;padding:20px;height:fit-content">
+      <h2 style="margin:0 0 14px;font-size:15px">Your details</h2>
+      <label style="display:block;font-size:12px;font-weight:600;color:#475467;margin-bottom:6px">Where you are now</label>
+      <div style="border:1px solid #E1E6EC;border-radius:8px;padding:9px 11px;font-size:14px;background:#F6F8FA">Class 12</div>
+      <label style="display:block;font-size:12px;font-weight:600;color:#475467;margin:14px 0 6px">Stream</label>
+      <div style="border:1px solid #E1E6EC;border-radius:8px;padding:9px 11px;font-size:14px">Science with Mathematics (PCM)</div>
+      <label style="display:block;font-size:12px;font-weight:600;color:#475467;margin:16px 0 8px">What you enjoy</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="font-size:12px;background:#1F5E7A;color:#fff;border-radius:16px;padding:5px 12px;font-weight:500">Coding</span>
+        <span style="font-size:12px;background:#fff;border:1px solid #E1E6EC;color:#475467;border-radius:16px;padding:5px 12px">Maths</span>
+        <span style="font-size:12px;background:#fff;border:1px solid #E1E6EC;color:#475467;border-radius:16px;padding:5px 12px">Electronics</span>
+        <span style="font-size:12px;background:#fff;border:1px solid #E1E6EC;color:#475467;border-radius:16px;padding:5px 12px">Data</span>
+        <span style="font-size:12px;background:#fff;border:1px solid #E1E6EC;color:#475467;border-radius:16px;padding:5px 12px">Design</span>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="background:#fff;border:1px solid #E1E6EC;border-radius:10px;padding:20px 22px">
+        <h3 style="margin:0 0 4px;font-size:16px">What you study now</h3>
+        <p style="margin:0 0 12px;font-size:13px;color:#7A8696">Free material for every class 12 subject.</p>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px">
+          <div style="font-size:14px">English<span class="lnk">NCERT</span><span class="lnk">Khan</span><span class="lnk">YouTube</span></div>
+          <div style="font-size:14px">Chemistry<span class="lnk">NCERT</span><span class="lnk">Khan</span><span class="lnk">YouTube</span></div>
+          <div style="font-size:14px">Physics<span class="lnk">NCERT</span><span class="lnk">Khan</span><span class="lnk">YouTube</span></div>
+          <div style="font-size:14px">Mathematics<span class="lnk">NCERT</span><span class="lnk">Khan</span><span class="lnk">YouTube</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <span style="border:1px solid #E1E6EC;background:#fff;border-radius:8px;padding:9px 15px;font-size:13px;color:#475467">Diploma after class 12</span>
+        <span style="background:#101828;color:#fff;border-radius:8px;padding:9px 15px;font-size:13px;font-weight:600">Undergraduate degree</span>
+        <span style="border:1px solid #E1E6EC;background:#fff;border-radius:8px;padding:9px 15px;font-size:13px;color:#475467">Skill course</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+        <div style="background:#fff;border:1px solid #E1E6EC;border-radius:10px;padding:18px 20px">
+          <h4 style="margin:0 0 10px;font-size:16px">B.Tech Computer Science</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+            <span style="font-size:11px;color:#475467;background:#EDF1F5;border-radius:6px;padding:3px 9px">4 years</span>
+            <span style="font-size:11px;color:#475467;background:#EDF1F5;border-radius:6px;padding:3px 9px">Coding</span>
+          </div>
+          <p style="margin:0 0 14px;font-size:13px;color:#475467;line-height:1.55">Needs Physics and Mathematics, usually with JEE Main.</p>
+          <div style="display:flex;gap:8px">
+            <span style="background:#1F5E7A;color:#fff;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600">Save</span>
+            <span style="border:1px solid #E1E6EC;border-radius:8px;padding:8px 14px;font-size:13px">Plan by week</span>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #E1E6EC;border-radius:10px;padding:18px 20px">
+          <h4 style="margin:0 0 10px;font-size:16px">B.Sc Computer Science</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+            <span style="font-size:11px;color:#475467;background:#EDF1F5;border-radius:6px;padding:3px 9px">3 years</span>
+            <span style="font-size:11px;color:#475467;background:#EDF1F5;border-radius:6px;padding:3px 9px">Coding</span>
+          </div>
+          <p style="margin:0 0 14px;font-size:13px;color:#475467;line-height:1.55">Needs Mathematics in class 12.</p>
+          <div style="display:flex;gap:8px">
+            <span style="border:1px solid #E1E6EC;border-radius:8px;padding:8px 14px;font-size:13px">Save</span>
+            <span style="border:1px solid #E1E6EC;border-radius:8px;padding:8px 14px;font-size:13px">Plan by week</span>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #E1E6EC;border-radius:10px;padding:18px 20px">
+          <h4 style="margin:0 0 10px;font-size:16px">BCA</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+            <span style="font-size:11px;color:#475467;background:#EDF1F5;border-radius:6px;padding:3px 9px">3 years</span>
+            <span style="font-size:11px;color:#1F5E7A;background:#E5F0F5;border-radius:6px;padding:3px 9px;font-weight:600">Exit each year</span>
+          </div>
+          <p style="margin:0 0 14px;font-size:13px;color:#475467;line-height:1.55">Any stream at many universities; some ask for Mathematics.</p>
+          <div style="display:flex;gap:8px">
+            <span style="border:1px solid #E1E6EC;border-radius:8px;padding:8px 14px;font-size:13px">Save</span>
+            <span style="border:1px solid #E1E6EC;border-radius:8px;padding:8px 14px;font-size:13px">Plan by week</span>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #E1E6EC;border-radius:10px;padding:18px 20px">
+          <h4 style="margin:0 0 10px;font-size:16px">B.Sc Mathematics</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+            <span style="font-size:11px;color:#475467;background:#EDF1F5;border-radius:6px;padding:3px 9px">3 years</span>
+            <span style="font-size:11px;color:#475467;background:#EDF1F5;border-radius:6px;padding:3px 9px">Maths</span>
+          </div>
+          <p style="margin:0 0 14px;font-size:13px;color:#475467;line-height:1.55">Needs Mathematics in class 12.</p>
+          <div style="display:flex;gap:8px">
+            <span style="border:1px solid #E1E6EC;border-radius:8px;padding:8px 14px;font-size:13px">Save</span>
+            <span style="border:1px solid #E1E6EC;border-radius:8px;padding:8px 14px;font-size:13px">Plan by week</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
