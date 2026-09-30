@@ -1707,8 +1707,20 @@ function quizBlock(step){
       <button class="primary small" type="submit" data-c="${step.concept}" style="margin-top:10px">Save score</button>
     </form></div>`;
 }
+function milestoneBlock(p){
+  if(!p) return "";
+  const earned = p.badges.filter(b => b.earned), next = p.badges.find(b => !b.earned);
+  return `<div class="block"><h3>Milestones</h3>
+    <p class="muted small">${earned.length} of ${p.badges.length} reached.</p>
+    ${earned.length ? `<div class="badges" style="margin-top:10px">${earned.map(b =>
+      `<span class="badge-chip earned">${esc(b.name)}</span>`).join("")}</div>` : ""}
+    ${next ? `<p class="caption" style="margin:10px 0 0">Next: ${esc(next.name)}. ${esc(next.rule)}</p>` : ""}
+  </div>`;
+}
 function shortlistRail(courses){
-  if(!courses.length) return "";
+  if(!courses.length) return `<div class="block"><h3>Your shortlist</h3>
+    <p class="muted small">Courses you save in the Course Finder appear here.</p>
+    <button class="small" data-go="finder" style="margin-top:10px">Find a course</button></div>`;
   return `<div class="block"><h3>Your shortlist</h3>
     <p class="muted small">Saved in the Course Finder.</p>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
@@ -1782,6 +1794,7 @@ async function renderStudent(){
       <aside class="railside">
         ${step ? quizBlock(step) : ""}
         ${marks.length ? recentScores(marks) : ""}
+        ${milestoneBlock(progress)}
         ${shortlistRail(savedCourses)}
       </aside>
     </div>
