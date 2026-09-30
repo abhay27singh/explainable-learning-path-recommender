@@ -197,7 +197,37 @@
     padding:22px 24px;box-shadow:var(--shadow);margin-bottom:18px}
   .next .eyebrow{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
   .next h2{margin:6px 0 6px;font-size:24px}
-  .next .meta{color:var(--ink-soft);margin:0 0 12px}
+  .next .meta{color:var(--ink-soft);margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  /* A recommendation is an instruction, not a description: why it comes next, then
+     the one thing to do about it. */
+  .next-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+  .status{font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;white-space:nowrap;
+    border:1px solid var(--rule);color:var(--ink-soft);background:var(--surface-alt)}
+  .status.ok{color:var(--good);background:var(--good-soft);border-color:var(--good)}
+  .status.hold{color:var(--warn);background:var(--warn-soft);border-color:var(--warn)}
+  .why{margin:12px 0 0;color:var(--ink-soft);font-size:14px;line-height:1.65}
+  .why .lbl,.todo .lbl{font-weight:700;color:var(--ink)}
+  .todo{margin:12px 0 0;padding:12px 14px;border-radius:8px;background:var(--accent-soft);
+    color:var(--ink);font-size:14px;line-height:1.6}
+  .next .actions{margin-top:16px}
+  /* One banner, for a condition the student can act on today. */
+  .alert{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;padding:14px 16px;
+    border:1px solid var(--warn);border-left:4px solid var(--warn);border-radius:var(--radius);
+    background:var(--warn-soft)}
+  .alert[hidden]{display:none}
+  .alert .tag{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--warn);white-space:nowrap;padding-top:2px}
+  .alert .body{flex:1;min-width:0;font-size:14px;line-height:1.6}
+  .alert .body strong{display:block;margin-bottom:2px}
+  .alert button{background:none;border:0;color:var(--warn);padding:2px 6px;font-size:18px;line-height:1}
+  /* Who is signed in, at the top of the rail. */
+  .railme{display:flex;gap:10px;align-items:center;padding:0 6px}
+  .railme .disc{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+    display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+  .railme .who{min-width:0}
+  .railme .nm{font-size:14px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .railme .sub{font-size:12px;color:var(--ink-faint)}
+  .rail hr{border:0;border-top:1px solid var(--rule);margin:0}
   .pill-lvl{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--surface-alt);color:var(--ink-soft)}
   ol.path{list-style:none;margin:0;padding:0;position:relative}
   ol.path li{position:relative;padding-left:52px;margin:0 0 6px}
@@ -1332,10 +1362,16 @@ function nextStepCard(r, t, forStudent){
   if(!r) return `<div class="next"><div class="eyebrow">Next step</div><h2>${forStudent ? "You have marked every week as done" : "Nothing to recommend right now"}</h2></div>`;
   const ready = !r.gaps.length;
   return `<div class="next">
-    <div class="eyebrow">${forStudent ? "Your next step" : "Their next step"}</div>
-    <h2>${esc(shortLabel(r.label))}</h2>
-    <p class="meta"><span class="pill-lvl">Level now: ${LEVEL(r.mastery, t)}</span> · ${ready ? "Ready to start" : "Revise earlier weeks first"}</p>
-    <ul class="plain">${reasonsFor(r, t, forStudent).map(l => `<li>${esc(l)}</li>`).join("")}</ul>
+    <div class="next-top">
+      <div>
+        <div class="eyebrow">${forStudent ? "Your next step" : "Their next step"}</div>
+        <h2>${esc(shortLabel(r.label))}</h2>
+        <p class="meta"><span class="pill-lvl">Level now: ${LEVEL(r.mastery, t)}</span></p>
+      </div>
+      <span class="status ${ready ? "ok" : "hold"}">${ready ? "Ready to start" : "Revise first"}</span>
+    </div>
+    <p class="why"><span class="lbl">Why this week:</span> ${esc(reasonsFor(r, t, forStudent).join(" "))}</p>
+    <p class="todo"><span class="lbl">Do this:</span> ${esc(todoFor(r, forStudent))}</p>
     ${forStudent ? `<div class="actions">
       <button class="act" data-c="${r.concept}" data-k="study">I studied this</button>
       <button class="act" data-c="${r.concept}" data-k="pass">I passed the test</button>
@@ -1350,6 +1386,42 @@ function nextStepCard(r, t, forStudent){
     <p class="caption score-inline" style="margin:6px 0 0">40 out of 100 or more counts as a pass.</p>` : ""}
     <details class="working"><summary>Show the model's working</summary><p class="prose">${esc(r.text)}</p></details>
   </div>`;
+}
+/* A week whose latest mark is below the pass mark stays in the path. Say so once,
+   at the top, rather than leaving the student to work it out from the numbers. */
+function retakeBanner(marks, steps){
+  const seen = new Set(), failing = [];
+  for(const m of marks){                       // marks are newest first
+    if(seen.has(m.week)) continue;
+    seen.add(m.week);
+    if(!m.pass) failing.push(m);
+  }
+  if(!failing.length) return "";
+  const first = failing[0], i = steps.findIndex(x => weekOf(x.label) === first.week);
+  return `<div class="alert" id="retake">
+    <span class="tag">Retake</span>
+    <div class="body">
+      <strong>${esc(first.week)} scored ${first.score} out of 100.</strong>
+      It stays in your path until a mark of 40 or more is recorded${
+        failing.length > 1 ? `, as ${failing.length - 1} other ${failing.length === 2 ? "week does" : "weeks do"}` : ""}.
+    </div>
+    ${i >= 0 ? `<button class="small" id="open-retake" data-i="${i}">Open ${esc(first.week)}</button>` : ""}
+    <button id="hide-retake" aria-label="Hide this">&times;</button>
+  </div>`;
+}
+
+/* The single instruction that follows from the reasons above it. */
+function todoFor(r, forStudent){
+  const week = weekOf(r.label);
+  if(r.gaps.length){
+    const names = r.gaps.slice(0, 2).map(g => weekOf(g.label)).join(" and ");
+    return forStudent
+      ? `Go back over ${names} before starting ${week}. Record each one when you have finished it.`
+      : `Ask them to revise ${names} before ${week}.`;
+  }
+  return forStudent
+    ? `Study ${week}, then mark it done or record your quiz score.`
+    : `${week} can be set as their next piece of work.`;
 }
 function pathList(steps, t, forStudent){
   if(!steps.length) return "";
@@ -1391,9 +1463,10 @@ function weekSheet(step, t, forStudent, position){
         <h2>${esc(shortLabel(step.label))}</h2></div>
       <button class="sheet-close" id="sheet-close" aria-label="Close">&times;</button>
     </div>
-    <p class="meta"><span class="pill-lvl">Level now: ${LEVEL(step.mastery, t)}</span> ·
-      ${ready ? "Ready to start" : "Revise earlier weeks first"}</p>
-    <ul class="plain">${reasonsFor(step, t, forStudent).map(l => `<li>${esc(l)}</li>`).join("")}</ul>
+    <p class="meta"><span class="pill-lvl">Level now: ${LEVEL(step.mastery, t)}</span>
+      <span class="status ${ready ? "ok" : "hold"}">${ready ? "Ready to start" : "Revise first"}</span></p>
+    <p class="why"><span class="lbl">Why this week:</span> ${esc(reasonsFor(step, t, forStudent).join(" "))}</p>
+    <p class="todo"><span class="lbl">Do this:</span> ${esc(todoFor(step, forStudent))}</p>
     ${step.gaps.length ? `<div class="block" style="margin:14px 0 0"><h3>Revise first</h3>
       <ul class="plain">${step.gaps.slice(0, 4).map(g =>
         `<li>${esc(weekOf(g.label))} <span class="caption">at ${pct(g.mastery)}%</span></li>`).join("")}</ul></div>` : ""}
@@ -1593,7 +1666,9 @@ function schoolRail(plan, where){
           ? `${plan.now.subjects.length} ${plan.now.subjects.length === 1 ? "subject" : "subjects"} with study links`
           : "Add your stream to see your subjects"}</div>
       </div>
-    </div>`);
+    </div>`,
+    "",
+    railMe(me.display_name, where || "Level not set"));
 }
 
 async function renderSchoolStudent(root){
@@ -1646,7 +1721,13 @@ const railGo = (icon, label, to) =>
   `<button class="railitem" data-go="${to}">${RAIL_ICON[icon]}<span>${label}</span></button>`;
 const railHere = (icon, label) =>
   `<button class="railitem on" aria-current="page">${RAIL_ICON[icon]}<span>${label}</span></button>`;
-const railShell = (nav, panel, foot = "") => `<aside class="rail">
+const railMe = (name, sub) => `<div class="railme">
+  <span class="disc" aria-hidden="true">${esc((name || "?").trim().charAt(0).toUpperCase())}</span>
+  <div class="who"><div class="nm">${esc(name)}</div><div class="sub">${esc(sub)}</div></div>
+</div>
+<hr>`;
+const railShell = (nav, panel, foot = "", me_ = "") => `<aside class="rail">
+  ${me_}
   <div><div class="grouphead">Workspace</div><div class="railnav" role="tablist">${nav}</div></div>
   ${panel}
   ${foot ? `<div class="railnav" style="margin-top:auto">${foot}</div>` : ""}
@@ -1666,7 +1747,8 @@ function studentRail(active, course){
   ].join("");
   const foot = onDash ? railTab("details", "My details", "details", active)
     : `<button class="railitem" data-details="1">${RAIL_ICON.details}<span>My details</span></button>`;
-  return railShell(nav, course ? coursePanel(course) : "", foot);
+  return railShell(nav, course ? coursePanel(course) : "", foot,
+    railMe(me.display_name, [stageLabel(me.stage), course && course.name].filter(Boolean).join(" · ")));
 }
 function coursePanel(c){
   const pc = c.weeks ? Math.round(c.done / c.weeks * 100) : 0;
@@ -1771,6 +1853,7 @@ async function renderStudent(){
         </div>
 
         <div data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
+          ${retakeBanner(marks, path.steps)}
           <div class="tiles">
             <div class="tile"><div class="v">${path.n_done} of ${path.n_weeks}</div><div class="k">weeks done</div></div>
             <div class="tile"><div class="v">${progress ? progress.streak.current : 0}</div><div class="k">day streak</div></div>
@@ -1806,6 +1889,10 @@ async function renderStudent(){
   });
   const open = $("#open-week");
   if(open) open.onclick = () => weekSheet(path.steps[0], t, true, `Step 1 of ${path.steps.length}`);
+  const retake = $("#open-retake"), hide = $("#hide-retake");
+  if(retake) retake.onclick = () => weekSheet(path.steps[+retake.dataset.i], t, true,
+    `Step ${+retake.dataset.i + 1} of ${path.steps.length}`);
+  if(hide) hide.onclick = () => { $("#retake").hidden = true; };
   bindViz(root, null);
   bindPath(root, path.steps, t, true);
   bindStudies();
