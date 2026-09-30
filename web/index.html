@@ -347,9 +347,10 @@
   /* Three pane workspace: the course in a rail, the work in the middle, the things
      a student does often on the right. Both rails fall away on a narrow screen, where
      the middle column is the whole page. */
-  .page.wide{max-width:1280px}
-  .workspace{display:grid;grid-template-columns:224px minmax(0,1fr) 296px;gap:16px;align-items:start}
-  .workspace.two{grid-template-columns:224px minmax(0,1fr)}
+  .page.wide{max-width:1320px}
+  .workspace{display:grid;grid-template-columns:236px minmax(0,1fr) 312px;gap:16px;align-items:start}
+  .workspace.two{grid-template-columns:236px minmax(0,1fr)}
+  .workspace.narrow{max-width:1140px;margin-inline:auto}
   .workspace.narrow .wsmain{max-width:860px}
   .rail{position:sticky;top:78px;background:var(--surface);border:1px solid var(--rule);
     border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 12px;
@@ -365,15 +366,19 @@
   .railcourse{padding:0 8px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-soft)}
   .bar{height:7px;background:var(--surface-alt);border-radius:4px;overflow:hidden}
   .bar > span{display:block;height:100%;background:var(--accent);border-radius:4px}
-  .railside{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .railside{display:flex;flex-direction:column;gap:14px;min-width:0;
+    position:sticky;top:78px;max-height:calc(100vh - 96px);overflow-y:auto;scrollbar-width:thin}
   .railside .block{margin:0;padding:16px 18px}
   .railside .block h3{font-size:15px}
+  .railside .tiles{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0}
+  .railside .tile{padding:12px 14px}
+  .railside .tile .v{font-size:22px}
   .scorerow{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:13px}
   .scorerow .n{text-align:right;font-variant-numeric:tabular-nums}
   .wsmain{display:flex;flex-direction:column;min-width:0}
   @media (max-width:1090px){
-    .workspace{grid-template-columns:208px minmax(0,1fr)}
-    .railside{grid-column:2}
+    .workspace{grid-template-columns:216px minmax(0,1fr)}
+    .railside{grid-column:2;position:static;max-height:none;overflow:visible}
   }
   .score-form.score-inline,p.score-inline{display:none}
   @media (max-width:860px){
@@ -1327,22 +1332,23 @@ function activityCalendar(cal){
 }
 function progressBlock(p){
   if(!p) return "";
-  const s = p.streak, w = p.week;
+  const w = p.week;
   const up = w.moved_up.length > 5 ? `${w.moved_up.slice(0, 5).join(", ")} and ${w.moved_up.length - 5} more` : w.moved_up.join(", ");
-  return `<div class="viz-row">
-      <figure class="viz"><h3>This week</h3><p class="sub">From the activities you recorded in the last 7 days.</p>
-        <ul class="plain">${w.summary.map(l => `<li>${esc(l)}</li>`).join("")}</ul>
-        ${up ? `<p class="caption" style="margin:10px 0 0">Improved: ${esc(up)}</p>` : ""}
-      </figure>
-      <figure class="viz"><h3>Streak</h3><p class="sub">A day counts when you record at least one activity.</p>
-        <div class="tiles" style="margin:0 0 12px">
-          <div class="tile"><div class="v">${s.current}</div><div class="k">${s.current === 1 ? "day" : "days"} in a row</div></div>
-          <div class="tile"><div class="v">${s.longest}</div><div class="k">longest run</div></div>
-        </div>
-        <div class="badges">${p.badges.map(b => `<span class="badge-chip${b.earned ? " earned" : ""}" title="${esc(b.rule)}">${esc(b.name)}${b.earned ? "" : ": not yet"}</span>`).join("")}</div>
-      </figure>
-    </div>
+  return `<figure class="viz"><h3>This week</h3><p class="sub">From the activities you recorded in the last 7 days.</p>
+      <ul class="plain">${w.summary.map(l => `<li>${esc(l)}</li>`).join("")}</ul>
+      ${up ? `<p class="caption" style="margin:10px 0 0">Improved: ${esc(up)}</p>` : ""}
+    </figure>
     ${activityCalendar(p.calendar)}`;
+}
+function streakCard(p){
+  if(!p) return "";
+  const s = p.streak;
+  return `<div class="block"><h3>Streak</h3>
+    <p class="muted small">A day counts when you record at least one activity.</p>
+    <div class="tiles" style="margin:12px 0 0">
+      <div class="tile"><div class="v">${s.current}</div><div class="k">${s.current === 1 ? "day" : "days"} in a row</div></div>
+      <div class="tile"><div class="v">${s.longest}</div><div class="k">longest run</div></div>
+    </div></div>`;
 }
 
 /* ---------------- the step-by-step path ---------------- */
@@ -1975,12 +1981,10 @@ async function renderProgress(){
         `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}${h.score === null || h.score === undefined ? "" : ` <span class="caption">scored ${h.score} out of 100</span>`}</li>`).join("")
     : "<li>Nothing recorded yet.</li>";
   root.innerHTML = `<div class="page wide">
-    <div class="workspace two">
+    <div class="workspace">
       ${studentRail("progress", {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
       <div class="wsmain">
-        ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`,
-          `<span class="row"><button class="small" data-go="record">Record of study</button>
-           <button class="small" data-go="dashboard">Back to my path</button></span>`)}
+        ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`)}
         ${progressBlock(progress)}
         ${scoreChart(state.history, names)}
         <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
@@ -1988,6 +1992,11 @@ async function renderProgress(){
         <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
           ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
       </div>
+
+      <aside class="railside">
+        ${streakCard(progress)}
+        ${milestoneBlock(progress)}
+      </aside>
     </div>
   </div>`;
   bindViz(root, null);
