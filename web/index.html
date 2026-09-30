@@ -366,8 +366,9 @@
   .railcourse{padding:0 8px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-soft)}
   .bar{height:7px;background:var(--surface-alt);border-radius:4px;overflow:hidden}
   .bar > span{display:block;height:100%;background:var(--accent);border-radius:4px}
-  .railside{display:flex;flex-direction:column;gap:14px;min-width:0;
-    position:sticky;top:78px;max-height:calc(100vh - 96px);overflow-y:auto;scrollbar-width:thin}
+  /* Not sticky: a full width row passes under this column, and a stuck card would
+     sit on top of it. */
+  .railside{display:flex;flex-direction:column;gap:14px;min-width:0}
   .railside .block{margin:0;padding:16px 18px}
   .railside .block h3{font-size:15px}
   .railside .tiles{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0}
@@ -376,12 +377,16 @@
   .scorerow{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:13px}
   .scorerow .n{text-align:right;font-variant-numeric:tabular-nums}
   .wsmain{display:flex;flex-direction:column;min-width:0}
+  .wsfull{grid-column:2 / 4;min-width:0}
+  .wsfull[hidden]{display:none}
   @media (max-width:1090px){
     .workspace{grid-template-columns:216px minmax(0,1fr)}
-    .railside{grid-column:2;position:static;max-height:none;overflow:visible}
+    .railside{grid-column:2}
+    .wsfull{grid-column:2}
   }
   .score-form.score-inline,p.score-inline{display:none}
   @media (max-width:860px){
+    .wsfull{grid-column:1}
     .score-form.score-inline{display:flex}
     p.score-inline{display:block}
     .railside .quizbox{display:none}
@@ -1869,8 +1874,6 @@ async function renderStudent(){
           </div>
           ${state.n_events === 0 ? `<div class="callout">Welcome. Your path follows your course week by week, starting at Week 1. Press "I studied this" or "I passed the test" and it moves on to the next week.</div>` : ""}
           ${nextStepCard(step, t, true)}
-          ${pathList(path.steps, t, true)}
-          ${courseStrip(state.concepts, t, true, false)}
         </div>
 
         <div data-tabpanel="details" ${studentTab === "details" ? "" : "hidden"}>
@@ -1886,6 +1889,11 @@ async function renderStudent(){
         ${milestoneBlock(progress)}
         ${shortlistRail(savedCourses)}
       </aside>
+
+      <div class="wsfull" data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
+        ${pathList(path.steps, t, true)}
+        ${courseStrip(state.concepts, t, true, false)}
+      </div>
     </div>
   </div>`;
 
@@ -1987,16 +1995,19 @@ async function renderProgress(){
         ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`)}
         ${progressBlock(progress)}
         ${scoreChart(state.history, names)}
-        <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
-        ${weekChart(state.concepts, t, true)}
-        <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
-          ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
       </div>
 
       <aside class="railside">
         ${streakCard(progress)}
         ${milestoneBlock(progress)}
       </aside>
+
+      <div class="wsfull">
+        <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
+        ${weekChart(state.concepts, t, true)}
+        <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
+          ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
+      </div>
     </div>
   </div>`;
   bindViz(root, null);
