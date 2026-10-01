@@ -23,6 +23,7 @@
     --rule:#E1E6EC; --accent:#1F5E7A; --accent-strong:#174A61; --accent-soft:#E5F0F5;
     --warn:#9E3A2C; --warn-soft:#F9E9E6; --good:#2A6350; --good-soft:#E3F1EB;
     --lvl-1:#86b6ef; --lvl-2:#3987e5; --lvl-3:#1c5cab; --viz-bar:#2a78d6;
+    --cal-0:#EDF1F5; --cal-1:#BBD8F2; --cal-2:#5496DC; --cal-3:#1C5CAB;
     --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
     --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
@@ -39,6 +40,8 @@
       --rule:#2A343B; --accent:#7FC4DE; --accent-strong:#A8DBEC; --accent-soft:#16323F;
       --warn:#F0A79B; --warn-soft:#3A211D; --good:#8FD3BA; --good-soft:#12302A;
       --lvl-1:#2F4C6B; --lvl-2:#3D82CE; --lvl-3:#8FC4F7; --viz-bar:#5AA3E8;
+    --cal-0:#202A32; --cal-1:#2F5578; --cal-2:#4A8BD0; --cal-3:#9ACDF9;
+      --cal-0:#202A32; --cal-1:#2F5578; --cal-2:#4A8BD0; --cal-3:#9ACDF9;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
       --footer:#0A0E11; --footer-ink:#AEB9C1; --veil:rgba(22,28,33,.96);
     }
@@ -302,7 +305,8 @@
   .lvl-bar span:last-child{border-radius:0 4px 4px 0}
   .lvl-bar span:only-child{border-radius:4px}
   .part-row{display:grid;grid-template-columns:minmax(120px,max-content) 1fr 42px;align-items:center;gap:10px;min-height:28px;font-size:12px;color:var(--ink-soft)}
-  .part-fill{height:16px;background:var(--viz-bar);border-radius:0 4px 4px 0;min-width:2px}
+  .part-track{height:16px;background:var(--surface-alt);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+  .part-fill{height:100%;background:var(--viz-bar);border-radius:0 3px 3px 0;min-width:2px}
   .part-row .val{color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
   details.viz-table{margin-top:10px}
   details.viz-table summary,details.working summary{cursor:pointer;font-size:13px;color:var(--ink-faint)}
@@ -1398,7 +1402,7 @@ function partChart(concepts, forStudent){
     const tip = {v:`${pct(r.avg)}% average`, l:[`${r.name}: weeks ${r.from} to ${r.to}`, `${r.n} weeks`]};
     return `<div class="part-row hit" tabindex="0" role="img" aria-label="${r.name}, weeks ${r.from} to ${r.to}: ${pct(r.avg)}% average" data-tip="${esc(JSON.stringify(tip))}">
       <span>${r.name} <span style="color:var(--ink-faint)">(weeks ${r.from} to ${r.to})</span></span>
-      <div><div class="part-fill" style="width:${Math.max(pct(r.avg), 1)}%"></div></div>
+      <div class="part-track"><div class="part-fill" style="width:${Math.max(pct(r.avg), 1)}%"></div></div>
       <span class="val">${pct(r.avg)}%</span></div>`;
   }).join("");
   return `<figure class="viz"><h3>By part of the course</h3>
@@ -1440,7 +1444,7 @@ function weekChart(concepts, t, forStudent){
 /* ---------------- progress: streak, calendar, weekly summary ---------------- */
 function activityCalendar(cal){
   if(!cal || !cal.length) return "";
-  const shade = n => n === 0 ? "var(--surface-alt)" : n === 1 ? "var(--lvl-1)" : n <= 3 ? "var(--lvl-2)" : "var(--lvl-3)";
+  const shade = n => n === 0 ? "var(--cal-0)" : n === 1 ? "var(--cal-1)" : n <= 3 ? "var(--cal-2)" : "var(--cal-3)";
   const size = 16, pitch = 19, padL = 34, padT = 20;
   const cols = Math.ceil(cal.length / 7), W = padL + cols * pitch, H = padT + 7 * pitch;
   const dfmt = d => new Date(d + "T00:00:00").toLocaleDateString(undefined, {day: "numeric", month: "short"});
@@ -1455,25 +1459,27 @@ function activityCalendar(cal){
   const cells = cal.map((d, i) => {
     const x = padL + Math.floor(i / 7) * pitch, y = padT + d.weekday * pitch;
     const tip = {v: `${d.count} ${d.count === 1 ? "activity" : "activities"}`, l: [dfmt(d.date)]};
-    return `<rect class="hit" x="${x}" y="${y}" width="${size}" height="${size}" rx="3" fill="${shade(d.count)}" tabindex="0" role="img" aria-label="${dfmt(d.date)}: ${d.count}" data-tip="${esc(JSON.stringify(tip))}"/>`;
+    return `<rect class="hit" x="${x}" y="${y}" width="${size}" height="${size}" rx="3" fill="${shade(d.count)}"
+      stroke="var(--rule)" stroke-width="${d.count ? 0 : 1}" tabindex="0" role="img" aria-label="${dfmt(d.date)}: ${d.count}" data-tip="${esc(JSON.stringify(tip))}"/>`;
   }).join("");
   const rows = cal.filter(d => d.count).map(d => [dfmt(d.date), d.count]);
   return `<figure class="viz"><h3>Activity calendar</h3>
     <p class="sub">Days you recorded study in the last 12 weeks.</p>
     <div class="scroll"><svg viewBox="0 0 ${W} ${H}" style="width:${W}px;max-width:100%;height:auto;display:block" role="group" aria-label="Activity calendar">${months}${dayNames}${cells}</svg></div>
-    <div class="viz-legend" style="margin-top:8px"><span>Less</span>${[0, 1, 2, 4].map(n => `<i style="background:${shade(n)};margin:0 2px"></i>`).join("")}<span>More</span></div>
+    <div class="viz-legend" style="margin-top:8px"><span>Less</span>${[0, 1, 2, 4].map(n => `<i style="background:${shade(n)};margin:0 2px;border:1px solid var(--rule)"></i>`).join("")}<span>More</span></div>
     ${vizTable(["Date", "Activities"], rows.length ? rows : [["No activity yet", ""]])}
   </figure>`;
 }
-function progressBlock(p){
+/* "This week" is two or three lines, so it shares a row with the marks chart rather
+   than running the width of the page on its own. */
+function weekFigure(p){
   if(!p) return "";
   const w = p.week;
   const up = w.moved_up.length > 5 ? `${w.moved_up.slice(0, 5).join(", ")} and ${w.moved_up.length - 5} more` : w.moved_up.join(", ");
   return `<figure class="viz"><h3>This week</h3><p class="sub">From the activities you recorded in the last 7 days.</p>
-      <ul class="plain">${w.summary.map(l => `<li>${esc(l)}</li>`).join("")}</ul>
-      ${up ? `<p class="caption" style="margin:10px 0 0">Improved: ${esc(up)}</p>` : ""}
-    </figure>
-    ${activityCalendar(p.calendar)}`;
+    <ul class="plain">${w.summary.map(l => `<li>${esc(l)}</li>`).join("")}</ul>
+    ${up ? `<p class="caption" style="margin:10px 0 0">Improved: ${esc(up)}</p>` : ""}
+  </figure>`;
 }
 function streakCard(p){
   if(!p) return "";
@@ -2129,8 +2135,8 @@ async function renderProgress(){
       ${studentRail("progress", {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
       <div class="wsmain">
         ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`)}
-        ${progressBlock(progress)}
-        ${scoreChart(state.history, names)}
+        <div class="viz-row">${weekFigure(progress)}${scoreChart(state.history, names)}</div>
+        ${progress ? activityCalendar(progress.calendar) : ""}
       </div>
 
       <aside class="railside">
