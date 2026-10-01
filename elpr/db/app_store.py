@@ -74,6 +74,21 @@ CREATE TABLE IF NOT EXISTS saved_courses (
     PRIMARY KEY (user_id, course_key)
 );
 
+-- Self-check results on entrance exam units. Deliberately not study_events: an exam
+-- unit is not a week of a course, and the model must never read one as if it were.
+CREATE TABLE IF NOT EXISTS self_checks (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL REFERENCES users(id),
+    exam       TEXT NOT NULL,
+    section    TEXT NOT NULL,
+    unit       TEXT NOT NULL,
+    n          INTEGER NOT NULL,
+    n_correct  INTEGER NOT NULL,
+    score      INTEGER NOT NULL,
+    created_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_checks_user ON self_checks(user_id, exam);
+
 -- What happened on each account, so an admin can answer "it is not working for me".
 -- Plain facts only: never a password, never the contents of an answer.
 CREATE TABLE IF NOT EXISTS user_log (
@@ -514,6 +529,33 @@ class AppStore:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    # -- self-checks --------------------------------------------------------------
+    def add_self_check(self, user_id: int, exam: str, section: str, unit: str,
+                       n: int, n_correct: int, score: int) -> None:
+        con = self._connect()
+        with con:
+            con.execute(
+                "INSERT INTO self_checks (user_id, exam, section, unit, n, n_correct, score,"
+                " created_at) VALUES (?,?,?,?,?,?,?,?)",
+                (user_id, exam, section, unit, int(n), int(n_correct), int(score), time.time()),
+            )
+
+    def self_checks(self, user_id: int) -> list[dict]:
+        """The latest result for each unit a student has checked, with how many tries.
+
+        Latest, not best: a unit checked well a month ago and badly today has not stuck,
+        and the page should say so."""
+        rows = self._connect().execute(
+            "SELECT exam, section, unit, n, n_correct, score, created_at AS at,"
+            "       (SELECT COUNT(*) FROM self_checks t WHERE t.user_id = c.user_id"
+            "         AND t.exam = c.exam AND t.section = c.section AND t.unit = c.unit) AS tries"
+            " FROM self_checks c WHERE user_id = ? AND id = ("
+            "   SELECT MAX(id) FROM self_checks m WHERE m.user_id = c.user_id"
+            "   AND m.exam = c.exam AND m.section = c.section AND m.unit = c.unit)"
+            " ORDER BY created_at DESC, id DESC", (user_id,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     # -- saved courses ----------------------------------------------------------
     def save_course(self, user_id: int, course_key: str) -> None:
         """Add a course to the student's shortlist. Saving twice changes nothing."""
@@ -610,6 +652,7 @@ class AppStore:
             con.execute("DELETE FROM learner_profiles WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM study_events WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM saved_courses WHERE user_id = ?", (uid,))
+            con.execute("DELETE FROM self_checks WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM user_log WHERE user_id = ?", (uid,))
             con.execute("UPDATE recommendation_log SET user_id = NULL WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM users WHERE id = ?", (uid,))

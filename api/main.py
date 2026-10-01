@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse
 
 from elpr.modules import module_display_map, subject_area
 from elpr.profile import clean as clean_profile, options as profile_options
-from elpr import course_finder, exams, ics
+from elpr import course_finder, exams, ics, selfcheck
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -355,6 +355,10 @@ def record_study(body: StudyEvent, elpr_session: str | None = Cookie(None)) -> d
         raise HTTPException(400, "kind must be study or assessment")
     if body.score is not None and body.kind != "assessment":
         raise HTTPException(400, "a score belongs to a test, not to reading")
+    # A pass is evidence the model learns from, so it needs a mark from a real quiz.
+    # "I found it hard" stays a plain claim: it only ever holds a week in place.
+    if body.kind == "assessment" and body.correct is True and body.score is None:
+        raise HTTPException(400, "a pass needs your quiz mark: enter it out of 100")
     s.store.add_event(user.id, body.concept_id, body.kind, body.correct, body.score)
     outcome = ("" if body.score is not None else
                "" if body.correct is None else
@@ -514,7 +518,13 @@ def exam_list(stream: str | None = None) -> dict:
 
     Public, like the rest of the Course Finder: a visitor deciding on a stream needs to
     see which exams each one opens."""
-    return exams.summary(stream)
+    out = exams.summary(stream)
+    for e in out["exams"]:
+        e["n_checks"] = sum(selfcheck.has_check(name, u)
+                            for name, units in exams.sections_for(e["key"], stream)
+                            for u in units)
+    out["check_note"] = selfcheck.COVERAGE_NOTE
+    return out
 
 
 @app.get("/api/exams/{key}")
@@ -530,7 +540,8 @@ def exam_detail(key: str, stream: str | None = None) -> dict:
         "body": exam.body, "leads_to": exam.leads_to, "source": exam.source,
         "note": exam.note, "streams": list(exam.streams), "stream": stream,
         "sections": [{"name": name,
-                      "units": [{"name": u, "links": course_finder.study_links(u, exams.SCHOOLING)}
+                      "units": [{"name": u, "links": course_finder.study_links(u, exams.SCHOOLING),
+                                 "check": selfcheck.has_check(name, u)}
                                 for u in units]} for name, units in sections],
     }
 
@@ -540,11 +551,15 @@ def exam_plan(key: str, weeks: int = Query(24, ge=1, le=260),
               start: str | None = None, stream: str | None = None) -> dict:
     """One exam's syllabus spread over the weeks left before it."""
     try:
-        return exams.exam_plan(key, weeks, start, stream)
+        plan = exams.exam_plan(key, weeks, start, stream)
     except KeyError:
         raise HTTPException(404, "no such exam")
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+    for week in plan["weeks"]:
+        for unit in week["units"]:
+            unit["check"] = selfcheck.has_check(unit["section"], unit["name"])
+    return plan
 
 
 @app.get("/api/exams/{key}/plan.ics")
@@ -572,6 +587,52 @@ def exam_plan_ics(key: str, weeks: int = Query(24, ge=1, le=260),
     return Response(content=body, media_type="text/calendar; charset=utf-8",
                     headers={"Content-Disposition":
                              f'attachment; filename="{plan["key"]}-revision-plan.ics"'})
+
+
+class SelfCheckAnswers(BaseModel):
+    exam: str
+    section: str
+    unit: str
+    answers: dict[str, int]
+
+
+@app.get("/api/selfcheck")
+def selfcheck_questions(exam: str, section: str, unit: str) -> dict:
+    """Questions for one exam unit, without their answers. Public: anyone revising can
+    check themselves, and only a signed-in student's result is kept."""
+    try:
+        return selfcheck.questions_for(exam, section, unit)
+    except KeyError:
+        raise HTTPException(404, "there is no self-check for that unit")
+
+
+@app.post("/api/selfcheck")
+def selfcheck_grade(body: SelfCheckAnswers, elpr_session: str | None = Cookie(None)) -> dict:
+    """Mark the answers on the server, so the right answers never reach the page before
+    the student has committed to theirs."""
+    try:
+        out = selfcheck.grade(body.exam, body.section, body.unit, body.answers)
+    except KeyError:
+        raise HTTPException(404, "there is no self-check for that unit")
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    user = _current(elpr_session)
+    out["saved"] = bool(user and user.role == "student")
+    if out["saved"]:
+        store = _service().store
+        store.add_self_check(user.id, body.exam, body.section, body.unit,
+                             out["n"], out["n_correct"], out["score"])
+        store.log(user.id, "self-check",
+                  f"{body.exam}, {body.unit}: {out['n_correct']} of {out['n']}")
+    return out
+
+
+@app.get("/api/me/selfchecks")
+def my_selfchecks(elpr_session: str | None = Cookie(None)) -> dict:
+    """The latest self-check result for each unit the student has checked."""
+    user = _require(elpr_session)
+    return {"checks": _service().store.self_checks(user.id),
+            "pass_mark": selfcheck.PASS_MARK, "note": selfcheck.COVERAGE_NOTE}
 
 
 @app.get("/api/me/path.ics")

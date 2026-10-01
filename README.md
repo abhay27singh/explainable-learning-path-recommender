@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 168 tests
+make test                                       # 189 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -169,12 +169,18 @@ One file, `web/index.html`, no build step.
   already passed.
 - **The weekly path.** Diploma and degree students follow their course from Week 1. Each
   step says why it comes next, what to revise first and what it opens up, all from the
-  prerequisite graph and the model. A week moves on when it is marked studied or passed,
-  or when a quiz score of 40 or more is entered.
+  prerequisite graph and the model. A week moves on when it is marked studied, or when a
+  quiz mark of 40 or more is entered. A bare "I passed" is refused by the API: a pass is
+  evidence the model learns from, so it needs a mark.
 - **Entrance exams.** JEE Main, NEET UG and CUET UG, each with its published syllabus
   outline, the official NTA link and a week by week revision plan. An exam only appears for
   a class 12 stream that can sit it. CUET's domain papers are built from the student's own
   subjects. No dates, cut-offs or ranks are stated anywhere.
+- **Self-check questions.** 204 questions across all 105 JEE Main and NEET UG units, each
+  with one right answer and the reason, marked on the server so the answers never reach
+  the page first. Results are kept per student and never mixed into the data the model
+  reads. The weekly course path has none, on purpose: its weeks come from an anonymised
+  course and have no topic a question could honestly be about.
 - **Course Finder.** Rule-based, not the model, and labelled as such. 59 courses: 43
   academic plus 16 NSQF skill courses, which NEP 2020 treats as an equal track. Eligibility
   by class 12 subjects or bachelor's degree, interest ranking, a shortlist, and a week by

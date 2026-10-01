@@ -19,7 +19,7 @@ paper.
 ## Commands
 
 ```bash
-make test                                   # 168 tests, pytest
+make test                                   # 189 tests, pytest
 make api                                    # http://localhost:8420
 .venv/bin/python -m pytest tests/test_stages.py -q
 .venv/bin/python scripts/08_admin.py create <username>
@@ -56,6 +56,11 @@ Rebuilding the data needs the OULAD download; see the quick start in `README.md`
   and no exam date, cut-off or rank is ever stated.
 - **Both planners split a syllabus with `course_finder.spread`.** Courses and exams must
   deal their weeks the same way, because a student uses both in the same week.
+- **Self-check questions only go where the topic is real.** JEE and NEET units are; a
+  week of the course path is not (OULAD's content is anonymised). Never write questions
+  for course weeks, and never record a self-check as a study event. A new question needs
+  one right answer, three distinct wrong ones and a reason; `tests/test_selfcheck.py`
+  checks the shape but not the facts, so check the facts yourself.
 - **Study links depend on the level.** NPTEL and SWAYAM carry nothing for class 10, class
   12 or an entrance exam written on them, so school-level subjects link to NCERT, Khan
   Academy and YouTube instead (`study_links`).

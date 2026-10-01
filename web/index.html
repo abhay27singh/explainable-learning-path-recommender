@@ -327,6 +327,21 @@
     overflow:auto;padding:24px 26px}
   .sheet-card h2{margin:6px 0 4px;font-size:22px}
   .sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  /* Self-check questions: one block per question, the options as full-width rows so a
+     thumb can hit them, and the marking shown on the options themselves. */
+  .q{border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin:0 0 12px}
+  .q legend{font-weight:600;font-size:15px;padding:0 4px;line-height:1.45}
+  .opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;margin:4px 0 0;border:1px solid var(--rule);
+    border-radius:8px;cursor:pointer;font-size:14px;font-weight:400;color:var(--ink)}
+  .opt input{width:auto;margin:3px 0 0}
+  .opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+  /* .q in front so marking beats the selected style: :has(input:checked) counts as
+     (0,2,1), which would otherwise leave a wrong pick looking merely selected. */
+  .q .opt.right{border-color:var(--good);background:var(--good-soft)}
+  .q .opt.wrong{border-color:var(--warn);background:var(--warn-soft)}
+  .q .verdict{margin:8px 0 0;font-size:13px;color:var(--ink-soft);line-height:1.55}
+  .q .verdict b{color:var(--ink)}
+  .check-last{margin-left:8px}
   .sheet-close{border:0;background:none;font-size:20px;line-height:1;padding:4px 8px;color:var(--ink-faint)}
   .sheet-close:hover{color:var(--ink)}
   #toast{position:fixed;right:18px;bottom:18px;z-index:80;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;
@@ -479,7 +494,7 @@
       <div class="steps3">
         <div class="step3"><div class="n">1</div><h3>Tell us where you are</h3><p>Class 10, class 12, diploma, undergraduate or postgraduate, and your course if you are on one.</p></div>
         <div class="step3"><div class="n">2</div><h3>Get your next step</h3><p>On a course, you get it week by week from Week 1. At school, you get courses that fit your subjects.</p></div>
-        <div class="step3"><div class="n">3</div><h3>Mark what you finish</h3><p>Press "I studied this" or "I passed the test" and your path moves on to the next week.</p></div>
+        <div class="step3"><div class="n">3</div><h3>Mark what you finish</h3><p>Press "I studied this", or enter the mark from your quiz, and your path moves on to the next week.</p></div>
       </div>
     </div>
   </section>
@@ -700,6 +715,7 @@ function show(name){
   if(!PUBLIC.has(name) && !me) name = "login";
   if((name === "admin" || name === "research") && (!me || me.role !== "admin")) name = "dashboard";
   if(me && (name === "login" || name === "signup" || name === "home")) name = "dashboard";
+  closeSheet();                                    // a sheet never outlives the page it opened on
   if(location.hash !== "#/" + name) history.replaceState(null, "", "#/" + name);
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "view-" + name));
   document.querySelectorAll("nav.links button").forEach(b => b.classList.toggle("on", b.dataset.go === name));
@@ -713,6 +729,8 @@ function show(name){
   window.scrollTo(0, 0);
 }
 document.addEventListener("click", e => {
+  const cb = e.target.closest(".check-btn");
+  if(cb){ e.preventDefault(); openCheck(cb.dataset.exam, cb.dataset.section, cb.dataset.unit); return; }
   if(e.target.closest("[data-details]")){ studentTab = "details"; nav("dashboard"); return; }
   const a = e.target.closest("[data-go]");
   if(!a) return;
@@ -1089,6 +1107,110 @@ function finderBackground(){
 }
 
 /* Right-hand panel: the subjects of this rung, then the courses of the next one. */
+/* ---------------- self-checks ----------------
+   Real questions on real syllabus units, marked on the server. The right answers are
+   not sent until the student has committed to theirs. Only entrance exam units have
+   them: a week of the course path is a position in an anonymised course, not a topic. */
+let myChecks = null;
+async function loadMyChecks(force = false){
+  if(!me || me.role !== "student") return (myChecks = {});
+  if(myChecks && !force) return myChecks;
+  try{
+    const r = await api("/api/me/selfchecks");
+    myChecks = Object.fromEntries(r.checks.map(c => [`${c.exam}|${c.section}|${c.unit}`, c]));
+  }catch{ myChecks = {}; }
+  return myChecks;
+}
+function checkBtn(exam, section, unit){
+  const last = (myChecks || {})[`${exam}|${section}|${unit}`];
+  return `<button class="small check-btn" type="button" data-exam="${esc(exam)}"
+      data-section="${esc(section)}" data-unit="${esc(unit)}" style="margin-left:8px">Check yourself</button>${
+    last ? `<span class="caption check-last">Last check: ${last.n_correct} of ${last.n}</span>` : ""}`;
+}
+
+async function openCheck(exam, section, unit){
+  const sheet = ensureSheet();
+  sheet.innerHTML = `<div class="sheet-card"><p class="muted small">Loading the questions</p></div>`;
+  sheet.hidden = false;
+  let c;
+  try{
+    c = await api(`/api/selfcheck?exam=${encodeURIComponent(exam)}&section=${encodeURIComponent(section)}`
+      + `&unit=${encodeURIComponent(unit)}`);
+  }catch(err){
+    sheet.innerHTML = `<div class="sheet-card"><div class="err">${esc(err.message || err)}</div></div>`;
+    return;
+  }
+  const examName = ({jee_main: "JEE Main", neet_ug: "NEET UG", cuet_ug: "CUET UG"})[exam] || exam;
+  sheet.innerHTML = `<div class="sheet-card">
+    <div class="sheet-top">
+      <div><div class="eyebrow">Self-check · ${esc(examName)} · ${esc(section)}</div><h2>${esc(unit)}</h2></div>
+      <button class="sheet-close" id="sheet-close" aria-label="Close">&times;</button>
+    </div>
+    <p class="muted small">${c.n} questions. ${esc(c.note)}</p>
+    <form id="check-form">
+      ${c.questions.map((q, i) => `<fieldset class="q" data-id="${esc(q.id)}">
+        <legend>${i + 1}. ${esc(q.prompt)}</legend>
+        ${q.options.map((o, j) => `<label class="opt"><input type="radio" name="${esc(q.id)}" value="${j}">
+          <span>${esc(o)}</span></label>`).join("")}
+      </fieldset>`).join("")}
+      <div class="row"><button class="primary" type="submit" style="width:auto;padding:10px 18px">Mark my answers</button></div>
+      <div id="check-msg" class="caption" style="margin:8px 0 0"></div>
+    </form>
+    <div id="check-out"></div>
+  </div>`;
+  $("#sheet-close").onclick = closeSheet;
+  $("#check-form").onsubmit = async e => {
+    e.preventDefault();
+    const answers = {};
+    for(const q of c.questions){
+      const picked = sheet.querySelector(`input[name="${CSS.escape(q.id)}"]:checked`);
+      if(!picked){ $("#check-msg").textContent = "Answer every question first."; return; }
+      answers[q.id] = +picked.value;
+    }
+    const button = e.target.querySelector("button[type=submit]");
+    button.disabled = true; button.textContent = "Marking";
+    const res = await fetch("/api/selfcheck", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({exam, section, unit, answers})});
+    const out = await res.json().catch(() => ({}));
+    if(!res.ok){ button.disabled = false; button.textContent = "Mark my answers";
+      $("#check-msg").textContent = out.detail || "Could not mark this. Try again."; return; }
+    showMarking(sheet, out, exam, section, unit);
+  };
+}
+
+function showMarking(sheet, out, exam, section, unit){
+  sheet.querySelectorAll("#check-form input").forEach(i => i.disabled = true);
+  out.results.forEach(r => {
+    const box = sheet.querySelector(`fieldset[data-id="${CSS.escape(r.id)}"]`);
+    const labels = box.querySelectorAll(".opt");
+    labels[r.answer].classList.add("right");
+    if(!r.correct) labels[r.chosen].classList.add("wrong");
+    box.insertAdjacentHTML("beforeend", `<p class="verdict">${r.correct
+      ? "<b>Right.</b>" : `<b>The answer is ${esc(r.answer_text)}.</b>`} ${esc(r.why)}</p>`);
+  });
+  sheet.querySelector("#check-form .row").hidden = true;
+  sheet.querySelector("#check-out").innerHTML = `<div class="callout" style="margin:4px 0 0">
+      <b>${out.n_correct} of ${out.n} right.</b> ${out.passed
+        ? "That counts as a pass on this unit."
+        : "Below the pass mark of 40, so this unit needs another look."}
+      ${out.saved ? "Saved to your account." : "Sign in as a student to keep your results."}
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="small" id="check-again">Try again</button>
+      ${out.saved ? "" : `<button class="small" data-go="signup">Create an account</button>`}
+    </div>`;
+  sheet.querySelector(".sheet-card").scrollTop = 0;
+  $("#check-again").onclick = () => openCheck(exam, section, unit);
+  if(out.saved){
+    loadMyChecks(true).then(() => document.querySelectorAll(".check-btn").forEach(b => {
+      if(b.dataset.exam !== exam || b.dataset.section !== section || b.dataset.unit !== unit) return;
+      const old = b.nextElementSibling;
+      if(old && old.classList.contains("check-last")) old.remove();
+      b.insertAdjacentHTML("afterend", `<span class="caption check-last">Last check: ${out.n_correct} of ${out.n}</span>`);
+    }));
+  }
+}
+
 /* ---------------- entrance exams ----------------
    JEE, NEET and CUET sit beside the ladder, not on it: an exam is the gate in front of a
    course, not a qualification of its own. Each card carries the published syllabus
@@ -1096,7 +1218,9 @@ function finderBackground(){
 const examCard = e => `<div class="course exam" data-key="${esc(e.key)}">
   <div class="course-top"><h3>${esc(e.name)}</h3><span class="chip">${esc(e.body)}</span></div>
   <p class="need">${esc(e.full_name)}</p>
-  <div class="chips">${e.sections.map(x => chip(`${x.name}: ${x.n_units}`)).join("")}</div>
+  <div class="chips">${e.sections.map(x => chip(`${x.name}: ${x.n_units}`)).join("")}${
+    e.n_checks ? `<span class="chip on">${e.n_checks === e.n_units ? "Self-check on every unit"
+      : `Self-check on ${e.n_checks} units`}</span>` : ""}</div>
   <p class="need">Leads to ${esc(e.leads_to)}.</p>
   ${e.note ? `<p class="caption">${esc(e.note)}</p>` : ""}
   <details class="working syllabus"><summary>What the syllabus covers, with free study links</summary>
@@ -1116,9 +1240,10 @@ async function loadSyllabus(card, stream){
       + (stream ? `?stream=${encodeURIComponent(stream)}` : ""));
   }catch(err){ body.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
   const x = examCache[id];
+  await loadMyChecks();
   body.innerHTML = x.sections.map(sec => `<p class="prose" style="margin:10px 0 2px"><b>${esc(sec.name)}</b></p>
     <ul class="plain" style="margin-top:2px">${sec.units.map(u =>
-      `<li>${esc(u.name)}${linkRow(u.links)}</li>`).join("")}</ul>`).join("")
+      `<li>${esc(u.name)}${linkRow(u.links)}${u.check ? checkBtn(x.key, sec.name, u.name) : ""}</li>`).join("")}</ul>`).join("")
     + `<p class="caption" style="margin:10px 0 0">The published unit outline, not the syllabus
        itself. Units are added and dropped between years, so check the official syllabus for
        the year you are sitting.</p>`;
@@ -1134,6 +1259,7 @@ async function loadExamPlan(card, weeks, start, stream){
     examPlanCache[id] = examPlanCache[id] || await api(`/api/exams/${encodeURIComponent(key)}/plan?x=1${qs}`);
   }catch(err){ body.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
   const p = examPlanCache[id];
+  await loadMyChecks();
   const dated = w => w.starts
     ? `<span class="caption"> ${new Date(w.starts + "T00:00:00").toLocaleDateString(undefined, {day:"numeric", month:"short"})}
        to ${new Date(w.ends + "T00:00:00").toLocaleDateString(undefined, {day:"numeric", month:"short"})}</span>` : "";
@@ -1145,7 +1271,8 @@ async function loadExamPlan(card, weeks, start, stream){
       and that is about ${p.per_week} ${p.per_week === 1 ? "unit" : "units"} a week.</p>
     <ol class="plain plan-weeks-list">${p.weeks.map(w => `<li><b>Week ${w.week}</b>${dated(w)}
       <ul class="plain">${w.units.map(u =>
-        `<li>${esc(u.name)} <span class="caption">${esc(u.section)}</span>${linkRow(u.links)}</li>`).join("")}</ul></li>`).join("")}</ol>
+        `<li>${esc(u.name)} <span class="caption">${esc(u.section)}</span>${linkRow(u.links)}${
+          u.check ? checkBtn(p.key, u.section, u.name) : ""}</li>`).join("")}</ul></li>`).join("")}</ol>
     <div class="row" style="margin-top:10px">
       <a class="btn small" href="/api/exams/${encodeURIComponent(p.key)}/plan.ics?weeks=${p.n_weeks}&start=${encodeURIComponent(p.starts || todayISO())}${stream ? `&stream=${encodeURIComponent(stream)}` : ""}">Add to my calendar</a>
     </div>
@@ -1175,7 +1302,8 @@ function examsBlock(out, stage){
       ? "Two years away, but the stream chosen in class 11 decides which of these are open."
       : "Each one is written on the class 11 and 12 syllabus you are already studying."}
       ${esc(out.note)}</p>
-    ${out.exams.map(examCard).join("")}</div>`;
+    ${out.exams.map(examCard).join("")}
+    ${out.check_note ? `<p class="caption" style="margin:4px 0 0">${esc(out.check_note)}</p>` : ""}</div>`;
 }
 
 /* With no interests ticked the panel used to say "pick an interest" and stop, which
@@ -1521,7 +1649,6 @@ function nextStepCard(r, t, forStudent){
     <p class="todo"><span class="lbl">Do this:</span> ${esc(todoFor(r, forStudent))}</p>
     ${forStudent ? `<div class="actions">
       <button class="act" data-c="${r.concept}" data-k="study">I studied this</button>
-      <button class="act" data-c="${r.concept}" data-k="pass">I passed the test</button>
       <button class="act" data-c="${r.concept}" data-k="fail">I found it hard</button>
     </div>
     <form class="row score-form score-inline" style="margin-top:12px;align-items:center">
@@ -1590,7 +1717,7 @@ function pathList(steps, t, forStudent){
 }
 /* One week, on its own, with everything known about it. Opened from the path list or
    from the course strip, closed with Escape or the backdrop. */
-function weekSheet(step, t, forStudent, position){
+function ensureSheet(){
   let sheet = document.getElementById("sheet");
   if(!sheet){
     sheet = document.createElement("div");
@@ -1603,6 +1730,10 @@ function weekSheet(step, t, forStudent, position){
     sheet.addEventListener("click", e => { if(e.target === sheet) closeSheet(); });
     document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheet(); });
   }
+  return sheet;
+}
+function weekSheet(step, t, forStudent, position){
+  const sheet = ensureSheet();
   const ready = !step.gaps.length;
   sheet.innerHTML = `<div class="sheet-card">
     <div class="sheet-top">
@@ -1621,7 +1752,6 @@ function weekSheet(step, t, forStudent, position){
       <ul class="plain">${step.unlocks.slice(0, 4).map(u => `<li>${esc(weekOf(u.label))}</li>`).join("")}</ul></div>` : ""}
     ${forStudent ? `<div class="actions">
       <button class="act" data-c="${step.concept}" data-k="study">I studied this</button>
-      <button class="act" data-c="${step.concept}" data-k="pass">I passed the test</button>
       <button class="act" data-c="${step.concept}" data-k="fail">I found it hard</button>
     </div>
     <form class="row score-form" style="margin-top:12px;align-items:center">
@@ -1665,11 +1795,11 @@ function bindActions(root){
   });
   root.querySelectorAll(".act").forEach(b => b.onclick = async () => {
     const kind = b.dataset.k === "study" ? "study" : "assessment";
-    const correct = b.dataset.k === "pass" ? true : b.dataset.k === "fail" ? false : null;
+    const correct = b.dataset.k === "fail" ? false : null;     // a pass arrives with a mark
     root.querySelectorAll(".act").forEach(x => x.disabled = true);
     b.textContent = "Saving";
     await post("/api/me/study", {concept_id:+b.dataset.c, kind, correct});
-    toast(kind === "study" ? "Marked as studied" : correct ? "Test marked as passed" : "Marked as hard");
+    toast(kind === "study" ? "Marked as studied" : "Marked as hard");
     closeSheet();
     renderStudent();
   });
@@ -2014,7 +2144,7 @@ async function renderStudent(){
               ? `<div class="tile"><div class="v text">${step ? esc(weekOf(step.label)) : "All done"}</div><div class="k">next step</div></div>`
               : `<div class="tile"><div class="v">${avg}</div><div class="k">average of your ${marks.length} ${marks.length === 1 ? "mark" : "marks"}${marks.length - passed ? `, ${marks.length - passed} below the pass mark` : ""}</div></div>`}
           </div>
-          ${state.n_events === 0 ? `<div class="callout">Welcome. Your path follows your course week by week, starting at Week 1. Press "I studied this" or "I passed the test" and it moves on to the next week.</div>` : ""}
+          ${state.n_events === 0 ? `<div class="callout">Welcome. Your path follows your course week by week, starting at Week 1. Press "I studied this", or enter the mark from your quiz, and it moves on to the next week.</div>` : ""}
           ${nextStepCard(step, t, true)}
         </div>
 

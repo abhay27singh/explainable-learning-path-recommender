@@ -105,3 +105,29 @@ def test_the_score_is_written_to_the_support_log(main):
     token = store.create_session(user.id)
     main.record_study(main.StudyEvent(concept_id=4, kind="assessment", score=55), token)
     assert any("scored 55 out of 100" in e["detail"] for e in store.logs("apiscore"))
+
+
+def test_the_api_refuses_a_pass_without_a_mark(tmp_path):
+    """Regression: "I passed the test" recorded a pass on the student's word alone, and
+    a pass is evidence the model learns from. It now needs the quiz mark."""
+    import api.main as main
+    from fastapi import HTTPException
+
+    from api.service import Service
+    from elpr.db.app_store import AppStore
+
+    main.service = Service()
+    main.service.store = AppStore(tmp_path / "app.db")
+    main.service.store.register("claimer", "passw0rd", "C", "student", module="CCC", stage="ug")
+    token = main.service.store.create_session(
+        main.service.store.authenticate("claimer", "passw0rd").id)
+
+    with pytest.raises(HTTPException) as bare:
+        main.record_study(main.StudyEvent(concept_id=3, kind="assessment", correct=True), token)
+    assert bare.value.status_code == 400 and "mark" in bare.value.detail
+
+    main.record_study(main.StudyEvent(concept_id=3, kind="assessment", score=72), token)
+    main.record_study(main.StudyEvent(concept_id=4, kind="assessment", correct=False), token)
+    events = main.service.store.events(main.service.store.authenticate("claimer", "passw0rd").id)
+    assert [(e["correct"], e["score"]) for e in events] == [(1, 72), (0, None)], \
+        "a mark still passes, and finding a week hard still needs no mark"

@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 168 tests. `make api` serves http://localhost:8420.
+`make test` runs 189 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -79,7 +79,10 @@ not just hidden in the page. Levels are editable later under My details.
 **The path.** `Service.course_path` walks the course in order from its first week.
 A week counts as done when studied or passed; "I found it hard" keeps it in place
 (`Service.done_concepts`). A quiz mark of 40 or more counts as a pass and anything lower
-keeps the week in the path, matching the binarisation in `sql/05_events.sql`. Each step is
+keeps the week in the path, matching the binarisation in `sql/05_events.sql`. There is no
+bare "I passed" any more: `/api/me/study` refuses `correct: true` without a score, because
+a pass is evidence the model learns from. "I found it hard" needs no mark, since it only
+ever holds a week in place. Each step is
 explained by the model with the earlier steps marked as known, so every explanation is
 real model output under a stated assumption. The card reads as an instruction: a status,
 a "Why this week" line from the prerequisite graph, and one "Do this" line. Advisers keep
@@ -104,6 +107,17 @@ same week by week planner (`exam_plan`) with an iCalendar download. An exam appe
 for a stream that can sit it, and the stream cards name the exams each stream opens. CUET
 is assembled from the student's own class 12 subjects rather than a fixed list. No exam
 date, cut-off or rank is stated anywhere: those change yearly, and a test enforces it.
+
+**Self-checks.** `elpr/selfcheck.py`: three questions per topic, 68 topics, 204
+questions, covering all 105 JEE Main and NEET UG units. Units map to topics by
+(section, unit), because NEET has a Thermodynamics unit in both Physics and Chemistry.
+Options are stored right-answer-first and shuffled on the way out by a crc32 seed, so the
+right answer lands evenly across the four places and never moves on reload. Marking
+happens on the server. Results go to their own `self_checks` table, never to
+`study_events`, because an exam unit is not a week of the student's course. The page
+shows the latest result per unit, not the best. The weekly course path has no questions
+by design: OULAD's content is anonymised, so its weeks have no topic. CUET's language,
+general test and commerce and humanities papers have no questions yet.
 
 **Progress and record.** Streaks, a 12-week activity calendar, milestones, a quiz-score
 chart against the pass line of 40, and a printable record of study with every finished
@@ -263,6 +277,7 @@ metadata.
 elpr/          data · db · graph · mining · models · planner · explain · eval
                course_finder.py (rules, 59 courses, the ladder, weekly plans)
                exams.py (JEE, NEET, CUET syllabus outlines and revision plans)
+               selfcheck.py (204 questions on JEE and NEET units, server marking)
                progress.py (streaks, calendar, milestones) · ics.py (calendar files)
                modules.py (illustrative course names) · profile.py (background fields)
 sql/           00–12, the entire ETL as reviewable SQL (DuckDB)
@@ -271,7 +286,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         168 tests
+tests/         189 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability
@@ -333,6 +348,6 @@ Rules the owner has set. They are not negotiable, and they apply to anything use
 2. **Deployment**: a public host, a custom domain and TLS. The password minimum and
    sign-in throttling are done; account recovery is not.
 3. **User study** with real students, which the paper lists but has never run.
-4. **Product work still open**: real self-check questions instead of the student
-   reporting their own pass, a printable PDF of a week plan, Hindi and regional
-   languages, and self-service account deletion.
+4. **Product work still open**: self-check questions for CUET's language and general
+   test papers, a printable PDF of a week plan, Hindi and regional languages, and
+   self-service account deletion.
