@@ -128,3 +128,13 @@ def test_new_student_gets_an_honest_empty_summary(tmp_path):
     assert p["week"]["activities"] == 0
     assert p["week"]["summary"][0] == "No activity recorded in the last 7 days."
     assert not any(b["earned"] for b in p["badges"])
+
+
+def test_the_progress_calendar_covers_a_year():
+    """The activity graph sits beside the streak, the way a contribution graph does, so
+    it shows a year: twelve weeks said nothing about whether a habit lasted."""
+    from elpr.progress import CALENDAR_WEEKS
+
+    cal = calendar_days([], TODAY, weeks=CALENDAR_WEEKS)
+    assert len(cal) >= 52 * 7
+    assert cal[0]["weekday"] == 0 and cal[-1]["date"] == TODAY.isoformat()

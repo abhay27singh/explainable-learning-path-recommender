@@ -29,32 +29,60 @@
     --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
     --header:64px;
     --footer:#101828; --footer-ink:#C7CED9; --veil:rgba(255,255,255,.96);
+    /* Liquid glass. A pane is a translucent fill, a blur of what is behind it, a lit top
+       edge and a soft shadow. --ground-art gives the blur something to refract: glass
+       over flat grey reads as nothing. Teal and green only, kept faint. */
+    --glass:rgba(255,255,255,.60); --glass-strong:rgba(255,255,255,.76); --glass-soft:rgba(255,255,255,.46);
+    --glass-input:rgba(255,255,255,.70); --glass-edge:rgba(255,255,255,.78);
+    --glass-hi:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(16,24,40,.03);
+    --glass-shadow:0 1px 2px rgba(16,24,40,.04),0 10px 30px rgba(16,24,40,.07);
+    --blur:blur(22px) saturate(170%); --radius-lg:16px; --control-edge:rgba(16,24,40,.16);
+    --accent-glow:rgba(31,94,122,.22);
+    --ground-art:radial-gradient(1100px 700px at 6% -8%,rgba(127,196,222,.38),transparent 62%),
+      radial-gradient(900px 640px at 102% 8%,rgba(143,211,186,.30),transparent 60%),
+      radial-gradient(1200px 820px at 46% 112%,rgba(31,94,122,.13),transparent 62%);
   }
   /* Dark theme. The level ramp keeps its meaning by brightness rather than depth:
      on a dark ground the darkest blue would read as the weakest, which is backwards. */
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme:dark;
-      --ground:#0F1418; --surface:#161C21; --surface-alt:#212A31 --seg-on:#2E3A43;
+      --ground:#0E1316; --surface:#161C21; --surface-alt:#212A31; --seg-on:#2E3A43;
       --ink:#E9EDF0; --ink-soft:#AEB9C1; --ink-faint:#88949E;
       --rule:#2A343B; --accent:#7FC4DE; --accent-strong:#A8DBEC; --accent-soft:#16323F;
       --warn:#F0A79B; --warn-soft:#3A211D; --good:#8FD3BA; --good-soft:#12302A;
       --lvl-1:#2F4C6B; --lvl-2:#3D82CE; --lvl-3:#8FC4F7; --viz-bar:#5AA3E8;
-    --cal-0:#202A32; --cal-1:#2F5578; --cal-2:#4A8BD0; --cal-3:#9ACDF9;
       --cal-0:#202A32; --cal-1:#2F5578; --cal-2:#4A8BD0; --cal-3:#9ACDF9;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
       --footer:#0A0E11; --footer-ink:#AEB9C1; --veil:rgba(22,28,33,.96);
+      --glass:rgba(26,34,40,.56); --glass-strong:rgba(18,24,29,.74); --glass-soft:rgba(255,255,255,.045);
+      --glass-input:rgba(10,14,17,.45); --glass-edge:rgba(255,255,255,.10);
+      --glass-hi:inset 0 1px 0 rgba(255,255,255,.07);
+      --glass-shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.32);
+      --accent-glow:rgba(127,196,222,.22); --control-edge:rgba(255,255,255,.16);
+      --ground-art:radial-gradient(1100px 700px at 6% -8%,rgba(31,94,122,.42),transparent 62%),
+          radial-gradient(900px 640px at 102% 8%,rgba(42,99,80,.30),transparent 60%),
+          radial-gradient(1200px 820px at 46% 112%,rgba(127,196,222,.12),transparent 62%);
     }
   }
   :root[data-theme="dark"]{
     color-scheme:dark;
-    --ground:#0F1418; --surface:#161C21; --surface-alt:#212A31 --seg-on:#2E3A43;
+    --ground:#0E1316; --surface:#161C21; --surface-alt:#212A31; --seg-on:#2E3A43;
     --ink:#E9EDF0; --ink-soft:#AEB9C1; --ink-faint:#88949E;
     --rule:#2A343B; --accent:#7FC4DE; --accent-strong:#A8DBEC; --accent-soft:#16323F;
     --warn:#F0A79B; --warn-soft:#3A211D; --good:#8FD3BA; --good-soft:#12302A;
     --lvl-1:#2F4C6B; --lvl-2:#3D82CE; --lvl-3:#8FC4F7; --viz-bar:#5AA3E8;
+    --cal-0:#202A32; --cal-1:#2F5578; --cal-2:#4A8BD0; --cal-3:#9ACDF9;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
     --footer:#0A0E11; --footer-ink:#AEB9C1; --veil:rgba(22,28,33,.96);
+    --glass:rgba(26,34,40,.56); --glass-strong:rgba(18,24,29,.74); --glass-soft:rgba(255,255,255,.045);
+    --glass-input:rgba(10,14,17,.45); --glass-edge:rgba(255,255,255,.10);
+    --glass-hi:inset 0 1px 0 rgba(255,255,255,.07);
+    --glass-shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.32);
+    --accent-glow:rgba(127,196,222,.22); --control-edge:rgba(255,255,255,.16);
+    --ground-art:radial-gradient(1100px 700px at 6% -8%,rgba(31,94,122,.42),transparent 62%),
+        radial-gradient(900px 640px at 102% 8%,rgba(42,99,80,.30),transparent 60%),
+        radial-gradient(1200px 820px at 46% 112%,rgba(127,196,222,.12),transparent 62%);
   }
   .themeseg{display:inline-flex;align-items:center;gap:2px;background:var(--surface-alt);
     border-radius:999px;padding:3px;border:1px solid var(--rule)}
@@ -295,8 +323,18 @@
   .viz{margin:0 0 16px;padding:16px 18px;border:1px solid var(--rule);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
   .viz h3{margin:0 0 2px;font-size:15px}
   .viz .sub{margin:0 0 10px;font-size:13px;color:var(--ink-faint)}
-  .viz-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  @media(max-width:880px){.viz-row{grid-template-columns:1fr}}
+  .viz-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px;align-items:start}
+  /* Activity: the count and the streaks in one line above a year of days, the way a
+     contribution graph reads. */
+  .act-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 28px;flex-wrap:wrap;margin:0 0 14px}
+  .act-head h3{margin:0;font-size:15px;font-weight:600;color:var(--ink-soft)}
+  .act-head h3 b{font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums;margin-right:4px}
+  .act-stats{display:flex;gap:26px;margin:0;flex-wrap:wrap}
+  .act-stats div{display:flex;flex-direction:column;gap:2px}
+  .act-stats dt{font-size:12px;color:var(--ink-faint)}
+  .act-stats dd{margin:0;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .cal-scroll{overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+  .cal-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px}
   .viz-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink-soft);margin:0 0 10px}
   .viz-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
   .lvl-bar{display:flex;gap:2px;height:24px;margin:4px 0 12px}
@@ -322,6 +360,10 @@
   .sheet{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:20px;
     background:rgba(16,24,40,.45)}
   .sheet[hidden]{display:none!important}
+  /* Anything given the hidden attribute is hidden, whatever display its class sets.
+     Without this, .row (flex) and similar kept "hidden" buttons on screen in a dead
+     state: the marked self-check left its disabled "Marking" button behind. */
+  [hidden]{display:none!important}
   .sheet-card{background:var(--surface);border:1px solid var(--rule);border-radius:14px;
     box-shadow:0 20px 50px rgba(16,24,40,.22);max-width:560px;width:100%;max-height:86vh;
     overflow:auto;padding:24px 26px}
@@ -401,15 +443,24 @@
   .scorerow .n{text-align:right;font-variant-numeric:tabular-nums}
   .wsmain{display:flex;flex-direction:column;min-width:0}
   .wsfull{grid-column:2 / 4;min-width:0}
-  .wsfull[hidden]{display:none}
+  /* The right rail may run longer than the head of the middle column. It spans two
+     rows, so the path carries on straight under the next step instead of starting
+     after a blank strip as tall as the difference. */
+  .wsmid{grid-column:2;min-width:0}
+  .workspace:has(.wsmid) > .railside{grid-column:3;grid-row:1 / span 2}
+  .workspace:has(.wsmid) > .rail{grid-row:1 / span 3}
+  .wsfull[hidden],.wsmid[hidden]{display:none}
   @media (max-width:1090px){
     .workspace{grid-template-columns:216px minmax(0,1fr)}
     .railside{grid-column:2}
     .wsfull{grid-column:2}
+    .workspace:has(.wsmid) > .railside{grid-column:2;grid-row:auto}
+    .workspace:has(.wsmid) > .rail{grid-row:1 / span 4}
   }
   .score-form.score-inline,p.score-inline{display:none}
   @media (max-width:860px){
-    .wsfull{grid-column:1}
+    .wsfull,.wsmid{grid-column:1}
+    .workspace:has(.wsmid) > .railside{grid-column:1}
     .score-form.score-inline{display:flex}
     p.score-inline{display:block}
     .railside .quizbox{display:none}
@@ -425,6 +476,9 @@
   th{text-align:left;font-size:12px;color:var(--ink-faint);border-bottom:1px solid var(--rule);padding:0 12px 8px 0;font-weight:600}
   td{padding:9px 12px 9px 0;border-bottom:1px solid var(--rule)}
   td.n,th.n{text-align:right;padding-right:0;font-variant-numeric:tabular-nums}
+  /* A right-aligned number with a left-aligned column after it needs a gap, or the two
+     run together: the adviser overview read "90000001Mathematics" under "IDCourse". */
+  td.n:not(:last-child),th.n:not(:last-child){padding-right:28px}
   .admin-table td.n,.admin-table th.n{padding-right:28px}
   tr.hl td{background:var(--accent-soft);font-weight:600}
   .scroll{overflow-x:auto}
@@ -439,6 +493,63 @@
   .legal h2{margin:0 0 4px;font-size:26px}
   .legal h3{margin:22px 0 6px;font-size:16px}
   .legal p{margin:0 0 10px;color:var(--ink-soft);max-width:68ch}
+  /* ================= Liquid glass =================
+     One layer over everything above, so every page and every role gets it at once.
+     Panels are translucent and blur what is behind them; a pane inside a pane gets a
+     lighter fill and no second blur, which would cost frames and muddy the first.
+     Buttons stay rounded rectangles: capsules are against the house rules. */
+  body{background-color:var(--ground);background-image:var(--ground-art);background-attachment:fixed}
+  header.site{background:var(--glass-strong);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+    border-bottom:1px solid var(--glass-edge);box-shadow:var(--glass-hi)}
+  .block,.viz,.next,.rail,main.split aside,.auth-card,.fact,.step3,.feature,.card,.alert{
+    background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+    border-color:var(--glass-edge);box-shadow:var(--glass-shadow),var(--glass-hi);border-radius:var(--radius-lg)}
+  .next{border-left:4px solid var(--accent)}
+  .card{border-left:3px solid var(--accent)}
+  .alert{background:var(--warn-soft);border-color:var(--warn);border-left:4px solid var(--warn)}
+  .band.alt{background:transparent}
+  .band.alt .step3{background:var(--glass)}
+  .sheet{background:rgba(8,12,16,.28);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .sheet-card{background:var(--glass-strong);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+    border-color:var(--glass-edge);box-shadow:0 24px 60px rgba(8,12,16,.28),var(--glass-hi);border-radius:20px}
+  #viz-tip{background:var(--glass-strong);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+    border-color:var(--glass-edge);border-radius:10px}
+  .tile,.course,.path-step,.learner,.q,.opt,.research li,.path-detail,.fixed{
+    background:var(--glass-soft);border-color:var(--glass-edge);box-shadow:var(--glass-hi)}
+  .tile,.course{border-radius:14px}
+  .q .opt.right{background:var(--good-soft);border-color:var(--good)}
+  .q .opt.wrong{background:var(--warn-soft);border-color:var(--warn)}
+  .opt:has(input:checked),.chipset label.pick:has(input:checked){background:var(--accent-soft);border-color:var(--accent)}
+  .chipset label.pick{background:var(--glass-input);border-color:var(--control-edge)}
+  /* Controls keep a visible edge. A glass edge on a glass panel made buttons and fields
+     read as plain text, which looks exactly like a button that does not work. */
+  input,select,textarea{background:var(--glass-input);border-color:var(--control-edge);box-shadow:var(--glass-hi)}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  button,.btn{background:var(--glass-input);border-color:var(--control-edge);box-shadow:var(--glass-hi),0 1px 2px rgba(16,24,40,.05);border-radius:10px}
+  button:hover,.btn:hover{border-color:var(--accent)}
+  button.primary,.btn.primary{box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 6px 18px var(--accent-glow)}
+  button.on{box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+  .seg,.themeseg{background:var(--glass-soft);border:1px solid var(--control-edge);box-shadow:var(--glass-hi)}
+  .railitem,.themeseg button,.sheet-close,.seg button:not(.on),nav.links button,.alert button{box-shadow:none}
+  .railitem.on{background:var(--accent-soft)}
+  .bar,.part-track{background:var(--glass-soft);border-color:var(--glass-edge)}
+  /* Use the window. The workspace pages ran to 1320px and left a third of a wide
+     screen empty; text inside stays at a reading width through its own rules. */
+  header.site .in, footer.site .in{max-width:1760px}
+  .page.wide{max-width:1760px;padding-inline:24px}
+  main.split{max-width:1760px}
+  .page{max-width:1760px;padding-inline:24px}           /* the same edges as the header */
+  .band .in{max-width:1320px}
+  .workspace.narrow, .workspace.narrow .wsmain{max-width:none}
+  /* For anyone who asked their system for less transparency: solid panels. */
+  @media (prefers-reduced-transparency: reduce){
+    :root{--glass:var(--surface);--glass-strong:var(--surface);--glass-soft:var(--surface-alt);
+      --glass-input:var(--surface);--blur:none;--ground-art:none}
+  }
+  @media print{
+    body{background-image:none}
+    .block,.viz,.next,.card,.course,.tile{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+  }
 </style>
 </head>
 <body>
@@ -711,20 +822,27 @@ function route(){ show(location.hash.replace(/^#\/?/, "") || (me ? "dashboard" :
 window.addEventListener("hashchange", route);
 
 function show(name){
+  // Explore is a mode of the Finder page rather than a page of its own, but it gets
+  // its own address so every rail, header and dashboard can link straight to it.
+  const explore = name === "explore";
+  if(explore) name = "finder";
   if(!document.getElementById("view-" + name)) name = me ? "dashboard" : "home";
   if(!PUBLIC.has(name) && !me) name = "login";
   if((name === "admin" || name === "research") && (!me || me.role !== "admin")) name = "dashboard";
   if(me && (name === "login" || name === "signup" || name === "home")) name = "dashboard";
   closeSheet();                                    // a sheet never outlives the page it opened on
-  if(location.hash !== "#/" + name) history.replaceState(null, "", "#/" + name);
+  const hash = "#/" + (explore && name === "finder" ? "explore" : name);
+  if(location.hash !== hash) history.replaceState(null, "", hash);
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "view-" + name));
   document.querySelectorAll("nav.links button").forEach(b => b.classList.toggle("on", b.dataset.go === name));
+  document.querySelectorAll(".railitem[data-go]").forEach(b =>
+    b.classList.toggle("on", b.dataset.go === (explore ? "explore" : name)));
   if(name === "dashboard") renderHome();
   if(name === "progress") renderProgress();
   if(name === "record") renderRecord();
   if(name === "research") renderResults().then(renderAbout);
   if(name === "admin") renderAdmin();
-  if(name === "finder") renderFinder();
+  if(name === "finder") renderFinder(explore);
   hideTip();
   window.scrollTo(0, 0);
 }
@@ -741,11 +859,20 @@ document.addEventListener("click", e => {
 /* ---------------- auth ---------------- */
 const stageLabel = v => ((finderOptions && finderOptions.stages) || []).find(s => s.value === v)?.label || "";
 const courseStage = v => !!((finderOptions && finderOptions.stages) || []).find(s => s.value === v)?.has_course;
+/* A hidden field must not take part in the form. The level select is `required`, so
+   when "Academic adviser" hid it the browser still refused to submit, and because the
+   field was hidden it could not even show why: the button simply did nothing. Hiding a
+   field here also disables it, which takes it out of validation and out of the data. */
 function syncSignup(){
   const student = $("#reg-role").value === "student", stage = $("#reg-stage").value;
-  $("#stage-wrap").style.display = student ? "block" : "none";
-  $("#module-wrap").style.display = student && courseStage(stage) ? "block" : "none";
-  $("#stream-wrap").style.display = student && stage === "class_12" ? "block" : "none";
+  const show = (wrap, on) => {
+    const box = $(wrap);
+    box.style.display = on ? "block" : "none";
+    box.querySelectorAll("select, input").forEach(f => f.disabled = !on);
+  };
+  show("#stage-wrap", student);
+  show("#module-wrap", student && courseStage(stage));
+  show("#stream-wrap", student && stage === "class_12");
 }
 $("#reg-role").onchange = syncSignup;
 $("#reg-stage").onchange = syncSignup;
@@ -773,9 +900,10 @@ $("#form-register").onsubmit = async e => {
   finally { e.target.dataset.busy = ""; }
 };
 $("#signout").onclick = async () => {
-  await post("/api/auth/logout");
+  try{ await post("/api/auth/logout"); }catch{}   // clear this browser regardless
   me = null; known.clear(); current = null;
   saved.clear(); savedCourses = []; savedLoaded = false;
+  myChecks = null;                 // the next person on this browser must not see these
   document.body.classList.remove("signed-in");
   $("#nav-admin").style.display = "none";
   $("#nav-research").style.display = "none";
@@ -783,9 +911,9 @@ $("#signout").onclick = async () => {
   nav("home");
 };
 
-/* Enter submits. Browsers do this for a form with a submit button, but several
-   fields here sit outside one (the explore filter, the plan length), and a double
-   submit would fire two requests, so the guard matters. */
+/* Enter submits a form, once. Browsers do this for a form with a submit button; this
+   covers a form without one, and the busy guard stops a second request firing while
+   the first is still out. */
 document.addEventListener("keydown", e => {
   if(e.key !== "Enter" || e.defaultPrevented) return;
   const el = e.target;
@@ -799,8 +927,12 @@ document.addEventListener("keydown", e => {
     }
     return;                                   // the browser submits the rest itself
   }
-  const button = el.closest(".block, .course, .page, aside, form")?.querySelector("button");
-  if(button){ e.preventDefault(); button.click(); }
+  // Outside a form, Enter presses only a button the field names itself. It used to
+  // press the first button in the surrounding card, so Enter in a plan's start date
+  // toggled "Save to my list" and in an exam card opened a self-check. Every field
+  // here that sits outside a form already acts as it changes.
+  const target = el.dataset.enter && document.querySelector(el.dataset.enter);
+  if(target){ e.preventDefault(); target.click(); }
 });
 
 async function bootstrap(){
@@ -1015,7 +1147,7 @@ function shortlistBlock(courses){
     ${courses.map(c => courseCard(c, saveBtn(c.key))).join("")}</div>`;
 }
 
-async function renderFinder(){
+async function renderFinder(explore = false){
   const wrap = $("#finder-form-wrap");
   if(!finderOptions){
     try{
@@ -1036,7 +1168,7 @@ async function renderFinder(){
     $("#finder-results").dataset.filled = "";
     buildFinderForm(own);
   }
-  showLadder();
+  if(explore) showExplore("all"); else showLadder();
 }
 
 let finderState = {};
@@ -1068,7 +1200,7 @@ function buildFinderForm(own){
     finderTimer = setTimeout(showLadder, 200);
   });
   f.onsubmit = e => { e.preventDefault(); showLadder(); };
-  $("#finder-explore").onclick = () => showExplore("all");
+  $("#finder-explore").onclick = () => nav("explore");
 }
 
 /* The background a rung needs: class 12 asks for the stream and subjects, a degree
@@ -1388,7 +1520,7 @@ async function showLadder(){
     </div>` : ""}
     <p class="caption" style="margin:14px 0 0">${esc(finderOptions.method)}. ${esc(finderOptions.note)}</p>
     ${signupCta() ? `<div style="margin-top:12px">${signupCta()}</div>` : ""}`;
-  $("#finder-explore-2").onclick = () => showExplore("all");
+  $("#finder-explore-2").onclick = () => nav("explore");
   el.querySelectorAll(".lvl").forEach(b => b.onclick = () => { s.level = b.dataset.l; showLadder(); });
   bindSave(el);
   bindPlans(el);
@@ -1417,7 +1549,8 @@ async function showExplore(level){
   }
   const x = exploreCache;
   el.innerHTML = `
-    ${pageHead("Explore all courses", `All ${x.count} courses, whatever your background, with free study links.`)}
+    ${pageHead("Explore all courses", `All ${x.count} courses, whatever your background, with free study links.`,
+      `<button class="small" data-go="finder">${me && me.role === "student" ? "Back to what I can do next" : "Back to the Course Finder"}</button>`)}
     <div class="row" style="margin:0 0 12px">${[["all", "All levels"], ...x.levels.map(l => [l.level, l.label])].map(([v, lab]) =>
       `<button class="small ex-level${v === level ? " on" : ""}" data-l="${esc(v)}">${esc(lab)}</button>`).join("")}</div>
     <input id="ex-filter" placeholder="Filter by course or subject, for example economics or data structures" autocomplete="off" style="margin-bottom:14px" />
@@ -1570,20 +1703,27 @@ function weekChart(concepts, t, forStudent){
 }
 
 /* ---------------- progress: streak, calendar, weekly summary ---------------- */
-function activityCalendar(cal){
-  if(!cal || !cal.length) return "";
+function activityCard(p){
+  if(!p || !p.calendar || !p.calendar.length) return "";
+  const cal = p.calendar, s = p.streak;
+  const total = cal.reduce((sum, d) => sum + d.count, 0), active = cal.filter(d => d.count).length;
   const shade = n => n === 0 ? "var(--cal-0)" : n === 1 ? "var(--cal-1)" : n <= 3 ? "var(--cal-2)" : "var(--cal-3)";
-  const size = 16, pitch = 19, padL = 34, padT = 20;
+  const size = 14, pitch = 17, padL = 30, padT = 18;
   const cols = Math.ceil(cal.length / 7), W = padL + cols * pitch, H = padT + 7 * pitch;
-  const dfmt = d => new Date(d + "T00:00:00").toLocaleDateString(undefined, {day: "numeric", month: "short"});
-  let lastMonth = "";
-  const months = cal.filter((_, i) => i % 7 === 0).map((d, col) => {
+  const dfmt = d => new Date(d + "T00:00:00").toLocaleDateString(undefined, {day: "numeric", month: "short", year: "numeric"});
+  // A month gets a label only with room for it: the year starts part way through a
+  // month, and that sliver's label used to run into the next one ("SepOct").
+  // A month gets a label only with room for it. The year starts part way through a
+  // month, and that sliver's label used to run into the next one ("SepOct"), so when
+  // two starts are too close the earlier, shorter one gives way.
+  const starts = [];
+  cal.filter((_, i) => i % 7 === 0).forEach((d, col) => {
     const m = new Date(d.date + "T00:00:00").toLocaleDateString(undefined, {month: "short"});
-    if(m === lastMonth) return "";
-    lastMonth = m;
-    return `<text x="${padL + col * pitch}" y="${padT - 7}" font-size="11" fill="var(--ink-faint)">${m}</text>`;
-  }).join("");
-  const dayNames = ["Mon", "", "Wed", "", "Fri", "", ""].map((n, r) => n ? `<text x="0" y="${padT + r * pitch + 12}" font-size="10" fill="var(--ink-faint)">${n}</text>` : "").join("");
+    if(!starts.length || starts[starts.length - 1].m !== m) starts.push({m, col});
+  });
+  const months = starts.filter((x, i) => !(starts[i + 1] && starts[i + 1].col - x.col < 3) && x.col <= cols - 2)
+    .map(x => `<text x="${padL + x.col * pitch}" y="${padT - 6}" font-size="10" fill="var(--ink-faint)">${x.m}</text>`).join("");
+  const dayNames = ["Mon", "", "Wed", "", "Fri", "", ""].map((n, r) => n ? `<text x="0" y="${padT + r * pitch + 11}" font-size="10" fill="var(--ink-faint)">${n}</text>` : "").join("");
   const cells = cal.map((d, i) => {
     const x = padL + Math.floor(i / 7) * pitch, y = padT + d.weekday * pitch;
     const tip = {v: `${d.count} ${d.count === 1 ? "activity" : "activities"}`, l: [dfmt(d.date)]};
@@ -1591,10 +1731,20 @@ function activityCalendar(cal){
       stroke="var(--rule)" stroke-width="${d.count ? 0 : 1}" tabindex="0" role="img" aria-label="${dfmt(d.date)}: ${d.count}" data-tip="${esc(JSON.stringify(tip))}"/>`;
   }).join("");
   const rows = cal.filter(d => d.count).map(d => [dfmt(d.date), d.count]);
-  return `<figure class="viz"><h3>Activity calendar</h3>
-    <p class="sub">Days you recorded study in the last 12 weeks.</p>
-    <div class="scroll"><svg viewBox="0 0 ${W} ${H}" style="width:${W}px;max-width:100%;height:auto;display:block" role="group" aria-label="Activity calendar">${months}${dayNames}${cells}</svg></div>
-    <div class="viz-legend" style="margin-top:8px"><span>Less</span>${[0, 1, 2, 4].map(n => `<i style="background:${shade(n)};margin:0 2px;border:1px solid var(--rule)"></i>`).join("")}<span>More</span></div>
+  return `<figure class="viz activity">
+    <div class="act-head">
+      <h3><b>${total}</b>${total === 1 ? "activity" : "activities"} in the past year</h3>
+      <dl class="act-stats">
+        <div><dt>Active days</dt><dd>${active}</dd></div>
+        <div><dt>Current streak</dt><dd>${s.current}</dd></div>
+        <div><dt>Longest streak</dt><dd>${s.longest}</dd></div>
+      </dl>
+    </div>
+    <div class="cal-scroll"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:${Math.round(W * 0.8)}px;max-width:${Math.round(W * 1.5)}px;height:auto;display:block" role="group" aria-label="Activity over the past year">${months}${dayNames}${cells}</svg></div>
+    <div class="cal-foot">
+      <span class="caption">A day counts toward a streak when you record at least one activity.</span>
+      <div class="viz-legend" style="margin:0"><span>Less</span>${[0, 1, 2, 4].map(n => `<i style="background:${shade(n)};margin:0 2px;border:1px solid var(--rule)"></i>`).join("")}<span>More</span></div>
+    </div>
     ${vizTable(["Date", "Activities"], rows.length ? rows : [["No activity yet", ""]])}
   </figure>`;
 }
@@ -1608,16 +1758,6 @@ function weekFigure(p){
     <ul class="plain">${w.summary.map(l => `<li>${esc(l)}</li>`).join("")}</ul>
     ${up ? `<p class="caption" style="margin:10px 0 0">Improved: ${esc(up)}</p>` : ""}
   </figure>`;
-}
-function streakCard(p){
-  if(!p) return "";
-  const s = p.streak;
-  return `<div class="block"><h3>Streak</h3>
-    <p class="muted small">A day counts when you record at least one activity.</p>
-    <div class="tiles" style="margin:12px 0 0">
-      <div class="tile"><div class="v">${s.current}</div><div class="k">${s.current === 1 ? "day" : "days"} in a row</div></div>
-      <div class="tile"><div class="v">${s.longest}</div><div class="k">longest run</div></div>
-    </div></div>`;
 }
 
 /* ---------------- the step-by-step path ---------------- */
@@ -1796,9 +1936,18 @@ function bindActions(root){
   root.querySelectorAll(".act").forEach(b => b.onclick = async () => {
     const kind = b.dataset.k === "study" ? "study" : "assessment";
     const correct = b.dataset.k === "fail" ? false : null;     // a pass arrives with a mark
+    const label = b.textContent;
     root.querySelectorAll(".act").forEach(x => x.disabled = true);
     b.textContent = "Saving";
-    await post("/api/me/study", {concept_id:+b.dataset.c, kind, correct});
+    try{ await post("/api/me/study", {concept_id:+b.dataset.c, kind, correct}); }
+    catch(err){
+      // Any failure (an expired session, a dropped connection) used to leave every
+      // button disabled and reading "Saving" until the page was reloaded.
+      root.querySelectorAll(".act").forEach(x => x.disabled = false);
+      b.textContent = label;
+      toast(err.message || "Could not save. Try again.");
+      return;
+    }
     toast(kind === "study" ? "Marked as studied" : "Marked as hard");
     closeSheet();
     renderStudent();
@@ -1934,7 +2083,8 @@ function nextStepsBlock(plan, examList = null){
 function schoolRail(plan, where){
   return railShell(
     `<button class="railitem on" aria-current="page">${RAIL_ICON.learning}<span>My learning</span></button>
-     ${railGo("finder", "Course Finder", "finder")}`,
+     ${railGo("finder", "Course Finder", "finder")}
+     ${railGo("explore", "Explore all courses", "explore")}`,
     `<div>
       <div class="grouphead">Where you are</div>
       <div class="railcourse">
@@ -1994,6 +2144,7 @@ const RAIL_ICON = {
   learning: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect></svg>`,
   progress: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"></path></svg>`,
   finder: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>`,
+  explore: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M9 9v11"></path></svg>`,
   record: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path><path d="M16 3v6h5"></path></svg>`,
   details: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></svg>`,
 };
@@ -2026,6 +2177,7 @@ function studentRail(active, course){
            : railGo("learning", "My learning", "dashboard"),
     me.module ? go("progress", "Progress", "progress", "progress") : "",
     go("finder", "Course Finder", "finder", "finder"),
+    go("explore", "Explore all courses", "explore", "explore"),
     me.module ? go("record", "Record of study", "record", "record") : "",
   ].join("");
   const foot = onDash ? railTab("details", "My details", "details", active)
@@ -2162,8 +2314,10 @@ async function renderStudent(){
         ${shortlistRail(savedCourses)}
       </aside>
 
-      <div class="wsfull" data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
+      <div class="wsmid" data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
         ${pathList(path.steps, t, true)}
+      </div>
+      <div class="wsfull" data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
         ${courseStrip(state.concepts, t, true, false)}
       </div>
     </div>
@@ -2197,7 +2351,12 @@ async function renderStudent(){
     renderStudent();
   };
   bindActions(root);
-  const u = $("#undo"); if(u) u.onclick = async () => { await post("/api/me/undo"); toast("Last activity undone"); renderStudent(); };
+  const u = $("#undo"); if(u) u.onclick = async () => {
+    u.disabled = true;
+    try{ await post("/api/me/undo"); }
+    catch(err){ u.disabled = false; toast(err.message || "Could not undo. Try again."); return; }
+    toast("Last activity undone"); renderStudent();
+  };
 }
 
 /* 9. Quiz scores over time. Only marks the student actually typed, with the pass
@@ -2265,26 +2424,36 @@ async function renderProgress(){
       ${studentRail("progress", {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
       <div class="wsmain">
         ${pageHead("Progress", `${esc(modName(state.module))} · ${path.n_done} of ${path.n_weeks} weeks done`)}
-        <div class="viz-row">${weekFigure(progress)}${scoreChart(state.history, names)}</div>
-        ${progress ? activityCalendar(progress.calendar) : ""}
+        ${activityCard(progress)}
       </div>
 
       <aside class="railside">
-        ${streakCard(progress)}
+        ${weekFigure(progress)}
         ${milestoneBlock(progress)}
       </aside>
 
+      <div class="wsmid">
+        <div class="viz-row">${scoreChart(state.history, names)}${levelChart(state.concepts, t, true)}</div>
+      </div>
+
       <div class="wsfull">
-        <div class="viz-row">${levelChart(state.concepts, t, true)}${partChart(state.concepts, true)}</div>
         ${weekChart(state.concepts, t, true)}
-        <div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
-          ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
+        <div class="viz-row">${partChart(state.concepts, true)}
+          <div class="block" style="margin:0"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
+            ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
+        </div>
       </div>
     </div>
   </div>`;
   bindViz(root, null);
+  root.querySelectorAll(".cal-scroll").forEach(c => { c.scrollLeft = c.scrollWidth; });   // today first
   const u = $("#undo");
-  if(u) u.onclick = async () => { await post("/api/me/undo"); toast("Last activity undone"); renderProgress(); };
+  if(u) u.onclick = async () => {
+    u.disabled = true;
+    try{ await post("/api/me/undo"); }
+    catch(err){ u.disabled = false; toast(err.message || "Could not undo. Try again."); return; }
+    toast("Last activity undone"); renderProgress();
+  };
 }
 
 /* A record of what actually happened: weeks finished, marks entered, dates. Not a

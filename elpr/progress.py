@@ -38,6 +38,9 @@ def streaks(stamps, today: date) -> dict:
             "last_active": max(days).isoformat()}
 
 
+CALENDAR_WEEKS = 53            # a full year, Monday aligned, so the first column is never empty
+
+
 def calendar_days(stamps, today: date, weeks: int = 12) -> list[dict]:
     """Activity count per day for whole weeks ending today, starting on a Monday."""
     counts = _day_counts(stamps)

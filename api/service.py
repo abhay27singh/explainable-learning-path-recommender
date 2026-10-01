@@ -371,7 +371,7 @@ class Service:
         import time as _time
         from datetime import date
 
-        from elpr.progress import badges, calendar_days, streaks
+        from elpr.progress import CALENDAR_WEEKS, badges, calendar_days, streaks
 
         now = _time.time() if now is None else float(now)
         today = date.fromtimestamp(now)
@@ -436,7 +436,9 @@ class Service:
         return {
             "module": module,
             "streak": streak,
-            "calendar": calendar_days(stamps, today),
+            # A year, as a contribution graph shows it: twelve weeks filled a third of the
+            # card and said nothing about whether a habit had lasted.
+            "calendar": calendar_days(stamps, today, weeks=CALENDAR_WEEKS),
             "badges": badges(len(events), streak["longest"], all_passed),
             "week": {"activities": n, "weeks_studied": studied, "passed": passed, "hard": hard,
                      "first_week": first_week, "moved_up": up, "moved_down": down,

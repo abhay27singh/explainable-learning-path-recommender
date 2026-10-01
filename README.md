@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 189 tests
+make test                                       # 194 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -185,8 +185,9 @@ One file, `web/index.html`, no build step.
   academic plus 16 NSQF skill courses, which NEP 2020 treats as an equal track. Eligibility
   by class 12 subjects or bachelor's degree, interest ranking, a shortlist, and a week by
   week plan for any course with a calendar file to download.
-- **Progress and record.** Streaks, a 12-week activity calendar, milestones, quiz marks
-  against the pass line, and a printable record of study. Every figure comes from what the
+- **Progress and record.** A year of activity with the active days and both streaks
+  above it, the way a contribution graph reads, plus milestones, quiz marks against the
+  pass line, and a printable record of study. Every figure comes from what the
   student recorded. It says plainly that it is not a certificate.
 - **Advisers** search all 25,101 dataset learners plus registered students, inspect any
   record, keep notes per learner, mark weeks a learner already knows, and compare planning
@@ -194,7 +195,9 @@ One file, `web/index.html`, no build step.
 - **Admin** manages accounts and is the only role that sees the research results page,
   which reads `results/*.json` directly so it cannot drift from the paper.
 
-Light and dark themes follow the system setting until the viewer picks one.
+Light and dark themes follow the system setting until the viewer picks one. Panels use a
+translucent "liquid glass" finish over soft teal light, with solid panels for anyone whose
+system asks for reduced transparency. Pages use the full width of the window.
 
 *Demonstration-grade authentication: an 8 character password minimum and sign-in
 throttling, but no TLS and no account recovery. Do not reuse a real password.*

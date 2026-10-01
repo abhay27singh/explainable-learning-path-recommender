@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 189 tests. `make api` serves http://localhost:8420.
+`make test` runs 194 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -69,6 +69,19 @@ shortlist). Blocks that are wide by nature, the path and the charts, run under b
 columns. Both rails fall away under 860px, where the score box returns to the next-step
 card. Light and dark themes follow the system setting until the viewer picks one, stored
 per browser under `elpr-theme`.
+
+**Liquid glass.** One layer at the end of the stylesheet gives every page and role the
+same finish: panels are a translucent fill with a backdrop blur, a lit top edge and a soft
+shadow, over faint teal and green light (`--ground-art`) so the blur has something to
+refract. A pane inside a pane gets a lighter fill and no second blur. Controls keep a
+visible edge (`--control-edge`): a glass edge on a glass panel made buttons read as plain
+text. Buttons stay rounded rectangles, not capsules, under the house rules. Anyone whose
+system asks for reduced transparency gets solid panels. Pages run to 1760px, the same
+edges as the header. On the dashboard the right rail spans two rows, so the path follows
+the next step directly instead of after a blank strip.
+
+**Explore.** `#/explore` is the Finder's explore-everything view with its own address,
+linked from every student rail and from both Finder buttons, with a way back.
 
 **Study levels.** Every student picks one at sign-up: `class_10`, `class_12`, `diploma`,
 `ug`, `pg` (`elpr/course_finder.py: STAGES`). Diploma and degree students also choose a
@@ -119,9 +132,11 @@ shows the latest result per unit, not the best. The weekly course path has no qu
 by design: OULAD's content is anonymised, so its weeks have no topic. CUET's language,
 general test and commerce and humanities papers have no questions yet.
 
-**Progress and record.** Streaks, a 12-week activity calendar, milestones, a quiz-score
-chart against the pass line of 40, and a printable record of study with every finished
-week and its date. All computed from recorded events only (`elpr/progress.py`). A
+**Progress and record.** One activity card reads like a contribution graph: the count
+for the year, active days, current and longest streak, then a year of days
+(`CALENDAR_WEEKS = 53`). Beside it, this week's summary and milestones; below, the quiz
+scores against the pass line of 40, the level and quarter charts and recent activity. A
+printable record of study lists every finished week and its date. All computed from recorded events only (`elpr/progress.py`). A
 student's first week makes no comparison claims, because there is nothing real to compare
 with. The record says plainly that it is not a certificate and is not issued by any
 institution.
@@ -286,7 +301,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         189 tests
+tests/         194 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

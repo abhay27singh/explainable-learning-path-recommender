@@ -19,7 +19,7 @@ paper.
 ## Commands
 
 ```bash
-make test                                   # 189 tests, pytest
+make test                                   # 194 tests, pytest
 make api                                    # http://localhost:8420
 .venv/bin/python -m pytest tests/test_stages.py -q
 .venv/bin/python scripts/08_admin.py create <username>
@@ -70,6 +70,12 @@ Rebuilding the data needs the OULAD download; see the quick start in `README.md`
 - **Colours come from tokens, never literals.** Three theme blocks have to stay in step:
   bare `:root`, the `prefers-color-scheme: dark` block, and `:root[data-theme="dark"]`. A
   colour defined in only one of them disappears in the other theme.
+  `tests/test_theme_tokens.py` now fails if the two dark blocks differ or a value
+  swallows the next token through a missing semicolon; both have happened here.
+- **A field the page hides must be disabled too.** A hidden `required` field blocks its
+  form without showing why; that is how adviser signup broke.
+- **`hidden` always wins.** There is a global `[hidden]{display:none!important}`. Do not
+  hide things with inline `display` when the attribute will do.
 - **Restart the server after adding a route.** uvicorn runs without `--reload` here, so a
   new endpoint 404s until the process is restarted.
 - **Accounts made while testing are real accounts.** Delete them from `data/app.db` when
