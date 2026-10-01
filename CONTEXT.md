@@ -4,7 +4,7 @@ Hand this to a fresh agent session (Claude Code, Antigravity, any IDE assistant)
 collaborator, or a supervisor and it will have everything it needs. Every research claim
 here is backed by a file in `results/`.
 
-Last updated 14 September 2026.
+Last updated 2 October 2026.
 
 ---
 
@@ -42,8 +42,9 @@ unreachable as stated.
 | 3 · Reinforcement learning | **Deferred**: greedy beats random by only d = 0.09 |
 | 5 · User study | **Not started** |
 | 7 · Public deployment | **Not started**: see the launch checklist below |
+| 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 84 tests. `make api` serves http://localhost:8420.
+`make test` runs 168 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -53,48 +54,79 @@ and work is on `main`.
 ## The web application
 
 Single FastAPI service (`api/main.py`) plus one page, `web/index.html`, a vanilla-JS
-single-page app with hash routing (`#/home`, `#/login`, `#/dashboard`, `#/finder`,
-`#/research`, `#/admin`, `#/privacy`, `#/terms`). No build step, no framework.
+single-page app with hash routing (`#/home`, `#/login`, `#/signup`, `#/dashboard`,
+`#/progress`, `#/record`, `#/finder`, `#/research`, `#/admin`, `#/privacy`, `#/terms`).
+No build step, no framework.
 
 **Roles.** `student`, `adviser`, `admin`. Admins are a superset of advisers. An admin can
 only be created from the command line (`scripts/08_admin.py create <username>`), never
 through the API, so a registered account can never escalate itself.
 
+**Layout.** Signed-in pages are a workspace: a rail on the left carrying who you are,
+where you are in the site and where you are in your course; the work in the middle; the
+things a student does often on the right (entering a mark, recent marks, milestones,
+shortlist). Blocks that are wide by nature, the path and the charts, run under both
+columns. Both rails fall away under 860px, where the score box returns to the next-step
+card. Light and dark themes follow the system setting until the viewer picks one, stored
+per browser under `elpr-theme`.
+
 **Study levels.** Every student picks one at sign-up: `class_10`, `class_12`, `diploma`,
 `ug`, `pg` (`elpr/course_finder.py: STAGES`). Diploma and degree students also choose a
-course and get a weekly path; school students get the Course Finder instead. The Finder
-offers only the level after the student's own (`NEXT_LEVELS`), enforced in the API, not
-just hidden in the page. Levels are editable later under My details.
+course and get a weekly path; school students get the ladder and the Course Finder. The
+Finder offers only the level after the student's own (`NEXT_LEVELS`), enforced in the API,
+not just hidden in the page. Levels are editable later under My details.
 
 **The path.** `Service.course_path` walks the course in order from its first week.
 A week counts as done when studied or passed; "I found it hard" keeps it in place
-(`Service.done_concepts`). Each step is explained by the model with the earlier steps
-marked as known, so every explanation is real model output under a stated assumption.
-Advisers keep the model-ranked view (`Service.learning_path`, greedy planner) plus a
-compare-planners tab.
+(`Service.done_concepts`). A quiz mark of 40 or more counts as a pass and anything lower
+keeps the week in the path, matching the binarisation in `sql/05_events.sql`. Each step is
+explained by the model with the earlier steps marked as known, so every explanation is
+real model output under a stated assumption. The card reads as an instruction: a status,
+a "Why this week" line from the prerequisite graph, and one "Do this" line. Advisers keep
+the model-ranked view (`Service.learning_path`, greedy planner) plus a compare-planners
+tab.
 
 **Week numbering.** The dataset counts a course's first week as 0. The page adds one for
 display in `humanize()` in `web/index.html`, applied once per API response. Server, data
 and tests all still use the dataset's numbering.
 
 **Course Finder.** Rule-based, not the model, and labelled as such everywhere it appears.
-43 courses in `elpr/course_finder.py` with eligibility by class 12 subjects or bachelor's
-degree, interest ranking, an explore-everything view, and Google site-search links to
-NPTEL and SWAYAM for each subject.
+59 courses in `elpr/course_finder.py`: 43 academic and 16 NSQF skill courses, which NEP
+2020 treats as an equal track alongside the academic one. Eligibility by class 12 subjects
+or bachelor's degree, interest ranking, an explore-everything view, a saved shortlist, and
+a week by week plan (`weekly_plan`) with dates and an iCalendar download. Study links are
+chosen by level: NCERT, Khan Academy and YouTube for school, NPTEL, SWAYAM and YouTube for
+college, Skill India and NSDC for the skill track.
 
-**Progress.** Streaks, a 12-week activity calendar, badges and a weekly summary, all
-computed from recorded events only (`elpr/progress.py`). A student's first week makes no
-comparison claims, because there is nothing real to compare with.
+**Entrance exams.** `elpr/exams.py`: JEE Main, NEET UG and CUET UG, each with the
+published unit outline of its syllabus, the official NTA link, what it leads to, and the
+same week by week planner (`exam_plan`) with an iCalendar download. An exam appears only
+for a stream that can sit it, and the stream cards name the exams each stream opens. CUET
+is assembled from the student's own class 12 subjects rather than a fixed list. No exam
+date, cut-off or rank is stated anywhere: those change yearly, and a test enforces it.
+
+**Progress and record.** Streaks, a 12-week activity calendar, milestones, a quiz-score
+chart against the pass line of 40, and a printable record of study with every finished
+week and its date. All computed from recorded events only (`elpr/progress.py`). A
+student's first week makes no comparison claims, because there is nothing real to compare
+with. The record says plainly that it is not a certificate and is not issued by any
+institution.
 
 **Research page.** Admin only, in the page and in `/api/metrics`. It reads `results/*.json`
 directly so it cannot drift from the paper.
 
-**Security posture.** scrypt password hashing, httpOnly session cookies, server-side
-access checks. No TLS, no rate limiting, no account recovery: demonstration grade, and
-the privacy page says so. `data/app.db` holds real accounts and **must never be
-committed**; it is git-ignored.
+**Performance.** Mastery is cached per learner (dataset learners by `lru_cache`, registered
+students keyed by their event count, last event, module and profile), so one page render
+runs the model once rather than five times. GZip middleware, a background warm-up thread
+on startup, and a self-hosted Inter woff2 instead of a font CDN. Measured: page 59 ms,
+endpoints 2 to 34 ms, adviser path 297 ms (`tests/test_performance.py`).
 
----
+**Security posture.** scrypt password hashing, httpOnly session cookies, server-side
+access checks, an 8 character password minimum (`MIN_PASSWORD`), and sign-in throttling
+after 8 failures in 15 minutes per username, which returns 429. Every account action is
+written to `user_log`. No TLS and no account recovery: demonstration grade, and the
+privacy page says so. `data/app.db` holds real accounts and **must never be committed**;
+it is git-ignored.
 
 ## Headline results (all measured, all in `results/`)
 
@@ -229,14 +261,17 @@ metadata.
 
 ```
 elpr/          data · db · graph · mining · models · planner · explain · eval
-               course_finder.py (rules, 43 courses) · progress.py (streaks)
+               course_finder.py (rules, 59 courses, the ladder, weekly plans)
+               exams.py (JEE, NEET, CUET syllabus outlines and revision plans)
+               progress.py (streaks, calendar, milestones) · ics.py (calendar files)
                modules.py (illustrative course names) · profile.py (background fields)
 sql/           00–12, the entire ETL as reviewable SQL (DuckDB)
 scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
                07 labels · 08_admin (accounts) · 08 recommend · 09 table2 · run_all_kt
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
-web/index.html one page: home, auth, dashboard, finder, research, admin, legal
-tests/         84 tests
+web/index.html one page: home, auth, dashboard, progress, record, finder,
+               research, admin, legal
+tests/         168 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability
@@ -285,6 +320,7 @@ Rules the owner has set. They are not negotiable, and they apply to anything use
 - **Never commit `data/app.db`**, and never put a real password in a file or a command.
 - **Before launch:** custom domain, favicon (done), no "made with AI" badge, privacy
   policy (done) and terms page (done).
+- **No custom cursors, and no hiding the real one.**
 - Keep product features clearly separated from the paper: anything not evaluated in the
   paper is labelled on the site and never added to it.
 
@@ -294,8 +330,9 @@ Rules the owner has set. They are not negotiable, and they apply to anything use
 
 1. **Fairness analysis** for the paper: subgroup performance by gender, disability and
    deprivation band, plus the `no_student` ablation.
-2. **Deployment**: a public host, a custom domain, TLS, rate limiting on sign-in, and a
-   real password minimum before anyone outside the demo registers.
+2. **Deployment**: a public host, a custom domain and TLS. The password minimum and
+   sign-in throttling are done; account recovery is not.
 3. **User study** with real students, which the paper lists but has never run.
-4. Optional product work: notifications or reminders, adviser notes per learner, and
-   letting a student mark several weeks done at once.
+4. **Product work still open**: real self-check questions instead of the student
+   reporting their own pass, a printable PDF of a week plan, Hindi and regional
+   languages, and self-service account deletion.

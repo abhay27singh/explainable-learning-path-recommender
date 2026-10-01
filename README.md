@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 84 tests
+make test                                       # 168 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -161,22 +161,37 @@ reproduce the paper's tables, not to run the site. Training runs on a free Colab
 ## Web application
 
 FastAPI service and a single-page app with scrypt-hashed accounts and role-based access.
+One file, `web/index.html`, no build step.
 
-- **Students** sign up with their level: class 10, class 12, diploma, undergraduate or
-  postgraduate. Diploma and degree students also choose a course and follow it week by
-  week from Week 1. Each step is explained from the prerequisite graph, and the path
-  moves on when a week is marked studied or passed. Streaks, an activity calendar and a
-  weekly summary come from what the student records.
-- **Course Finder** is rule-based, not the model. It suggests courses for the level after
-  the student's own, lists all 43 courses to explore, and links free NPTEL and SWAYAM
-  material for each subject.
+- **The ladder.** Class 10 to class 12 or diploma, then undergraduate, then postgraduate.
+  Each rung shows what is studied there with free study links, and a button for what comes
+  next. Students pick their rung at sign-up and the site never offers a level they have
+  already passed.
+- **The weekly path.** Diploma and degree students follow their course from Week 1. Each
+  step says why it comes next, what to revise first and what it opens up, all from the
+  prerequisite graph and the model. A week moves on when it is marked studied or passed,
+  or when a quiz score of 40 or more is entered.
+- **Entrance exams.** JEE Main, NEET UG and CUET UG, each with its published syllabus
+  outline, the official NTA link and a week by week revision plan. An exam only appears for
+  a class 12 stream that can sit it. CUET's domain papers are built from the student's own
+  subjects. No dates, cut-offs or ranks are stated anywhere.
+- **Course Finder.** Rule-based, not the model, and labelled as such. 59 courses: 43
+  academic plus 16 NSQF skill courses, which NEP 2020 treats as an equal track. Eligibility
+  by class 12 subjects or bachelor's degree, interest ranking, a shortlist, and a week by
+  week plan for any course with a calendar file to download.
+- **Progress and record.** Streaks, a 12-week activity calendar, milestones, quiz marks
+  against the pass line, and a printable record of study. Every figure comes from what the
+  student recorded. It says plainly that it is not a certificate.
 - **Advisers** search all 25,101 dataset learners plus registered students, inspect any
-  record, mark weeks a learner already knows, and compare planning strategies.
+  record, keep notes per learner, mark weeks a learner already knows, and compare planning
+  strategies.
 - **Admin** manages accounts and is the only role that sees the research results page,
   which reads `results/*.json` directly so it cannot drift from the paper.
 
-*Demonstration-grade authentication: no TLS, no rate limiting, no account recovery. Do
-not reuse a real password.*
+Light and dark themes follow the system setting until the viewer picks one.
+
+*Demonstration-grade authentication: an 8 character password minimum and sign-in
+throttling, but no TLS and no account recovery. Do not reuse a real password.*
 
 ---
 
