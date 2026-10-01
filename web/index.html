@@ -329,6 +329,10 @@
     font-size:14px;opacity:0;transform:translateY(6px);transition:opacity .15s ease,transform .15s ease;pointer-events:none}
   #toast.show{opacity:1;transform:none}
   .chipset{display:flex;flex-direction:column;gap:6px}
+  /* Sixteen interests at full size pushed the only button that matters off the screen.
+     The list scrolls in its own box so the button stays where it can be reached. */
+  .chipset.scroll{max-height:300px;overflow-y:auto;padding-right:4px;scrollbar-width:thin}
+  .chipset.scroll label.pick{padding:6px 10px;font-size:13px;gap:8px}
   .chipset label.pick{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink);padding:8px 11px;
     border:1px solid var(--rule);border-radius:8px;cursor:pointer;margin:0;font-weight:500;transition:border-color .15s,background .15s}
   .chipset label.pick input{width:auto;margin:0}
@@ -1073,7 +1077,8 @@ function finderBackground(){
   }
   const levels = o.next_levels[s.stage] || [];
   $("#finder-interests").innerHTML = levels.length ? `<label>What you enjoy</label>
-    <div class="chipset">${o.interests.map(x =>
+    <p class="caption" style="margin:0 0 6px">Optional. It decides the order the courses come in, not which ones you may do.</p>
+    <div class="chipset scroll">${o.interests.map(x =>
       `<label class="pick"><input type="checkbox" name="interest" value="${esc(x.value)}"${
         s.interests.includes(x.value) ? " checked" : ""}>${esc(x.label)}</label>`).join("")}</div>
     <div style="margin-top:18px"><button class="primary" type="submit">Find courses</button></div>` : "";
@@ -1169,6 +1174,27 @@ function examsBlock(out, stage){
     ${out.exams.map(examCard).join("")}</div>`;
 }
 
+/* With no interests ticked the panel used to say "pick an interest" and stop, which
+   left a signed in student looking at an empty page. The courses at that rung exist
+   whether or not anyone has said what they enjoy, so show them in the order the
+   catalogue lists them and let the interests do what they actually do: reorder. */
+async function levelCourses(level){
+  if(!exploreCache){
+    try{
+      const r = await fetch("/api/course-finder/explore");
+      if(!r.ok) throw new Error(r.status);
+      exploreCache = await r.json();
+    }catch{ return ""; }
+  }
+  const lvl = exploreCache.levels.find(l => l.level === level);
+  if(!lvl) return "";
+  const all = lvl.categories.flatMap(c => c.courses);
+  return `<p class="muted small" style="margin:0 0 12px">All ${all.length} ${esc(lvl.label.toLowerCase())}
+      ${all.length === 1 ? "course" : "courses"}, in catalogue order. Tick what you enjoy on the left
+      and the closest ones come first.</p>
+    ${all.map(c => courseCard(c, saveBtn(c.key))).join("")}`;
+}
+
 async function showLadder(){
   const s = finderState, el = $("#finder-results");
   finderBackground();
@@ -1191,6 +1217,7 @@ async function showLadder(){
     s.level = (levels.find(l => l.value === "ug") || levels[0] || {}).value || null;
 
   let courses = "";
+  if(s.level && !s.interests.length) courses = await levelCourses(s.level);
   if(s.level && s.interests.length){
     const body = {level: s.level, stream: s.stream, degree: s.degree,
                   subjects: s.subjects, interests: s.interests};
@@ -1225,7 +1252,7 @@ async function showLadder(){
       ${levels.length > 1 ? `<div class="row" style="margin-bottom:10px">${levels.map(l =>
         `<button class="small lvl${l.value === s.level ? " on" : ""}" data-l="${esc(l.value)}">${esc(l.label)}</button>`).join("")}</div>` : ""}
       ${s.level === "skill" ? `<p class="caption" style="margin:0 0 10px">${esc(finderOptions.skill_note || "")}</p>` : ""}
-      ${courses || `<p class="muted small" style="margin:0">Pick at least one interest on the left to see courses.</p>`}
+      ${courses || `<p class="muted small" style="margin:0">No courses to show for this level yet.</p>`}
     </div>` : ""}
     <p class="caption" style="margin:14px 0 0">${esc(finderOptions.method)}. ${esc(finderOptions.note)}</p>
     ${signupCta() ? `<div style="margin-top:12px">${signupCta()}</div>` : ""}`;
