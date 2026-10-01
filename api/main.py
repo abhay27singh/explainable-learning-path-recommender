@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse
 
 from elpr.modules import module_display_map, subject_area
 from elpr.profile import clean as clean_profile, options as profile_options
-from elpr import course_finder, ics
+from elpr import course_finder, exams, ics
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -506,6 +506,72 @@ def course_finder_plan_ics(key: str, weeks: int = Query(24, ge=1, le=260),
     return Response(content=body, media_type="text/calendar; charset=utf-8",
                     headers={"Content-Disposition":
                              f'attachment; filename="{plan["key"]}-study-plan.ics"'})
+
+
+@app.get("/api/exams")
+def exam_list(stream: str | None = None) -> dict:
+    """Entrance exams a student can aim at, narrowed by class 12 stream.
+
+    Public, like the rest of the Course Finder: a visitor deciding on a stream needs to
+    see which exams each one opens."""
+    return exams.summary(stream)
+
+
+@app.get("/api/exams/{key}")
+def exam_detail(key: str, stream: str | None = None) -> dict:
+    """One exam's published syllabus outline, section by section."""
+    try:
+        exam = exams.EXAMS[key]
+        sections = exams.sections_for(key, stream)
+    except KeyError:
+        raise HTTPException(404, "no such exam")
+    return {
+        "key": exam.key, "name": exam.name, "full_name": exam.full_name,
+        "body": exam.body, "leads_to": exam.leads_to, "source": exam.source,
+        "note": exam.note, "streams": list(exam.streams), "stream": stream,
+        "sections": [{"name": name,
+                      "units": [{"name": u, "links": course_finder.study_links(u, exams.SCHOOLING)}
+                                for u in units]} for name, units in sections],
+    }
+
+
+@app.get("/api/exams/{key}/plan")
+def exam_plan(key: str, weeks: int = Query(24, ge=1, le=260),
+              start: str | None = None, stream: str | None = None) -> dict:
+    """One exam's syllabus spread over the weeks left before it."""
+    try:
+        return exams.exam_plan(key, weeks, start, stream)
+    except KeyError:
+        raise HTTPException(404, "no such exam")
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/exams/{key}/plan.ics")
+def exam_plan_ics(key: str, weeks: int = Query(24, ge=1, le=260),
+                  start: str | None = None, stream: str | None = None) -> Response:
+    """The same revision plan as a calendar file: one all-day event per week."""
+    from datetime import date as _date
+
+    try:
+        plan = exams.exam_plan(key, weeks, start or _date.today().isoformat(), stream)
+    except KeyError:
+        raise HTTPException(404, "no such exam")
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    events = [{
+        "uid": f"{plan['key']}-w{week['week']}@learning-path",
+        "start": _date.fromisoformat(week["starts"]),
+        "days": 7,
+        "summary": f"{plan['name']} revision · Week {week['week']}",
+        "description": "Revise this week: "
+                       + ", ".join(u["name"] for u in week["units"]),
+    } for week in plan["weeks"]]
+    body = ics.calendar(f"{plan['name']} revision plan", events)
+    return Response(content=body, media_type="text/calendar; charset=utf-8",
+                    headers={"Content-Disposition":
+                             f'attachment; filename="{plan["key"]}-revision-plan.ics"'})
 
 
 @app.get("/api/me/path.ics")

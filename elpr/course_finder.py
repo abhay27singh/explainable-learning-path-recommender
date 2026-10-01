@@ -974,6 +974,21 @@ def _monday_of(day: str) -> date:
     return chosen - timedelta(days=chosen.weekday())
 
 
+def spread(items: list, weeks: int) -> list[list]:
+    """Deal items out over the weeks in order, as evenly as the list allows.
+
+    26 items over 12 weeks gives weeks of 3 and weeks of 2, never 5 and then 1, and no
+    week is ever empty. Order is kept, because a syllabus read out of order is a
+    different syllabus."""
+    base, extra = divmod(len(items), weeks)
+    out, at = [], 0
+    for index in range(weeks):
+        take = base + (1 if index < extra else 0)
+        out.append(items[at:at + take])
+        at += take
+    return out
+
+
 def weekly_plan(key: str, weeks: int = 24, start: str | None = None) -> dict:
     """Spread a course's subjects over however many weeks the student wants.
 
@@ -995,12 +1010,8 @@ def weekly_plan(key: str, weeks: int = 24, start: str | None = None) -> dict:
     weeks = min(int(weeks), len(subjects))
 
     begin = _monday_of(start) if start else None
-    base, extra = divmod(len(subjects), weeks)
-    out, at = [], 0
-    for index in range(weeks):
-        take = base + (1 if index < extra else 0)
-        block = subjects[at:at + take]
-        at += take
+    out = []
+    for index, block in enumerate(spread(subjects, weeks)):
         week = {
             "week": index + 1,
             "years": sorted({year for year, _ in block}),

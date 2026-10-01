@@ -909,14 +909,20 @@ async function loadPlan(card, weeks, start){
   body.querySelector(".plan-start").onchange = e =>
     loadPlan(card, body.querySelector(".plan-weeks").value, e.target.value);
 }
-/* A class 11 stream, with a look at the degrees it opens up two years later. */
-const streamCard = st => `<div class="course" data-stream="${esc(st.value)}">
+/* A class 11 stream, with a look at the degrees it opens up two years later and the
+   entrance exams it makes you eligible for. Which exams a stream opens is most of what
+   the choice is about, so it belongs on the card rather than three screens further on. */
+const streamCard = (st, exams = null) => {
+  const open = exams ? exams.filter(e => e.streams.includes(st.value)) : [];
+  return `<div class="course" data-stream="${esc(st.value)}">
   <div class="course-top"><h3>${esc(st.label)}</h3></div>
   <div class="chips">${st.core.map(chip).join("")}</div>
   <p class="need">Leads to ${esc(st.leads_to)}.</p>
+  ${open.length ? `<p class="need">Entrance exams it opens: ${open.map(e => esc(e.name)).join(", ")}.</p>` : ""}
   <details class="working ahead"><summary>Degrees this stream opens</summary>
     <div class="ahead-body">Loading</div></details>
 </div>`;
+};
 const aheadCache = {};
 async function loadAhead(card){
   const stream = card.dataset.stream, body = card.querySelector(".ahead-body");
@@ -1074,14 +1080,109 @@ function finderBackground(){
 }
 
 /* Right-hand panel: the subjects of this rung, then the courses of the next one. */
+/* ---------------- entrance exams ----------------
+   JEE, NEET and CUET sit beside the ladder, not on it: an exam is the gate in front of a
+   course, not a qualification of its own. Each card carries the published syllabus
+   outline, the official link, and the same week by week planner the courses use. */
+const examCard = e => `<div class="course exam" data-key="${esc(e.key)}">
+  <div class="course-top"><h3>${esc(e.name)}</h3><span class="chip">${esc(e.body)}</span></div>
+  <p class="need">${esc(e.full_name)}</p>
+  <div class="chips">${e.sections.map(x => chip(`${x.name}: ${x.n_units}`)).join("")}</div>
+  <p class="need">Leads to ${esc(e.leads_to)}.</p>
+  ${e.note ? `<p class="caption">${esc(e.note)}</p>` : ""}
+  <details class="working syllabus"><summary>What the syllabus covers, with free study links</summary>
+    <div class="syllabus-body">Loading</div></details>
+  <details class="working exam-plan"><summary>Plan the revision week by week</summary>
+    <div class="exam-plan-body">Loading</div></details>
+  <div class="actions"><a class="btn small" href="${esc(e.source)}" target="_blank" rel="noopener">Official syllabus and dates</a></div>
+</div>`;
+
+const examCache = {}, examPlanCache = {};
+async function loadSyllabus(card, stream){
+  const key = card.dataset.key, body = card.querySelector(".syllabus-body");
+  const id = `${key}:${stream || ""}`;
+  body.innerHTML = `<p class="muted small">Loading the syllabus</p>`;
+  try{
+    examCache[id] = examCache[id] || await api(`/api/exams/${encodeURIComponent(key)}`
+      + (stream ? `?stream=${encodeURIComponent(stream)}` : ""));
+  }catch(err){ body.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
+  const x = examCache[id];
+  body.innerHTML = x.sections.map(sec => `<p class="prose" style="margin:10px 0 2px"><b>${esc(sec.name)}</b></p>
+    <ul class="plain" style="margin-top:2px">${sec.units.map(u =>
+      `<li>${esc(u.name)}${linkRow(u.links)}</li>`).join("")}</ul>`).join("")
+    + `<p class="caption" style="margin:10px 0 0">The published unit outline, not the syllabus
+       itself. Units are added and dropped between years, so check the official syllabus for
+       the year you are sitting.</p>`;
+}
+
+async function loadExamPlan(card, weeks, start, stream){
+  const key = card.dataset.key, body = card.querySelector(".exam-plan-body");
+  const id = `${key}:${stream || ""}:${weeks || ""}:${start || ""}`;
+  body.innerHTML = `<p class="muted small">Working it out</p>`;
+  const qs = (weeks ? `&weeks=${weeks}` : "") + `&start=${encodeURIComponent(start || todayISO())}`
+    + (stream ? `&stream=${encodeURIComponent(stream)}` : "");
+  try{
+    examPlanCache[id] = examPlanCache[id] || await api(`/api/exams/${encodeURIComponent(key)}/plan?x=1${qs}`);
+  }catch(err){ body.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
+  const p = examPlanCache[id];
+  const dated = w => w.starts
+    ? `<span class="caption"> ${new Date(w.starts + "T00:00:00").toLocaleDateString(undefined, {day:"numeric", month:"short"})}
+       to ${new Date(w.ends + "T00:00:00").toLocaleDateString(undefined, {day:"numeric", month:"short"})}</span>` : "";
+  body.innerHTML = `
+    <p class="muted small">${p.n_units} units. Finish in
+      <select class="plan-weeks">${p.options.map(w =>
+        `<option value="${w}"${w === p.n_weeks ? " selected" : ""}>${w} weeks</option>`).join("")}</select>
+      starting <input type="date" class="plan-start" value="${esc(p.starts || todayISO())}" style="width:auto;display:inline-block" />
+      and that is about ${p.per_week} ${p.per_week === 1 ? "unit" : "units"} a week.</p>
+    <ol class="plain plan-weeks-list">${p.weeks.map(w => `<li><b>Week ${w.week}</b>${dated(w)}
+      <ul class="plain">${w.units.map(u =>
+        `<li>${esc(u.name)} <span class="caption">${esc(u.section)}</span>${linkRow(u.links)}</li>`).join("")}</ul></li>`).join("")}</ol>
+    <div class="row" style="margin-top:10px">
+      <a class="btn small" href="/api/exams/${encodeURIComponent(p.key)}/plan.ics?weeks=${p.n_weeks}&start=${encodeURIComponent(p.starts || todayISO())}${stream ? `&stream=${encodeURIComponent(stream)}` : ""}">Add to my calendar</a>
+    </div>
+    <p class="caption" style="margin:8px 0 0">${esc(p.note)}</p>`;
+  body.querySelector(".plan-weeks").onchange = e =>
+    loadExamPlan(card, e.target.value, body.querySelector(".plan-start").value, stream);
+  body.querySelector(".plan-start").onchange = e =>
+    loadExamPlan(card, body.querySelector(".plan-weeks").value, e.target.value, stream);
+}
+
+function bindExams(root, stream){
+  root.querySelectorAll("details.syllabus").forEach(d => d.ontoggle = () => {
+    if(d.open && d.querySelector(".syllabus-body").textContent === "Loading")
+      loadSyllabus(d.closest(".exam"), stream);
+  });
+  root.querySelectorAll("details.exam-plan").forEach(d => d.ontoggle = () => {
+    if(d.open && d.querySelector(".exam-plan-body").textContent === "Loading")
+      loadExamPlan(d.closest(".exam"), null, null, stream);
+  });
+}
+
+function examsBlock(out, stage){
+  if(!out || !out.exams.length) return "";
+  const ahead = stage !== "class_12";
+  return `<div class="block"><h3>${ahead ? "Entrance exams after class 12" : "Entrance exams you can sit"}</h3>
+    <p class="muted small">${ahead
+      ? "Two years away, but the stream chosen in class 11 decides which of these are open."
+      : "Each one is written on the class 11 and 12 syllabus you are already studying."}
+      ${esc(out.note)}</p>
+    ${out.exams.map(examCard).join("")}</div>`;
+}
+
 async function showLadder(){
   const s = finderState, el = $("#finder-results");
   finderBackground();
   const seq = ++finderSeq;
-  let plan;
+  const school = s.stage === "class_10" || s.stage === "class_12";
+  const examStream = s.stage === "class_12" ? s.stream : null;
+  let plan, examList = null;
   try{
-    plan = await api(`/api/course-finder/subjects?stage=${encodeURIComponent(s.stage)}`
-      + (s.stage === "class_12" ? `&stream=${encodeURIComponent(s.stream)}` : ""));
+    [plan, examList] = await Promise.all([
+      api(`/api/course-finder/subjects?stage=${encodeURIComponent(s.stage)}`
+        + (s.stage === "class_12" ? `&stream=${encodeURIComponent(s.stream)}` : "")),
+      school ? api("/api/exams" + (examStream ? `?stream=${encodeURIComponent(examStream)}` : ""))
+             : Promise.resolve(null),
+    ]);
   }catch(e){ el.innerHTML = `<div class="err">${esc(e.message || e)}</div>`; return; }
   if(seq !== finderSeq) return;
 
@@ -1115,8 +1216,9 @@ async function showLadder(){
     </div>` : ""}
     ${plan.next.streams.length ? `<div class="block"><h3>Choose a stream for class 11 and 12</h3>
       <p class="muted small">Your stream decides which degrees you can apply for later.</p>
-      ${plan.next.streams.map(st => streamCard(st)).join("")}
+      ${plan.next.streams.map(st => streamCard(st, examList && examList.exams)).join("")}
     </div>` : ""}
+    ${examsBlock(examList, s.stage)}
     ${levels.length ? `<div class="block"><h3>Courses you can do next</h3>
       <p class="muted small">The academic path and the skill path both count. NEP 2020 treats them
         as equal, and a skill course can be taken alongside school or a degree.</p>
@@ -1132,6 +1234,7 @@ async function showLadder(){
   bindSave(el);
   bindPlans(el);
   bindAhead(el);
+  bindExams(el, examStream);
 }
 
 function finderCourses(out){
@@ -1651,7 +1754,7 @@ function studyNowBlock(plan){
     <p class="caption" style="margin:10px 0 0">${esc(now.note)}</p></div>`;
 }
 
-function nextStepsBlock(plan){
+function nextStepsBlock(plan, examList = null){
   const n = plan.next, levels = n.levels.map(l => l.label).join(" or ");
   const line = n.leads_to ? `Your stream leads to ${n.leads_to}.`
     : `After ${n.label} you can go on to ${levels || "a course of your choice"}.`;
@@ -1659,7 +1762,7 @@ function nextStepsBlock(plan){
     <p class="muted small">${esc(line)}</p>
     <div class="row"><button class="small" id="see-next">See the courses I can choose</button></div>
     <div id="next-list" hidden style="margin-top:14px">
-      ${n.streams.map(st => streamCard(st)).join("")}
+      ${n.streams.map(st => streamCard(st, examList && examList.exams)).join("")}
       ${n.streams.length ? `<p class="caption" style="margin:4px 0 10px">Pick a stream in class 11, or take a diploma straight after class 10.</p>` : ""}
       <button class="small" data-go="finder">Open the Course Finder</button>
     </div></div>`;
@@ -1685,8 +1788,13 @@ function schoolRail(plan, where){
 async function renderSchoolStudent(root){
   root.innerHTML = `<div class="page">${skeleton()}</div>`;
   await loadSaved();
-  let plan;
-  try{ plan = await api("/api/me/study-plan"); }
+  let plan, examList = null;
+  try{
+    [plan, examList] = await Promise.all([
+      api("/api/me/study-plan"),
+      api("/api/exams" + (me.stream ? `?stream=${encodeURIComponent(me.stream)}` : "")),
+    ]);
+  }
   catch(e){ root.innerHTML = `<div class="page"><div class="err">${esc(e.message || e)}</div></div>`; return; }
   const sub = [stageLabel(me.stage), me.stream ? (finderOptions.streams.find(s => s.value === me.stream) || {}).label : ""]
     .filter(Boolean).join(" · ");
@@ -1696,7 +1804,8 @@ async function renderSchoolStudent(root){
       <div class="wsmain">
         ${pageHead(`Hi ${me.display_name}`, sub)}
         ${studyNowBlock(plan)}
-        ${nextStepsBlock(plan)}
+        ${nextStepsBlock(plan, examList)}
+        ${examsBlock(examList, me.stage)}
         ${shortlistBlock(savedCourses)}
         ${studiesForm()}
       </div>
