@@ -195,8 +195,8 @@ One file, `web/index.html`, no build step.
 - **Admin** manages accounts and is the only role that sees the research results page,
   which reads `results/*.json` directly so it cannot drift from the paper.
 
-The look follows the "Academic Navigator" system: navy for actions, teal for progress,
-amber for warnings, Plus Jakarta Sans headings, light glass panels (solid for anyone whose
+The look follows the "Academic Navigator" layout in its icy-blue colours: sky blue on an
+ice canvas, a glacial navy dark theme, amber for warnings, Plus Jakarta Sans headings, light glass panels (solid for anyone whose
 system asks for reduced transparency), and a navy dark theme. Pages use the full width
 of the window, and on a phone the main places sit in a tab bar at the bottom.
 

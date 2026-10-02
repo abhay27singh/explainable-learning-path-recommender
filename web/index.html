@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Learning Path Recommender</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231E3A8A'/%3E%3Cpath d='M7 24 L16 16 L25 8' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='7' cy='24' r='3.2' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='white'/%3E%3Ccircle cx='25' cy='8' r='3.2' fill='white'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230369A1'/%3E%3Cpath d='M7 24 L16 16 L25 8' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='7' cy='24' r='3.2' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='white'/%3E%3Ccircle cx='25' cy='8' r='3.2' fill='white'/%3E%3C/svg%3E" />
 <link rel="preload" href="/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
 
 <style>
@@ -18,75 +18,75 @@
   }
   :root{
     color-scheme:light;
-    --ground:#F8FAFC; --surface:#FFFFFF; --surface-alt:#F1F5F9; --seg-on:#FFFFFF;
-    --ink:#0B1C30; --ink-soft:#475569; --ink-faint:#64748B;
-    --rule:#E2E8F0; --accent:#1E3A8A; --accent-strong:#2563EB; --accent-soft:#DBEAFE;
-    --on-accent:#FFFFFF; --secondary:#0D9488; --secondary-soft:#CCFBF1;
-    --warn:#B45309; --warn-soft:#FEF3C7; --good:#0F766E; --good-soft:#CCFBF1;
-    --lvl-1:#93C5FD; --lvl-2:#3B82F6; --lvl-3:#1E3A8A; --viz-bar:#2563EB;
-    --cal-0:#EEF2F7; --cal-1:#99F6E4; --cal-2:#2DD4BF; --cal-3:#0F766E;
+    --ground:#F3F9FE; --surface:#FFFFFF; --surface-alt:#E6F3FC; --seg-on:#FFFFFF;
+    --ink:#0F243D; --ink-soft:#536B85; --ink-faint:#56708A;
+    --rule:#D3E6F4; --accent:#0369A1; --accent-strong:#075985; --accent-soft:#E0F2FE;
+    --on-accent:#FFFFFF; --secondary:#0EA5E9; --secondary-soft:#E0F2FE;
+    --warn:#B45309; --warn-soft:#FEF3C7; --good:#047857; --good-soft:#D1FAE5;
+    --lvl-1:#BAE6FD; --lvl-2:#38BDF8; --lvl-3:#0369A1; --viz-bar:#0284C7;
+    --cal-0:#E6F3FC; --cal-1:#BAE6FD; --cal-2:#38BDF8; --cal-3:#0369A1;
     --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
     --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     --display:"Plus Jakarta Sans",Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
     --radius:12px; --shadow:0 1px 3px rgba(15,23,42,.05);
     --header:64px;
-    --footer:#0B1C30; --footer-ink:#CBD5E1; --veil:rgba(255,255,255,.96);
+    --footer:#091729; --footer-ink:#C7E3F8; --veil:rgba(255,255,255,.96);
     /* Liquid glass. A pane is a translucent fill, a blur of what is behind it, a lit top
        edge and a soft shadow. --ground-art gives the blur something to refract: glass
        over flat grey reads as nothing. Teal and green only, kept faint. */
     --glass:rgba(255,255,255,.80); --glass-strong:rgba(255,255,255,.88); --glass-soft:rgba(255,255,255,.62);
-    --glass-input:rgba(255,255,255,.94); --glass-edge:rgba(226,232,240,.95);
+    --glass-input:rgba(255,255,255,.94); --glass-edge:rgba(199,227,248,.95);
     --glass-hi:inset 0 1px 0 rgba(255,255,255,.9);
-    --glass-shadow:0 1px 3px rgba(15,23,42,.05),0 8px 24px rgba(15,23,42,.05);
-    --blur:blur(18px) saturate(160%); --radius-lg:16px; --control-edge:#CBD5E1;
-    --accent-glow:rgba(30,58,138,.22);
-    --ground-art:radial-gradient(1100px 700px at 4% -10%,rgba(37,99,235,.10),transparent 62%),
-      radial-gradient(900px 640px at 104% 6%,rgba(13,148,136,.10),transparent 60%),
-      radial-gradient(1200px 820px at 46% 114%,rgba(30,58,138,.07),transparent 62%);
+    --glass-shadow:0 1px 3px rgba(9,23,41,.05),0 8px 24px rgba(14,165,233,.07);
+    --blur:blur(18px) saturate(160%); --radius-lg:16px; --control-edge:#BCD7EC;
+    --accent-glow:rgba(3,105,161,.24);
+    --ground-art:radial-gradient(1100px 700px at 4% -10%,rgba(56,189,248,.18),transparent 62%),
+      radial-gradient(900px 640px at 104% 6%,rgba(14,165,233,.12),transparent 60%),
+      radial-gradient(1200px 820px at 46% 114%,rgba(186,230,253,.40),transparent 62%);
   }
   /* Dark theme. The level ramp keeps its meaning by brightness rather than depth:
      on a dark ground the darkest blue would read as the weakest, which is backwards. */
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme:dark;
-      --ground:#0A1222; --surface:#111B2E; --surface-alt:#1A2741; --seg-on:#24344F;
-      --ink:#E6EDF7; --ink-soft:#B4C2D6; --ink-faint:#8D9DB5;
-      --rule:#26344D; --accent:#93B4FF; --accent-strong:#B6C8FF; --accent-soft:#1B2C55;
-      --on-accent:#0B1C30; --secondary:#2DD4BF; --secondary-soft:#0E3B37;
-      --warn:#FBBF24; --warn-soft:#3A2A0A; --good:#5EEAD4; --good-soft:#0E3B37;
-      --lvl-1:#1E3A8A; --lvl-2:#3B82F6; --lvl-3:#93C5FD; --viz-bar:#60A5FA;
-      --cal-0:#16213A; --cal-1:#115E59; --cal-2:#14B8A6; --cal-3:#5EEAD4;
+      --ground:#0A1526; --surface:#0E1E38; --surface-alt:#162A4A; --seg-on:#1D365D;
+      --ink:#F0F6FC; --ink-soft:#C7E3F8; --ink-faint:#93B8D6;
+      --rule:#1E3A5F; --accent:#38BDF8; --accent-strong:#7DD3FC; --accent-soft:#0C3155;
+      --on-accent:#082F49; --secondary:#0EA5E9; --secondary-soft:#0C3155;
+      --warn:#FBBF24; --warn-soft:#3A2A0A; --good:#34D399; --good-soft:#0B3A2E;
+      --lvl-1:#0C4A6E; --lvl-2:#0284C7; --lvl-3:#7DD3FC; --viz-bar:#38BDF8;
+      --cal-0:#13243F; --cal-1:#0C4A6E; --cal-2:#0284C7; --cal-3:#7DD3FC;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
-      --footer:#060B16; --footer-ink:#B4C2D6; --veil:rgba(17,27,46,.96);
-      --glass:rgba(17,27,46,.70); --glass-strong:rgba(12,20,36,.84); --glass-soft:rgba(255,255,255,.04);
-      --glass-input:rgba(8,14,26,.55); --glass-edge:rgba(148,180,255,.13);
+      --footer:#060E1B; --footer-ink:#C7E3F8; --veil:rgba(14,30,56,.96);
+      --glass:rgba(14,30,56,.72); --glass-strong:rgba(10,21,38,.85); --glass-soft:rgba(255,255,255,.04);
+      --glass-input:rgba(6,14,28,.55); --glass-edge:rgba(56,189,248,.16);
       --glass-hi:inset 0 1px 0 rgba(255,255,255,.06);
       --glass-shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.32);
-      --accent-glow:rgba(147,180,255,.18); --control-edge:rgba(148,180,255,.24);
-      --ground-art:radial-gradient(1100px 700px at 4% -10%,rgba(30,58,138,.42),transparent 62%),
-          radial-gradient(900px 640px at 104% 6%,rgba(13,148,136,.20),transparent 60%),
-          radial-gradient(1200px 820px at 46% 114%,rgba(37,99,235,.10),transparent 62%);
+      --accent-glow:rgba(56,189,248,.22); --control-edge:rgba(125,211,252,.24);
+      --ground-art:radial-gradient(1100px 700px at 4% -10%,rgba(14,165,233,.22),transparent 62%),
+          radial-gradient(900px 640px at 104% 6%,rgba(56,189,248,.10),transparent 60%),
+          radial-gradient(1200px 820px at 46% 114%,rgba(2,132,199,.14),transparent 62%);
     }
   }
   :root[data-theme="dark"]{
     color-scheme:dark;
-    --ground:#0A1222; --surface:#111B2E; --surface-alt:#1A2741; --seg-on:#24344F;
-    --ink:#E6EDF7; --ink-soft:#B4C2D6; --ink-faint:#8D9DB5;
-    --rule:#26344D; --accent:#93B4FF; --accent-strong:#B6C8FF; --accent-soft:#1B2C55;
-    --on-accent:#0B1C30; --secondary:#2DD4BF; --secondary-soft:#0E3B37;
-    --warn:#FBBF24; --warn-soft:#3A2A0A; --good:#5EEAD4; --good-soft:#0E3B37;
-    --lvl-1:#1E3A8A; --lvl-2:#3B82F6; --lvl-3:#93C5FD; --viz-bar:#60A5FA;
-    --cal-0:#16213A; --cal-1:#115E59; --cal-2:#14B8A6; --cal-3:#5EEAD4;
+    --ground:#0A1526; --surface:#0E1E38; --surface-alt:#162A4A; --seg-on:#1D365D;
+    --ink:#F0F6FC; --ink-soft:#C7E3F8; --ink-faint:#93B8D6;
+    --rule:#1E3A5F; --accent:#38BDF8; --accent-strong:#7DD3FC; --accent-soft:#0C3155;
+    --on-accent:#082F49; --secondary:#0EA5E9; --secondary-soft:#0C3155;
+    --warn:#FBBF24; --warn-soft:#3A2A0A; --good:#34D399; --good-soft:#0B3A2E;
+    --lvl-1:#0C4A6E; --lvl-2:#0284C7; --lvl-3:#7DD3FC; --viz-bar:#38BDF8;
+    --cal-0:#13243F; --cal-1:#0C4A6E; --cal-2:#0284C7; --cal-3:#7DD3FC;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
-    --footer:#060B16; --footer-ink:#B4C2D6; --veil:rgba(17,27,46,.96);
-    --glass:rgba(17,27,46,.70); --glass-strong:rgba(12,20,36,.84); --glass-soft:rgba(255,255,255,.04);
-    --glass-input:rgba(8,14,26,.55); --glass-edge:rgba(148,180,255,.13);
+    --footer:#060E1B; --footer-ink:#C7E3F8; --veil:rgba(14,30,56,.96);
+    --glass:rgba(14,30,56,.72); --glass-strong:rgba(10,21,38,.85); --glass-soft:rgba(255,255,255,.04);
+    --glass-input:rgba(6,14,28,.55); --glass-edge:rgba(56,189,248,.16);
     --glass-hi:inset 0 1px 0 rgba(255,255,255,.06);
     --glass-shadow:0 1px 2px rgba(0,0,0,.35),0 12px 34px rgba(0,0,0,.32);
-    --accent-glow:rgba(147,180,255,.18); --control-edge:rgba(148,180,255,.24);
-    --ground-art:radial-gradient(1100px 700px at 4% -10%,rgba(30,58,138,.42),transparent 62%),
-        radial-gradient(900px 640px at 104% 6%,rgba(13,148,136,.20),transparent 60%),
-        radial-gradient(1200px 820px at 46% 114%,rgba(37,99,235,.10),transparent 62%);
+    --accent-glow:rgba(56,189,248,.22); --control-edge:rgba(125,211,252,.24);
+    --ground-art:radial-gradient(1100px 700px at 4% -10%,rgba(14,165,233,.22),transparent 62%),
+        radial-gradient(900px 640px at 104% 6%,rgba(56,189,248,.10),transparent 60%),
+        radial-gradient(1200px 820px at 46% 114%,rgba(2,132,199,.14),transparent 62%);
   }
   .themeseg{display:inline-flex;align-items:center;gap:2px;background:var(--surface-alt);
     border-radius:999px;padding:3px;border:1px solid var(--rule)}
@@ -563,7 +563,7 @@
   .page-head,.dash-head{margin:0 0 18px}
   .page-head h1,.dash-head h1{font-size:30px;line-height:1.2;margin:2px 0 4px;font-weight:700;color:var(--ink)}
   .page-head p,.dash-head p{font-size:15px;color:var(--ink-soft);margin:0}
-  .page-head .eyebrow,.dash-head .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--secondary)}
+  .page-head .eyebrow,.dash-head .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
   .block > h3,.viz > h3,.rail h3,.railside h3{font-family:var(--display);font-weight:600}
   button,.btn,input,select,textarea{border-radius:8px}
   nav.links{background:var(--glass-soft);border:1px solid var(--control-edge);border-radius:12px;padding:4px;gap:2px}
@@ -580,7 +580,7 @@
   .tile .bar > span{background:var(--secondary)}
   .railcourse .bar > span{background:var(--secondary)}
   .next{border-left-color:var(--secondary)}
-  .next .eyebrow{color:var(--secondary)}
+  .next .eyebrow{color:var(--accent)}
   @media(max-width:860px){.page-head h1,.dash-head h1{font-size:24px}}
   /* ---------------- prerequisite graph ---------------- */
   .view-switch{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap}
@@ -613,7 +613,7 @@
   .gnode.sel{box-shadow:0 0 0 3px var(--accent-soft);border-color:var(--accent)}
   .graph-canvas.has-sel .gnode:not(.sel):not(.rel){opacity:.5}
   .graph-insp{position:sticky;top:78px;padding:16px;border-radius:14px;background:var(--glass-soft);border:1px solid var(--glass-edge)}
-  .graph-insp .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--secondary)}
+  .graph-insp .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
   .graph-insp h3{margin:4px 0 8px;font-size:18px}
   .graph-insp h4{margin:16px 0 6px;font-size:13px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
   .graph-insp .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0}
@@ -626,7 +626,7 @@
   /* ---------------- Finder: the closest match ---------------- */
   .top-match{border:2px solid var(--accent);border-radius:14px;padding:16px 18px;margin:0 0 14px;background:var(--glass-input)}
   .top-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-  .top-match .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--secondary)}
+  .top-match .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
   .top-match h3{margin:2px 0 6px;font-size:19px}
   /* ---------------- Explore catalogue ---------------- */
   .facets h4{margin:16px 0 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
@@ -743,7 +743,7 @@
   .fprog .segs i.on{background:var(--secondary)}
   #finder-match .top-match{margin:0 0 12px}
   .match-empty,.match-next{padding:16px 18px;border-radius:14px;background:var(--glass-input);border:1px solid var(--glass-edge)}
-  .match-empty .eyebrow,.match-next .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--secondary)}
+  .match-empty .eyebrow,.match-next .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
   .match-empty h3{margin:4px 0 6px;font-size:17px}
   .mn-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--rule);font-size:13px;font-weight:600}
   .mn-row:first-of-type{border-top:0}
@@ -770,7 +770,7 @@
 <header class="site">
   <div class="in">
     <a class="brand" data-go="home" href="#/home">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1E3A8A"/><path d="M7 24 L16 16 L25 8" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="7" cy="24" r="3.2" fill="#fff"/><circle cx="16" cy="16" r="3.2" fill="#fff"/><circle cx="25" cy="8" r="3.2" fill="#fff"/></svg>
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0369A1"/><path d="M7 24 L16 16 L25 8" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="7" cy="24" r="3.2" fill="#fff"/><circle cx="16" cy="16" r="3.2" fill="#fff"/><circle cx="25" cy="8" r="3.2" fill="#fff"/></svg>
       Learning Path Recommender
     </a>
     <button type="button" class="ctx auth-only" id="ctx" data-details="1" title="Change this under My details" hidden>

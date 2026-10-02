@@ -81,8 +81,11 @@ edges as the header. On the dashboard the right rail spans two rows, so the path
 the next step directly instead of after a blank strip.
 
 **Academic Navigator.** The visual system adopted from a Stitch export (October 2026),
-taking only what our data can back. Navy `#1E3A8A` for actions, teal `#0D9488` for
-progress, amber for warnings, on slate; Plus Jakarta Sans for headings when available,
+taking only what our data can back. Colours are the export's "icy blue" variant: an ice
+canvas `#F3F9FE`, ink `#0F243D`, sky `#0369A1` for actions and links and bright sky
+`#0EA5E9` only for bars, lines and glow (it is 2.8:1 against white, too faint for text);
+the dark theme is the export's glacial navy `#0A1526` with cyan `#38BDF8` and dark text on
+it. Every text pairing measures at least 4.5:1 in both themes; Plus Jakarta Sans for headings when available,
 Inter otherwise; every page header is a small teal label, a large title, one line and
 actions on the right; the header nav is a segmented control with square corners. Text on
 a filled control uses `--on-accent`, which is dark in the dark theme. Not taken from the
