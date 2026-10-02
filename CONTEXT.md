@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 196 tests. `make api` serves http://localhost:8420.
+`make test` runs 199 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -108,13 +108,17 @@ theme switch, and a profile chip with the user's initial. No photos anywhere.
 Open the next week). Over the path, a control band holds the view switch, the course,
 weeks done and whether the next week is ready.
 
-**Course Finder steps.** The page is a planning form: questions A (where you are), B
-(what you enjoy, as icon cards) and C (your pace, as three cards), all visible, with an
-action bar under them and "N of 3 answered" in the page header. Results stay live, and
-the pace sets the default length of every week plan. The closest match is pinned in a
-right-hand column with the next three below it; under 1180px that column folds away and
-the match appears at the top of the list instead. The background fields redraw only when
-the rung or stream changes, so answering does not lose keyboard focus. The best-ranked course leads as the closest match, described by the interests it
+**Course Finder steps.** The page is a planning form with two questions, both visible: A,
+where you are (level, then stream and subjects for class 12, or degree and then branch or
+subject for a graduate, from `DEGREE_GROUPS`) and what you want next (the next levels,
+including the skill path); B, what you enjoy, as icon cards. "N of 2 answered" sits in
+the page header. Results stay live. The right-hand column is pinned and lists every
+match, the closest first; a row opens that course's page in Explore. When nothing at the
+chosen level matches, the column shows what matches at the other levels, usually the
+skill path, with one click to switch. Under 1180px the column folds away and the match
+appears at the top of the list. The background fields redraw only when the rung, stream
+or degree changes, so answering does not lose keyboard focus. There is no pace question:
+every week plan carries its own length choice. The best-ranked course leads as the closest match, described by the interests it
 covers and Strong or Partial, never a percentage. A trip to Explore and back keeps the
 answers; a new rung or signing out clears them.
 
@@ -153,7 +157,7 @@ display in `humanize()` in `web/index.html`, applied once per API response. Serv
 and tests all still use the dataset's numbering.
 
 **Course Finder.** Rule-based, not the model, and labelled as such everywhere it appears.
-59 courses in `elpr/course_finder.py`: 43 academic and 16 NSQF skill courses, which NEP
+64 courses in `elpr/course_finder.py`: 48 academic and 16 NSQF skill courses, which NEP
 2020 treats as an equal track alongside the academic one. Eligibility by class 12 subjects
 or bachelor's degree, interest ranking, an explore-everything view, a saved shortlist, and
 a week by week plan (`weekly_plan`) with dates and an iCalendar download. Study links are
@@ -336,7 +340,7 @@ metadata.
 
 ```
 elpr/          data · db · graph · mining · models · planner · explain · eval
-               course_finder.py (rules, 59 courses, the ladder, weekly plans)
+               course_finder.py (rules, 64 courses, the ladder, weekly plans)
                exams.py (JEE, NEET, CUET syllabus outlines and revision plans)
                selfcheck.py (204 questions on JEE and NEET units, server marking)
                progress.py (streaks, calendar, milestones) · ics.py (calendar files)
@@ -347,7 +351,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         196 tests
+tests/         199 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

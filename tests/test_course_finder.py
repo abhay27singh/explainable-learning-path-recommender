@@ -178,3 +178,32 @@ def test_no_user_facing_text_uses_em_dashes():
             texts += [label, *subjects]
     offenders = [t for t in texts if "—" in t]
     assert not offenders, offenders
+
+
+def test_every_degree_sits_in_exactly_one_group():
+    """The Finder asks for the degree and then the branch or subject. A degree missing
+    from the groups could never be picked; one in two groups would be asked twice."""
+    grouped = [k for _, _, options in cf.DEGREE_GROUPS for k, _ in options]
+    assert sorted(grouped) == sorted(cf.DEGREES) and len(grouped) == len(set(grouped))
+    o = cf.options()
+    assert [g["label"] for g in o["degree_groups"]][0] == "B.Tech / B.E."
+
+
+def test_an_engineer_in_another_branch_finds_their_own_m_tech():
+    """Regression: every non-computing engineer was "another branch", and the catalogue
+    had no M.Tech outside Computer Science, so a mechanical or electronics graduate who
+    liked their own subject was told nothing matched."""
+    for degree, interests, expect in (
+            ("btech_mech", ["machines"], "mtech_mech"),
+            ("btech_ece", ["electronics"], "mtech_ece"),
+            ("btech_ee", ["electronics", "machines"], "mtech_ee"),
+            ("btech_civil", ["design", "machines"], "mtech_civil"),
+            ("btech_chem", ["machines", "maths"], "mtech_chem")):
+        out = cf.recommend("pg", interests, degree=degree)
+        assert keys(out["courses"])[0] == expect, (degree, keys(out["courses"]))
+
+
+def test_courses_open_to_any_engineer_stay_open_to_every_branch():
+    for key in ("mca", "msc_ds"):
+        assert cf.OTHER_ENGINEERING <= cf._BY_KEY[key].degrees, key
+    assert not cf._BY_KEY["mtech_mech"].eligible([], "btech_civil"), "a branch is not interchangeable"

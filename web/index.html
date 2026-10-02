@@ -722,17 +722,6 @@
   .optcard:has(input:checked) .oc-ico{background:var(--accent);color:var(--on-accent)}
   .optcard:has(input:checked) .oc-tick{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px var(--accent-soft)}
   .optcard:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
-  .pace-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-  @media(max-width:620px){.pace-row{grid-template-columns:minmax(0,1fr)}}
-  .pace-card{position:relative;display:flex;flex-direction:column;gap:2px;margin:0;padding:12px 14px;border:1px solid var(--control-edge);
-    border-radius:12px;background:var(--glass-input);cursor:pointer;color:var(--ink);font-weight:400}
-  .pace-card input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
-  .pace-card b{font-size:13px}
-  .pace-card .pc-num{font-family:var(--display);font-size:26px;font-weight:700;color:var(--accent);line-height:1.2}
-  .pace-card .pc-num small{font-size:13px;font-weight:600;color:var(--ink-soft)}
-  .pace-card .pc-note{font-size:12px;color:var(--ink-faint)}
-  .pace-card:has(input:checked){border:2px solid var(--accent);background:var(--accent-soft);padding:11px 13px}
-  .pace-card:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
   .fbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin:0 0 18px;
     border-radius:var(--radius-lg);background:var(--glass);border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow),var(--glass-hi)}
   .fbar .primary{width:auto;padding:10px 18px}
@@ -763,6 +752,24 @@
   .cd-similar{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
   .sim{padding:14px 16px;border-radius:14px;background:var(--glass-soft);border:1px solid var(--glass-edge)}
   .sim h4{margin:8px 0 4px;font-size:15px}
+  /* ---------------- Finder: levels in A, matches listed on the right ---------------- */
+  .fgrid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
+  .fgrid-2 label{margin-top:0}
+  @media(max-width:760px){.fgrid-2{grid-template-columns:minmax(0,1fr)}}
+  #finder-levels:not(:empty){margin-top:14px;padding-top:12px;border-top:1px solid var(--rule)}
+  #finder-levels label{margin-top:0}
+  .lvl-row{display:flex;gap:8px;flex-wrap:wrap}
+  .lvl-row .lvl{padding:9px 16px;font-weight:600}
+  .mn-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 6px;
+    border:0;border-top:1px solid var(--rule);border-radius:0;background:none;box-shadow:none;color:var(--ink)}
+  .mn-row:hover{background:var(--surface-alt)}
+  .mn-row span:first-child{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .mn-row b{font-size:13px}
+  .mn-row small{font-size:11px;color:var(--ink-faint);font-weight:400}
+  .match-next{margin-top:12px}
+  .match-next .mn-row:first-of-type{border-top:0}
+  .mn-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+  #finder-match{max-height:calc(100vh - 110px);overflow-y:auto;scrollbar-width:thin}
 </style>
 </head>
 <body>
@@ -1402,7 +1409,7 @@ function bindAhead(root){
 function bindPlans(root){
   root.querySelectorAll("details.plan").forEach(d => d.ontoggle = () => {
     if(d.open && d.querySelector(".plan-body").textContent === "Loading")
-      loadPlan(d.closest(".course"), finderState.pace || null);
+      loadPlan(d.closest(".course"), null);
   });
 }
 
@@ -1479,14 +1486,9 @@ async function renderFinder(explore = false){
 
 let finderState = {};
 
-/* The Finder as three questions on one page, like a planning form: where you are,
-   what you enjoy, your pace. The results stay live, the closest match is pinned on
-   the right, and the header counts how many questions are answered. */
-const PACES = [
-  {weeks: 36, label: "Lighter", note: "Room for school, work or a second course"},
-  {weeks: 24, label: "Steady", note: "The usual pace"},
-  {weeks: 12, label: "Faster", note: "A full load every week"},
-];
+/* The Finder as two questions on one page, like a planning form: where you are (and
+   what you want next), and what you enjoy. The results stay live, every match is
+   listed in the pinned column on the right, and the header counts what is answered. */
 const INTEREST_ICON = {
   coding: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/>',
   maths: '<path d="M18 6H7l6 6-6 6h11"/>',
@@ -1510,7 +1512,6 @@ const fsec = (tag, title, note, body, extra = "") => `<section class="fsec" data
   ${body}</section>`;
 function buildFinderForm(own){
   const o = finderOptions, s = finderState;
-  s.pace = s.pace || 24;
   $("#finder-steps").innerHTML = `<form id="finder-form">
     ${fsec("A", "Where you are", "Your level and what you studied decide which courses you can go on to.",
       `<div class="fgrid"><div><label for="finder-stage">Where you are now</label>
@@ -1518,13 +1519,10 @@ function buildFinderForm(own){
           <p class="caption" style="margin:6px 0 0">Change this under My details.</p>`
           : `<select id="finder-stage" name="stage">${o.stages.map(x =>
               `<option value="${esc(x.value)}"${x.value === s.stage ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`}</div>
-        <div id="finder-background"></div></div>`)}
+        <div id="finder-background"></div></div>
+      <div id="finder-levels"></div>`)}
     ${fsec("B", "What you enjoy", "Pick any. It changes the order courses come in, not which ones you may do.",
       `<div id="finder-interests"></div>`)}
-    ${fsec("C", "Your pace", "Sets how every week-by-week plan below is split. Any plan can still be changed.",
-      `<div class="pace-row">${PACES.map(x => `<label class="pace-card"><input type="radio" name="pace" value="${x.weeks}"${
-        x.weeks === s.pace ? " checked" : ""}><b>${x.label}</b><span class="pc-num">${x.weeks}<small> weeks</small></span>
-        <span class="pc-note">${esc(x.note)}</span></label>`).join("")}</div>`)}
     <div class="fbar">
       <button type="button" class="small" id="finder-explore">Explore all courses</button>
       <span class="caption">Results update as you answer.</span>
@@ -1538,7 +1536,10 @@ function buildFinderForm(own){
     if(e.target.name === "stage"){ s.stage = e.target.value; s.level = null; }
     if(e.target.name === "stream") s.stream = e.target.value;
     if(e.target.name === "degree") s.degree = e.target.value;
-    if(e.target.name === "pace") s.pace = +e.target.value;     // plans are cached by length, so no clearing
+    if(e.target.name === "degreegroup"){
+      const g = o.degree_groups.find(x => x.label === e.target.value);
+      if(g) s.degree = g.options[0].value;           // a new degree starts at its first branch
+    }
     s.subjects = [...f.querySelectorAll('input[name="subject"]:checked')].map(x => x.value);
     s.interests = [...f.querySelectorAll('input[name="interest"]:checked')].map(x => x.value);
     clearTimeout(finderTimer);
@@ -1559,7 +1560,8 @@ function finderBackground(){
   const o = finderOptions, s = finderState, box = $("#finder-background");
   // Redrawing on every answer threw away keyboard focus. Only a new rung or stream
   // changes what these fields are, so only those redraw them.
-  const sig = `${s.stage}|${s.stream}`;
+  const groupOf = d => (o.degree_groups.find(g => g.options.some(x => x.value === d)) || {}).label;
+  const sig = `${s.stage}|${s.stream}|${groupOf(s.degree)}`;
   if(box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const subjects = () => {
@@ -1578,9 +1580,15 @@ function finderBackground(){
       <div id="finder-subjects"></div>`;
     subjects();
   }else if(s.stage === "ug"){
-    box.innerHTML = `<label for="finder-degree">Your bachelor's degree</label>
-      <select id="finder-degree" name="degree">${o.degrees.map(x =>
-        `<option value="${esc(x.value)}"${x.value === s.degree ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`;
+    // Two steps, like stream then subjects one rung down: the degree, then the branch
+    // or subject where the degree has more than one.
+    const group = o.degree_groups.find(g => g.options.some(x => x.value === s.degree)) || o.degree_groups[0];
+    box.innerHTML = `<div class="fgrid-2"><div><label for="finder-dgroup">Your bachelor's degree</label>
+      <select id="finder-dgroup" name="degreegroup">${o.degree_groups.map(g =>
+        `<option${g.label === group.label ? " selected" : ""}>${esc(g.label)}</option>`).join("")}</select></div>
+      ${group.options.length > 1 ? `<div><label for="finder-degree">${esc(group.pick)}</label>
+        <select id="finder-degree" name="degree">${group.options.map(x =>
+          `<option value="${esc(x.value)}"${x.value === s.degree ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select></div>` : ""}</div>`;
   }else{
     box.innerHTML = "";
   }
@@ -1590,8 +1598,7 @@ function finderBackground(){
         s.interests.includes(x.value) ? " checked" : ""}><span class="oc-ico"><svg viewBox="0 0 24 24" aria-hidden="true">${
         INTEREST_ICON[x.value] || ""}</svg></span><span class="oc-label">${esc(x.label)}</span><span class="oc-tick" aria-hidden="true"></span></label>`).join("")}</div>` : "";
   // At the top of the ladder there is nothing further to choose, so B and C step aside.
-  document.querySelectorAll('#finder-form .fsec[data-sec="B"], #finder-form .fsec[data-sec="C"]')
-    .forEach(sec => sec.hidden = !levels.length);
+  document.querySelectorAll('#finder-form .fsec[data-sec="B"]').forEach(sec => sec.hidden = !levels.length);
 }
 
 /* Right-hand panel: the subjects of this rung, then the courses of the next one. */
@@ -1850,26 +1857,41 @@ async function showLadder(){
       : `<div class="err">${esc(out.detail || "Something went wrong. Try again.")}</div>`;
   }
 
-  const answered = [true, s.interests.length > 0, !!s.pace].filter(Boolean).length;
-  const total = levels.length ? 3 : 1;
+  const done = [true, s.interests.length > 0];
+  const total = levels.length ? 2 : 1;
+  const answered = done.slice(0, total).filter(Boolean).length;
+  // What comes next is part of "where you are", so it sits in A, in view, not under the list.
+  $("#finder-levels").innerHTML = levels.length ? `<label>What you want next</label>
+    <div class="lvl-row">${levels.map(l => `<button type="button" class="lvl${l.value === s.level ? " on" : ""}"
+      data-l="${esc(l.value)}">${esc(l.label)}</button>`).join("")}</div>
+    ${s.level === "skill" ? `<p class="caption" style="margin:6px 0 0">${esc(finderOptions.skill_note || "")}</p>` : ""}` : "";
+  $("#finder-levels").querySelectorAll(".lvl").forEach(b => b.onclick = () => { s.level = b.dataset.l; showLadder(); });
   $("#finder-head").innerHTML = pageHead(
     `After ${plan.now.stage === "class_12" && s.stream ? "class 12" : stageLabel(s.stage).toLowerCase()}`,
     plan.next.leads_to || (levels.length ? `You can go on to ${levels.map(l => l.label).join(" or ")}.`
       : "You are at the top of the ladder. Explore any course that interests you."),
-    `<div class="fprog"><span>${Math.min(answered, total)} of ${total} answered</span>
-      <div class="segs">${["Where you are", "What you enjoy", "Your pace"].slice(0, total).map((t, i) =>
-        `<i class="${[true, s.interests.length > 0, !!s.pace][i] ? "on" : ""}" title="${t}"></i>`).join("")}</div></div>`,
+    `<div class="fprog"><span>${answered} of ${total} answered</span>
+      <div class="segs">${["Where you are", "What you enjoy"].slice(0, total).map((t, i) =>
+        `<i class="${done[i] ? "on" : ""}" title="${t}"></i>`).join("")}</div></div>`,
     "Course Finder · rule-based, not the model");
-  $("#finder-match").innerHTML = matchPanel(ranked, levels.length);
+  let elsewhere = [];
+  if(ranked && !ranked.courses.length){
+    elsewhere = (await Promise.all(levels.filter(l => l.value !== s.level).map(async l => {
+      const r = await fetch("/api/course-finder", {method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({level: l.value, stream: s.stream, degree: s.degree, subjects: s.subjects, interests: s.interests})});
+      const o2 = r.ok ? await r.json() : {courses: []};
+      return {level: l.value, label: l.label, courses: o2.courses.slice(0, 4)};
+    }))).filter(x => x.courses.length);
+    if(seq !== finderSeq) return;
+  }
+  $("#finder-match").innerHTML = matchPanel(ranked, levels.length, elsewhere);
   const el2 = $("#finder-out");
   el.dataset.filled = "1";
   el2.innerHTML = `
-    ${levels.length ? `<div class="block" id="finder-courses"><h3>Courses you can do next</h3>
+    ${levels.length ? `<div class="block" id="finder-courses"><h3>${esc((levels.find(l => l.value === s.level) || {}).label || "Courses")}: courses you can do next</h3>
       <p class="muted small">The academic path and the skill path both count. NEP 2020 treats them
         as equal, and a skill course can be taken alongside school or a degree.</p>
-      ${levels.length > 1 ? `<div class="row" style="margin-bottom:10px">${levels.map(l =>
-        `<button class="small lvl${l.value === s.level ? " on" : ""}" data-l="${esc(l.value)}">${esc(l.label)}</button>`).join("")}</div>` : ""}
-      ${s.level === "skill" ? `<p class="caption" style="margin:0 0 10px">${esc(finderOptions.skill_note || "")}</p>` : ""}
+
       ${courses || `<p class="muted small" style="margin:0">No courses to show for this level yet.</p>`}
     </div>` : ""}
     ${plan.next.streams.length ? `<div class="block"><h3>Choose a stream for class 11 and 12</h3>
@@ -1885,35 +1907,45 @@ async function showLadder(){
     </div>` : ""}
     <p class="caption" style="margin:14px 0 0">${esc(finderOptions.method)}. ${esc(finderOptions.note)}</p>
     ${signupCta() ? `<div style="margin-top:12px">${signupCta()}</div>` : ""}`;
-  el2.querySelectorAll(".lvl").forEach(b => b.onclick = () => { s.level = b.dataset.l; showLadder(); });
   for(const box of [el2, $("#finder-match")]){
     bindSave(box);
     bindPlans(box);
   }
+  $("#finder-match").querySelectorAll(".mn-open").forEach(b => b.onclick = () => {
+    exploreState.detail = b.dataset.key; nav("explore");
+  });
+  $("#finder-match").querySelectorAll(".mn-level").forEach(b => b.onclick = () => {
+    s.level = b.dataset.l; showLadder();
+  });
   bindAhead(el2);
   bindExams(el2, examStream);
 }
 
 /* The right-hand column: the closest match, or what to do to get one. Stated from
    what the rules found, never as a percentage. */
-function matchPanel(out, hasLevels){
+function matchPanel(out, hasLevels, elsewhere = []){
   if(!hasLevels) return `<div class="match-empty"><div class="eyebrow">Closest match</div>
     <h3>Nothing further up the ladder</h3>
     <p class="muted small">Every course on the site is open to explore, including the skill path.</p>
     <button class="small" data-go="explore">Explore all courses</button></div>`;
   if(!out) return `<div class="match-empty"><div class="eyebrow">Closest match</div>
     <h3>Pick what you enjoy</h3>
-    <p class="muted small">Tick at least one interest in B. The course that covers the most of them,
-      among those your background qualifies you for, appears here with what it needs and a plan.</p></div>`;
+    <p class="muted small">Tick at least one interest in B. Every course your background qualifies you for
+      is listed here, the closest first.</p></div>`;
+  const row = c => `<button type="button" class="mn-row mn-open" data-key="${esc(c.key)}">
+      <span><b>${esc(c.name)}</b><small>${esc([c.level_label, c.duration].filter(Boolean).join(" · "))}</small></span>
+      <span class="gchip ${c.fit === "Strong match" ? "done" : "ready"}">${esc(c.fit)}</span></button>`;
   if(!out.courses.length) return `<div class="match-empty"><div class="eyebrow">Closest match</div>
-    <h3>No match at this level</h3>
-    <p class="muted small">No course at this level covers those interests for your background. Try another
-      level under the list, or different interests.</p></div>`;
-  const next = out.courses.slice(1, 4);
+      <h3>No match at this level</h3>
+      <p class="muted small">No ${esc((out.level_label || "").toLowerCase())} course covers those interests for your
+        background.${elsewhere.length ? " These do, at another level:" : " Try different interests."}</p></div>
+    ${elsewhere.map(x => `<div class="match-next"><div class="mn-head"><div class="eyebrow">${esc(x.label)}</div>
+      <button type="button" class="small mn-level" data-l="${esc(x.level)}">Show these</button></div>
+      ${x.courses.map(row).join("")}</div>`).join("")}`;
+  const rest = out.courses.slice(1);
   return `${topMatch(out)}
-    ${next.length ? `<div class="match-next"><div class="eyebrow">Next closest</div>
-      ${next.map(c => `<div class="mn-row"><span>${esc(c.name)}</span><span class="gchip ${c.fit === "Strong match" ? "done" : "ready"}">${esc(c.fit)}</span></div>`).join("")}
-    </div>` : ""}`;
+    ${rest.length ? `<div class="match-next"><div class="eyebrow">Also matching · ${rest.length}</div>
+      ${rest.map(row).join("")}</div>` : ""}`;
 }
 
 function topMatch(out, inline = false){
@@ -2025,7 +2057,7 @@ function courseDetail(c, all){
         <p class="muted" style="margin:0">${esc(c.category)}. Usually needs: ${esc(c.eligibility || "")}</p>
       </div>
       <div class="cd-actions">${saveBtn(c.key)}
-        <a class="btn small" href="/api/course-finder/plan.ics?key=${encodeURIComponent(c.key)}&weeks=${finderState.pace || 24}&start=${todayISO()}">Add a plan to my calendar</a>
+        <a class="btn small" href="/api/course-finder/plan.ics?key=${encodeURIComponent(c.key)}&weeks=24&start=${todayISO()}">Add a plan to my calendar</a>
         <button class="small" id="cd-back" type="button">Back to all courses</button></div>
     </div>
     <div class="tiles cd-tiles">

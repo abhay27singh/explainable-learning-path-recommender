@@ -12,14 +12,14 @@ tasks. This file is only the short version.
 An explainable learning-path recommender over the OULAD dataset (the research, written up
 in `paper/`) plus a web application for Indian students: the ladder from class 10 to
 postgraduate, a week-by-week course path, entrance exam revision plans (JEE, NEET, CUET),
-and a rule-based Course Finder covering 59 academic and skill courses. The paper's results
+and a rule-based Course Finder covering 64 academic and skill courses. The paper's results
 stay on an admin-only Research page as validation. Product features are never added to the
 paper.
 
 ## Commands
 
 ```bash
-make test                                   # 196 tests, pytest
+make test                                   # 199 tests, pytest
 make api                                    # http://localhost:8420
 .venv/bin/python -m pytest tests/test_stages.py -q
 .venv/bin/python scripts/08_admin.py create <username>

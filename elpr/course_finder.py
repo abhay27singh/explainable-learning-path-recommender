@@ -108,6 +108,11 @@ STREAM_SUBJECTS: dict[str, dict[str, list[str]]] = {
 
 DEGREES: dict[str, str] = {
     "btech_cs": "B.Tech / B.E. in Computer Science or IT",
+    "btech_ece": "B.Tech / B.E. in Electronics and Communication",
+    "btech_ee": "B.Tech / B.E. in Electrical",
+    "btech_mech": "B.Tech / B.E. in Mechanical",
+    "btech_civil": "B.Tech / B.E. in Civil",
+    "btech_chem": "B.Tech / B.E. in Chemical",
     "btech_other": "B.Tech / B.E. in another branch",
     "bca": "BCA",
     "bsc_cs": "B.Sc Computer Science",
@@ -121,6 +126,30 @@ DEGREES: dict[str, str] = {
     "ba_english": "B.A. English",
     "ba_other": "B.A. in another subject",
 }
+
+# The same degrees as two steps, the way the class 12 rung asks for a stream and then
+# subjects: first the degree, then the branch or subject where there is a choice.
+DEGREE_GROUPS: tuple = (
+    ("B.Tech / B.E.", "Your branch", (
+        ("btech_cs", "Computer Science or IT"), ("btech_ece", "Electronics and Communication"),
+        ("btech_ee", "Electrical"), ("btech_mech", "Mechanical"), ("btech_civil", "Civil"),
+        ("btech_chem", "Chemical"), ("btech_other", "Another branch"))),
+    ("B.Sc", "Your subject", (
+        ("bsc_cs", "Computer Science"), ("bsc_maths", "Mathematics, Physics or Statistics"),
+        ("bsc_life", "Life Sciences or Biotechnology"))),
+    ("B.A.", "Your subject", (
+        ("ba_econ", "Economics"), ("ba_psych", "Psychology"), ("ba_english", "English"),
+        ("ba_other", "Another subject"))),
+    ("BCA", "", (("bca", "BCA"),)),
+    ("B.Com", "", (("bcom", "B.Com"),)),
+    ("BBA", "", (("bba", "BBA"),)),
+    ("B.Pharm", "", (("bpharm", "B.Pharm"),)),
+)
+
+# Every engineering branch except computer science. Courses open to "a B.Tech in any
+# branch" list this rather than one catch-all, so a new branch cannot be forgotten.
+OTHER_ENGINEERING = frozenset({"btech_ece", "btech_ee", "btech_mech", "btech_civil",
+                               "btech_chem", "btech_other"})
 
 INTERESTS: dict[str, str] = {
     "coding": "Coding and computers",
@@ -653,6 +682,53 @@ COURSES: tuple[Course, ...] = (
              "Machine Learning", "Research Methodology")),
             ("Year 2", ("Dissertation",))),
            degrees=frozenset({"btech_cs"})),
+    # One M.Tech for each of the main engineering branches. Year 1 is the coursework the
+    # AICTE model curricula and the large university syllabi share for the usual
+    # specialisation; year 2 is the dissertation.
+    Course("mtech_ece", "M.Tech Electronics and Communication (VLSI Design)", "pg",
+           "Engineering and technology", "2 years", "AICTE",
+           "A B.Tech or B.E. in Electronics and Communication or Electrical, usually through GATE",
+           {"electronics": 3, "maths": 2, "coding": 1},
+           (("Year 1", ("Advanced Digital System Design", "Analog IC Design", "Digital IC Design",
+             "VLSI Technology", "Embedded Systems", "Research Methodology")),
+            ("Year 2", ("Testing and Verification of VLSI Circuits", "Dissertation"))),
+           degrees=frozenset({"btech_ece", "btech_ee"})),
+    Course("mtech_ee", "M.Tech Electrical Engineering (Power Systems)", "pg",
+           "Engineering and technology", "2 years", "AICTE",
+           "A B.Tech or B.E. in Electrical, or Electrical and Electronics, usually through GATE",
+           {"electronics": 3, "machines": 2, "maths": 2},
+           (("Year 1", ("Advanced Power System Analysis", "Power System Dynamics and Stability",
+             "Power Electronics", "Power System Protection", "Renewable Energy Systems",
+             "Research Methodology")),
+            ("Year 2", ("HVDC and FACTS", "Dissertation"))),
+           degrees=frozenset({"btech_ee"})),
+    Course("mtech_mech", "M.Tech Mechanical Engineering (Machine Design)", "pg",
+           "Engineering and technology", "2 years", "AICTE",
+           "A B.Tech or B.E. in Mechanical or Production Engineering, usually through GATE",
+           {"machines": 3, "maths": 2, "design": 1},
+           (("Year 1", ("Advanced Mechanics of Solids", "Finite Element Methods",
+             "Advanced Machine Design", "Mechanical Vibrations", "Computer Aided Design",
+             "Research Methodology")),
+            ("Year 2", ("Fatigue and Fracture Mechanics", "Dissertation"))),
+           degrees=frozenset({"btech_mech"})),
+    Course("mtech_civil", "M.Tech Civil Engineering (Structural Engineering)", "pg",
+           "Engineering and technology", "2 years", "AICTE",
+           "A B.Tech or B.E. in Civil Engineering, usually through GATE",
+           {"machines": 2, "design": 2, "maths": 2},
+           (("Year 1", ("Advanced Structural Analysis", "Advanced Design of Concrete Structures",
+             "Finite Element Analysis of Structures", "Structural Dynamics",
+             "Earthquake Resistant Design", "Research Methodology")),
+            ("Year 2", ("Design of Prestressed Concrete Structures", "Dissertation"))),
+           degrees=frozenset({"btech_civil"})),
+    Course("mtech_chem", "M.Tech Chemical Engineering", "pg",
+           "Engineering and technology", "2 years", "AICTE",
+           "A B.Tech or B.E. in Chemical Engineering, usually through GATE",
+           {"machines": 2, "maths": 2, "biology": 1},
+           (("Year 1", ("Advanced Transport Phenomena", "Advanced Chemical Reaction Engineering",
+             "Advanced Process Control", "Advanced Chemical Engineering Thermodynamics",
+             "Process Modelling and Simulation", "Research Methodology")),
+            ("Year 2", ("Process Safety and Hazard Analysis", "Dissertation"))),
+           degrees=frozenset({"btech_chem"})),
     Course("mca", "MCA (Master of Computer Applications)", "pg", "Computing", "2 years", "AICTE",
            "A degree such as BCA, B.Sc or B.Com with Mathematics in class 12 or in the degree, "
            "usually through NIMCET or a university test",
@@ -661,7 +737,7 @@ COURSES: tuple[Course, ...] = (
              "Database Systems", "Operating Systems", "Discrete Mathematics")),
             ("Year 2", ("Software Engineering", "Computer Networks", "Cloud Computing",
              "Major Project"))),
-           degrees=frozenset({"bca", "bsc_cs", "bsc_maths", "btech_cs", "btech_other", "bcom"})),
+           degrees=frozenset({"bca", "bsc_cs", "bsc_maths", "btech_cs", "bcom"}) | OTHER_ENGINEERING),
     Course("msc_ds", "M.Sc Data Science", "pg", "Computing", "2 years", "University syllabi",
            "A degree with Mathematics or Statistics, such as B.Sc, BCA or B.Tech",
            {"data": 3, "coding": 2, "maths": 2},
@@ -669,7 +745,7 @@ COURSES: tuple[Course, ...] = (
              "Machine Learning", "Database Systems")),
             ("Year 2", ("Deep Learning", "Big Data Analytics", "Data Visualisation",
              "Capstone Project"))),
-           degrees=frozenset({"bsc_maths", "bsc_cs", "bca", "btech_cs", "btech_other"})),
+           degrees=frozenset({"bsc_maths", "bsc_cs", "bca", "btech_cs"}) | OTHER_ENGINEERING),
     Course("msc_maths", "M.Sc Mathematics", "pg", "Sciences", "2 years", "UGC framework",
            "A B.Sc with Mathematics, usually through IIT JAM or CUET-PG",
            {"maths": 3, "data": 2},
@@ -767,6 +843,9 @@ def options() -> dict:
                      "optional": STREAM_SUBJECTS[k]["optional"]} for k, v in STREAMS.items()],
         "subjects_note": SUBJECTS_NOTE,
         "degrees": [{"value": k, "label": v} for k, v in DEGREES.items()],
+        "degree_groups": [{"label": g, "pick": pick,
+                           "options": [{"value": k, "label": lab} for k, lab in opts]}
+                          for g, pick, opts in DEGREE_GROUPS],
         "interests": [{"value": k, "label": v} for k, v in INTERESTS.items()],
     }
 

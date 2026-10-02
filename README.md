@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 196 tests
+make test                                       # 199 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -181,7 +181,7 @@ One file, `web/index.html`, no build step.
   the page first. Results are kept per student and never mixed into the data the model
   reads. The weekly course path has none, on purpose: its weeks come from an anonymised
   course and have no topic a question could honestly be about.
-- **Course Finder.** Rule-based, not the model, and labelled as such. 59 courses: 43
+- **Course Finder.** Rule-based, not the model, and labelled as such. 64 courses: 48
   academic plus 16 NSQF skill courses, which NEP 2020 treats as an equal track. Eligibility
   by class 12 subjects or bachelor's degree, interest ranking, a shortlist, and a week by
   week plan for any course with a calendar file to download.
@@ -203,9 +203,11 @@ of the window, and on a phone the main places sit in a tab bar at the bottom.
 - **Prerequisite graph.** Beside the week list, every week of the student's course as
   the model's prerequisite graph: done, now, ready or not ready, with the selected week's
   links drawn and named. A table view lists the same.
-- **Course Finder in three steps** (where you are, what you enjoy, your pace), with the
-  closest match stated by which interests it covers, and Explore as a catalogue with
-  level and subject filters.
+- **Course Finder as a planning form**: where you are (down to the engineering branch or
+  degree subject) and what you want next, then what you enjoy. Every match is listed
+  beside the questions, closest first; when nothing fits at one level, the matches at
+  the others are offered. Explore is a catalogue with level and subject filters and a page
+  per course.
 
 *Demonstration-grade authentication: an 8 character password minimum and sign-in
 throttling, but no TLS and no account recovery. Do not reuse a real password.*
