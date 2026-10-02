@@ -582,6 +582,47 @@
   .next{border-left-color:var(--secondary)}
   .next .eyebrow{color:var(--secondary)}
   @media(max-width:860px){.page-head h1,.dash-head h1{font-size:24px}}
+  /* ---------------- prerequisite graph ---------------- */
+  .view-switch{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap}
+  .graph-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 20px;flex-wrap:wrap;margin-bottom:14px}
+  .graph-legend{display:flex;gap:6px;flex-wrap:wrap}
+  .gchip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;border:1px solid transparent;white-space:nowrap;line-height:1.5}
+  .gchip.done{background:var(--good-soft);color:var(--good)}
+  .gchip.now{background:var(--accent);color:var(--on-accent)}
+  .gchip.ready{background:var(--accent-soft);color:var(--accent)}
+  .gchip.locked{background:var(--surface-alt);color:var(--ink-faint);border-color:var(--rule)}
+  .graph-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+  .graph-canvas{position:relative;min-width:0}
+  .graph-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
+  .graph-lines path{fill:none;stroke-width:2}
+  .graph-lines .met{stroke:var(--secondary)}
+  .graph-lines .unmet{stroke:var(--warn);stroke-dasharray:5 4}
+  .graph-lines .opens{stroke:var(--accent);opacity:.45}
+  .graph-cols{position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:26px}
+  .gcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .gcol-head{display:flex;flex-direction:column;align-items:center;padding:8px 10px;border-radius:8px;
+    background:var(--surface-alt);font-size:12px;color:var(--ink-faint)}
+  .gcol-head b{font-family:var(--display);color:var(--accent);font-size:13px}
+  .gnode{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:8px 10px;border-radius:10px;
+    background:var(--surface);border:1px solid var(--rule);box-shadow:none;transition:opacity .15s,border-color .15s,box-shadow .15s}
+  .gnode .gn-top{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:13px}
+  .gnode .gn-sub{font-size:11px;color:var(--ink-faint)}
+  .gnode.done{border-left:3px solid var(--good)}
+  .gnode.now{border:2px solid var(--accent)}
+  .gnode.locked{border-style:dashed;background:var(--surface-alt)}
+  .gnode.sel{box-shadow:0 0 0 3px var(--accent-soft);border-color:var(--accent)}
+  .graph-canvas.has-sel .gnode:not(.sel):not(.rel){opacity:.5}
+  .graph-insp{position:sticky;top:78px;padding:16px;border-radius:14px;background:var(--glass-soft);border:1px solid var(--glass-edge)}
+  .graph-insp .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--secondary)}
+  .graph-insp h3{margin:4px 0 8px;font-size:18px}
+  .graph-insp h4{margin:16px 0 6px;font-size:13px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .graph-insp .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0}
+  .ilist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto}
+  .ilist li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+  .ilink{border:0;background:none;padding:0;color:var(--accent);font-weight:600;box-shadow:none;
+    text-decoration:underline;text-underline-offset:2px}
+  @media(max-width:1180px){.graph-wrap{grid-template-columns:minmax(0,1fr)}.graph-insp{position:static}}
+  @media(max-width:700px){.graph-cols{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}}
 </style>
 </head>
 <body>
@@ -2289,6 +2330,201 @@ function shortlistRail(courses){
     </div>`;
 }
 
+/* ---------------- prerequisite graph ----------------
+   The student's own course as the model's prerequisite graph: every week in four
+   columns by part of the course, each marked done, now, ready or locked from the
+   student's own record. One week is selected at a time and only its links are drawn:
+   a week can have sixteen, and all of a course's links at once are a scribble. */
+let pathView = (() => { try{ return localStorage.getItem("elpr-path-view") || "timeline"; }catch{ return "timeline"; } })();
+const graphCache = {};
+// Nothing on this site stops a student opening any week, so a week whose earlier
+// weeks are unfinished is "not ready", never "locked".
+const STATUS_LABEL = {done: "Done", now: "Now", ready: "Ready", locked: "Not ready"};
+const EDGE_KIND = {sequence: "course order", assessment: "assessed before it",
+                   mined: "order earlier students followed"};
+const activityOf = label => ((label || "").match(/\(([^)]*)\)/) || [])[1] || "";
+
+function graphModel(g, ctx){
+  const preds = new Map(), succs = new Map();
+  g.edges.forEach(e => {
+    if(!preds.has(e.dst)) preds.set(e.dst, []);
+    if(!succs.has(e.src)) succs.set(e.src, []);
+    preds.get(e.dst).push(e);
+    succs.get(e.src).push(e);
+  });
+  const nodes = g.nodes.slice().sort((a, b) => a.week - b.week);
+  const size = Math.ceil(nodes.length / 4), names = ["Start", "Early", "Later", "End"];
+  const cols = [0, 1, 2, 3].map(i => nodes.slice(i * size, (i + 1) * size)).filter(c => c.length)
+    .map((c, i) => ({name: names[i], from: c[0].week, to: c[c.length - 1].week, nodes: c}));
+  const status = new Map(nodes.map(n => {
+    const id = n.concept;
+    const st = ctx.done.has(id) ? "done" : id === ctx.now ? "now"
+      : (preds.get(id) || []).every(e => ctx.done.has(e.src)) ? "ready" : "locked";
+    return [id, st];
+  }));
+  return {preds, succs, nodes, cols, status, byId: new Map(nodes.map(n => [n.concept, n]))};
+}
+
+function gnode(n, m, ctx){
+  const st = m.status.get(n.concept), c = ctx.concepts.get(n.concept), ins = (m.preds.get(n.concept) || []).length;
+  return `<button class="gnode ${st}${n.concept === ctx.sel ? " sel" : ""}" data-c="${n.concept}" type="button"
+      aria-pressed="${n.concept === ctx.sel}" title="${esc(activityOf(n.label))}">
+    <span class="gn-top"><b>${esc(weekOf(n.label))}</b><span class="gchip ${st}">${STATUS_LABEL[st]}</span></span>
+    <span class="gn-sub">${c ? esc(LEVEL(c.mastery, ctx.t)) : ""}${ins ? ` · builds on ${ins}` : ""}</span>
+  </button>`;
+}
+
+function renderGraphView(host, ctx, g){
+  const m = graphModel(g, ctx);
+  if(!ctx.sel || !m.byId.has(ctx.sel)) ctx.sel = ctx.now ?? (m.nodes[0] || {}).concept;
+  const counts = {done: 0, now: 0, ready: 0, locked: 0};
+  m.status.forEach(v => counts[v]++);
+  host.innerHTML = `<div class="block graph-block">
+    <div class="graph-head">
+      <div><h3 style="margin:0">Prerequisite graph</h3>
+        <p class="muted small" style="margin:4px 0 0">Every week of your course. Pick one to see what it builds on and what it opens up.</p></div>
+      <div class="graph-legend">${["done", "now", "ready", "locked"].map(k =>
+        `<span class="gchip ${k}">${STATUS_LABEL[k]}: ${counts[k]}</span>`).join("")}</div>
+    </div>
+    <div class="graph-wrap">
+      <div class="graph-canvas has-sel">
+        <svg class="graph-lines" aria-hidden="true"></svg>
+        <div class="graph-cols">${m.cols.map(c => `<div class="gcol">
+          <div class="gcol-head"><b>${c.name}</b><span>weeks ${c.from} to ${c.to}</span></div>
+          ${c.nodes.map(n => gnode(n, m, ctx)).join("")}</div>`).join("")}</div>
+      </div>
+      <aside class="graph-insp" aria-live="polite"></aside>
+    </div>
+    <p class="caption" style="margin:12px 0 0">Links come from the graph behind the model: the course's own order,
+      which weeks are assessed before others, and the order earlier students who did well followed.
+      A week is ready when everything it builds on is done.</p>
+  </div>`;
+  const block = host.querySelector(".graph-block");
+  const select = id => {
+    ctx.sel = id;
+    const rel = new Set([...(m.preds.get(id) || []).map(e => e.src), ...(m.succs.get(id) || []).map(e => e.dst)]);
+    block.querySelectorAll(".gnode").forEach(b => {
+      const c = +b.dataset.c;
+      b.classList.toggle("sel", c === id);
+      b.classList.toggle("rel", rel.has(c));
+      b.setAttribute("aria-pressed", String(c === id));
+    });
+    graphInspector(block.querySelector(".graph-insp"), m, ctx, select);
+    drawGraphLines(block, m, ctx);
+  };
+  block.querySelectorAll(".gnode").forEach(b => b.onclick = () => select(+b.dataset.c));
+  graphRedraw = () => { if(block.isConnected) drawGraphLines(block, m, ctx); };
+  select(ctx.sel);
+}
+
+function graphInspector(box, m, ctx, select){
+  const n = m.byId.get(ctx.sel);
+  if(!n){ box.innerHTML = ""; return; }
+  const st = m.status.get(n.concept), c = ctx.concepts.get(n.concept);
+  const part = m.cols.find(col => col.nodes.includes(n));
+  const byWeek = key => (a, b) => m.byId.get(a[key]).week - m.byId.get(b[key]).week;
+  const ins = (m.preds.get(n.concept) || []).slice().sort(byWeek("src"));
+  const outs = (m.succs.get(n.concept) || []).slice().sort(byWeek("dst"));
+  const met = ins.filter(e => ctx.done.has(e.src)).length;
+  const row = (id, kinds) => {
+    const w = m.byId.get(id), s = m.status.get(id);
+    return `<li><button class="ilink" data-c="${id}" type="button">${esc(weekOf(w.label))}</button>
+      <span class="gchip ${s}">${STATUS_LABEL[s]}</span>
+      <span class="caption">${esc(kinds.map(k => EDGE_KIND[k] || k).join(", "))}</span></li>`;
+  };
+  const i = ctx.steps.findIndex(s => s.concept === n.concept);
+  box.innerHTML = `<div class="eyebrow">${part ? `${part.name} of the course` : "Selected week"}</div>
+    <h3>${esc(shortLabel(n.label))}</h3>
+    <p class="meta"><span class="gchip ${st}">${STATUS_LABEL[st]}</span>${c ? ` <span class="pill-lvl">Level now: ${LEVEL(c.mastery, ctx.t)}</span>` : ""}</p>
+    ${activityOf(n.label) ? `<p class="caption" style="margin:6px 0 0">That week's activity: ${esc(activityOf(n.label))}.</p>` : ""}
+    <h4>Builds on ${ins.length ? `<span class="caption">${met} of ${ins.length} done</span>` : ""}</h4>
+    ${ins.length ? `<ul class="ilist">${ins.map(e => row(e.src, e.kinds)).join("")}</ul>`
+      : `<p class="muted small" style="margin:0">Nothing earlier. It can start straight away.</p>`}
+    <h4>Opens up ${outs.length ? `<span class="caption">${outs.length} ${outs.length === 1 ? "week" : "weeks"}</span>` : ""}</h4>
+    ${outs.length ? `<ul class="ilist">${outs.map(e => row(e.dst, e.kinds)).join("")}</ul>`
+      : `<p class="muted small" style="margin:0">Nothing later depends on it.</p>`}
+    ${i >= 0 ? `<button class="primary" id="g-open" type="button" style="margin-top:14px">Open ${esc(weekOf(n.label))}</button>` : ""}`;
+  box.querySelectorAll(".ilink").forEach(b => b.onclick = () => select(+b.dataset.c));
+  const open = box.querySelector("#g-open");
+  if(open) open.onclick = () => weekSheet(ctx.steps[i], ctx.t, true, `Step ${i + 1} of ${ctx.steps.length}`);
+}
+
+/* Lines for the selected week only: what it builds on (teal when done, amber dashes
+   when not) and what it opens up (faint navy). Drawn behind the cards, from real
+   positions, so they follow the layout at any width. */
+function drawGraphLines(block, m, ctx){
+  const canvas = block.querySelector(".graph-canvas"), svg = block.querySelector(".graph-lines");
+  const box = canvas.getBoundingClientRect();
+  svg.setAttribute("viewBox", `0 0 ${Math.round(box.width)} ${Math.round(box.height)}`);
+  const at = id => {
+    const el = canvas.querySelector(`.gnode[data-c="${id}"]`);
+    if(!el) return null;
+    const r = el.getBoundingClientRect();
+    return {l: r.left - box.left, r: r.right - box.left, cx: r.left - box.left + r.width / 2, cy: r.top - box.top + r.height / 2};
+  };
+  const sel = at(ctx.sel);
+  if(!sel){ svg.innerHTML = ""; return; }
+  const curve = (a, b) => {
+    if(Math.abs(a.cx - b.cx) < 4){                       // same column: bow out to the right
+      const x = a.r + 18;
+      return `M${a.r},${a.cy} C${x},${a.cy} ${x},${b.cy} ${b.r},${b.cy}`;
+    }
+    const right = a.cx < b.cx, x1 = right ? a.r : a.l, x2 = right ? b.l : b.r, mid = (x1 + x2) / 2;
+    return `M${x1},${a.cy} C${mid},${a.cy} ${mid},${b.cy} ${x2},${b.cy}`;
+  };
+  const lines = [];
+  (m.preds.get(ctx.sel) || []).forEach(e => { const a = at(e.src);
+    if(a) lines.push(`<path d="${curve(a, sel)}" class="${ctx.done.has(e.src) ? "met" : "unmet"}"/>`); });
+  (m.succs.get(ctx.sel) || []).forEach(e => { const b = at(e.dst);
+    if(b) lines.push(`<path d="${curve(sel, b)}" class="opens"/>`); });
+  svg.innerHTML = lines.join("");
+}
+let graphRedraw = null, graphTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(graphTimer);
+  graphTimer = setTimeout(() => graphRedraw && graphRedraw(), 120);
+});
+
+function renderTableView(host, ctx, g){
+  const m = graphModel(g, ctx);
+  host.innerHTML = `<div class="block"><h3>Every week</h3>
+    <p class="muted small">Status, level and links for each week of your course, in course order.</p>
+    <div class="scroll"><table><thead><tr><th>Week</th><th>Part</th><th>Status</th><th>Level now</th>
+      <th class="n">Builds on</th><th class="n">Opens up</th></tr></thead><tbody>
+    ${m.cols.map(col => col.nodes.map(n => {
+      const st = m.status.get(n.concept), c = ctx.concepts.get(n.concept);
+      return `<tr${n.concept === ctx.now ? ' class="hl"' : ""}><td>${esc(weekOf(n.label))}</td><td>${col.name}</td>
+        <td><span class="gchip ${st}">${STATUS_LABEL[st]}</span></td><td>${c ? esc(LEVEL(c.mastery, ctx.t)) : ""}</td>
+        <td class="n">${(m.preds.get(n.concept) || []).length}</td><td class="n">${(m.succs.get(n.concept) || []).length}</td></tr>`;
+    }).join("")).join("")}
+    </tbody></table></div></div>`;
+}
+
+function bindPathViews(root, ctx){
+  const host = root.querySelector("#path-view");
+  if(!host) return;
+  const show = async v => {
+    pathView = v;
+    try{ localStorage.setItem("elpr-path-view", v); }catch{}
+    root.querySelectorAll(".pview").forEach(b => {
+      b.classList.toggle("on", b.dataset.t === v);
+      b.setAttribute("aria-selected", String(b.dataset.t === v));
+    });
+    graphRedraw = null;
+    if(v === "timeline"){ host.innerHTML = pathList(ctx.steps, ctx.t, true); bindPath(host, ctx.steps, ctx.t, true); return; }
+    host.innerHTML = `<div class="block"><p class="muted small" style="margin:0">Loading the graph</p></div>`;
+    let g;
+    try{
+      g = graphCache[ctx.module] = graphCache[ctx.module]
+        || await api(`/api/graph/${encodeURIComponent(ctx.module)}`).then(humanize);
+    }catch(err){ host.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
+    if(pathView !== v) return;                    // switched again while it loaded
+    if(v === "graph") renderGraphView(host, ctx, g); else renderTableView(host, ctx, g);
+  };
+  root.querySelectorAll(".pview").forEach(b => b.onclick = () => show(b.dataset.t));
+  if(pathView !== "timeline") show(pathView);
+}
+
 async function renderStudent(){
   const root = $("#view-dashboard");
   if(!me.module) return renderSchoolStudent(root);
@@ -2359,7 +2595,9 @@ async function renderStudent(){
       </aside>
 
       <div class="wsmid" data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
-        ${pathList(path.steps, t, true)}
+        <div class="view-switch">${segButtons([["timeline", "Timeline"], ["graph", "Prerequisite graph"], ["table", "Table"]],
+          pathView, "pview")}</div>
+        <div id="path-view">${pathView === "timeline" ? pathList(path.steps, t, true) : ""}</div>
       </div>
       <div class="wsfull" data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
         ${courseStrip(state.concepts, t, true, false)}
@@ -2379,6 +2617,8 @@ async function renderStudent(){
   if(hide) hide.onclick = () => { $("#retake").hidden = true; };
   bindViz(root, null);
   bindPath(root, path.steps, t, true);
+  bindPathViews(root, {module: path.module, done: new Set(path.done || []), now: step ? step.concept : null,
+    steps: path.steps, t, concepts: new Map(state.concepts.map(c => [c.concept, c])), sel: null});
   bindStudies();
   bindSave(root);
   bindPlans(root);

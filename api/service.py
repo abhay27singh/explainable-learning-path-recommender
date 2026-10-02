@@ -322,6 +322,9 @@ class Service:
             "module": module,
             "n_weeks": len(weeks),
             "n_done": len(set(done) & set(weeks)),
+            # In course order, so the page can mark the graph without repeating the rule
+            # for what counts as done.
+            "done": [c for c in weeks if c in set(done)],
             "thresholds": {"mastered": round(first.thresholds.mastered, 4),
                            "prerequisite": round(first.thresholds.prerequisite, 4)},
             "steps": out,
