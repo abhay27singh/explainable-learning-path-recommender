@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 194 tests
+make test                                       # 196 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -195,9 +195,17 @@ One file, `web/index.html`, no build step.
 - **Admin** manages accounts and is the only role that sees the research results page,
   which reads `results/*.json` directly so it cannot drift from the paper.
 
-Light and dark themes follow the system setting until the viewer picks one. Panels use a
-translucent "liquid glass" finish over soft teal light, with solid panels for anyone whose
-system asks for reduced transparency. Pages use the full width of the window.
+The look follows the "Academic Navigator" system: navy for actions, teal for progress,
+amber for warnings, Plus Jakarta Sans headings, light glass panels (solid for anyone whose
+system asks for reduced transparency), and a navy dark theme. Pages use the full width
+of the window, and on a phone the main places sit in a tab bar at the bottom.
+
+- **Prerequisite graph.** Beside the week list, every week of the student's course as
+  the model's prerequisite graph: done, now, ready or not ready, with the selected week's
+  links drawn and named. A table view lists the same.
+- **Course Finder in three steps** (where you are, what you enjoy, your pace), with the
+  closest match stated by which interests it covers, and Explore as a catalogue with
+  level and subject filters.
 
 *Demonstration-grade authentication: an 8 character password minimum and sign-in
 throttling, but no TLS and no account recovery. Do not reuse a real password.*

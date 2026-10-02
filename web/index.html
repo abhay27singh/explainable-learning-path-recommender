@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Learning Path Recommender</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F5E7A'/%3E%3Cpath d='M7 24 L16 16 L25 8' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='7' cy='24' r='3.2' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='white'/%3E%3Ccircle cx='25' cy='8' r='3.2' fill='white'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231E3A8A'/%3E%3Cpath d='M7 24 L16 16 L25 8' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='7' cy='24' r='3.2' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='white'/%3E%3Ccircle cx='25' cy='8' r='3.2' fill='white'/%3E%3C/svg%3E" />
 <link rel="preload" href="/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
 
 <style>
@@ -662,6 +662,20 @@
   .ex-active{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
   .ex-active:empty{display:none}
   .ex-chip{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:600}
+  /* ---------------- phone tab bar ---------------- */
+  .tabbar{display:none}
+  @media(max-width:860px){
+    body.signed-in .tabbar:not([hidden]){display:grid;grid-auto-flow:column;grid-auto-columns:1fr;position:fixed;left:0;right:0;bottom:0;
+      z-index:45;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));background:var(--glass-strong);
+      -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-top:1px solid var(--glass-edge);box-shadow:0 -6px 20px rgba(15,23,42,.06)}
+    body.signed-in{padding-bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+    body.signed-in header.site nav.links{display:none}
+    .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:0;border-radius:10px;
+      background:none;box-shadow:none;color:var(--ink-faint);font-size:11px;font-weight:600}
+    .tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .tab.on{color:var(--accent);background:var(--accent-soft)}
+    #toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  }
 </style>
 </head>
 <body>
@@ -669,7 +683,7 @@
 <header class="site">
   <div class="in">
     <a class="brand" data-go="home" href="#/home">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1F5E7A"/><path d="M7 24 L16 16 L25 8" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="7" cy="24" r="3.2" fill="#fff"/><circle cx="16" cy="16" r="3.2" fill="#fff"/><circle cx="25" cy="8" r="3.2" fill="#fff"/></svg>
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1E3A8A"/><path d="M7 24 L16 16 L25 8" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="7" cy="24" r="3.2" fill="#fff"/><circle cx="16" cy="16" r="3.2" fill="#fff"/><circle cx="25" cy="8" r="3.2" fill="#fff"/></svg>
       Learning Path Recommender
     </a>
     <nav class="links" aria-label="Main">
@@ -692,6 +706,7 @@
     </div>
   </div>
 </header>
+<nav class="tabbar" id="tabbar" aria-label="Main" hidden></nav>
 
 <!-- ================= home ================= -->
 <div class="view" id="view-home">
@@ -956,6 +971,7 @@ function show(name){
   if(name === "admin") renderAdmin();
   if(name === "finder") renderFinder(explore);
   hideTip();
+  markTab();
   window.scrollTo(0, 0);
 }
 document.addEventListener("click", e => {
@@ -1016,6 +1032,7 @@ $("#signout").onclick = async () => {
   me = null; known.clear(); current = null;
   saved.clear(); savedCourses = []; savedLoaded = false;
   myChecks = null;                 // the next person on this browser must not see these
+  $("#tabbar").hidden = true; $("#tabbar").innerHTML = "";
   finderState = {}; exploreState = {levels: new Set(), cats: new Set(), q: ""};
   document.body.classList.remove("signed-in");
   $("#nav-admin").style.display = "none";
@@ -1084,6 +1101,44 @@ async function bootstrap(){
   route();
 }
 
+/* ---------------- phone tab bar ----------------
+   On a phone the header nav wraps onto two lines and the rails are hidden, so the main
+   places move to a bar at the bottom of the screen, within reach of a thumb. Same
+   places as the header, by role, and only once signed in. */
+const TAB_ICON = {
+  research: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>`,
+  admin: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 20a6 6 0 0 1 12 0"></path><path d="M17 11h4M19 9v4"></path></svg>`,
+};
+function tabsFor(user){
+  if(!user) return [];
+  if(user.role === "student") return [
+    ["dashboard", "My learning", "learning"],
+    ...(user.module ? [["progress", "Progress", "progress"]] : []),
+    ["finder", "Finder", "finder"],
+    ["explore", "Explore", "explore"],
+  ];
+  return [
+    ["dashboard", "Learners", "learning"],
+    ["finder", "Finder", "finder"],
+    ...(user.role === "admin" ? [["research", "Research", "research"], ["admin", "Admin", "admin"]] : []),
+  ];
+}
+function renderTabbar(){
+  const bar = $("#tabbar"), tabs = tabsFor(me);
+  bar.hidden = !tabs.length;
+  bar.innerHTML = tabs.map(([to, label, icon]) => `<button type="button" class="tab" data-go="${to}">
+    ${RAIL_ICON[icon] || TAB_ICON[icon]}<span>${label}</span></button>`).join("");
+  markTab();
+}
+function markTab(){
+  const here = location.hash.replace(/^#\/?/, "") || "dashboard";
+  document.querySelectorAll("#tabbar .tab").forEach(b => {
+    const on = b.dataset.go === here || (here === "record" && b.dataset.go === "progress");
+    b.classList.toggle("on", on);
+    if(on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+}
+
 function enter(){
   savedLoaded = false;
   document.body.classList.add("signed-in");
@@ -1093,6 +1148,7 @@ function enter(){
   $("#nav-admin").style.display = me.role === "admin" ? "" : "none";
   $("#nav-research").style.display = me.role === "admin" ? "" : "none";
   $("#nav-progress").style.display = me.role === "student" && me.module ? "" : "none";
+  renderTabbar();
 }
 
 /* ---------------- feedback ---------------- */

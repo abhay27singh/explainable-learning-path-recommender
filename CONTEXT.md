@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 194 tests. `make api` serves http://localhost:8420.
+`make test` runs 196 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -80,8 +80,35 @@ system asks for reduced transparency gets solid panels. Pages run to 1760px, the
 edges as the header. On the dashboard the right rail spans two rows, so the path follows
 the next step directly instead of after a blank strip.
 
-**Explore.** `#/explore` is the Finder's explore-everything view with its own address,
-linked from every student rail and from both Finder buttons, with a way back.
+**Academic Navigator.** The visual system adopted from a Stitch export (October 2026),
+taking only what our data can back. Navy `#1E3A8A` for actions, teal `#0D9488` for
+progress, amber for warnings, on slate; Plus Jakarta Sans for headings when available,
+Inter otherwise; every page header is a small teal label, a large title, one line and
+actions on the right; the header nav is a segmented control with square corners. Text on
+a filled control uses `--on-accent`, which is dark in the dark theme. Not taken from the
+export: its AI photos, salary, placement and review figures, star ratings, institutional
+claims, product name and logo, pill buttons and gradient buttons.
+
+**Prerequisite graph.** The dashboard's path block has three views, remembered per
+browser: Timeline, Prerequisite graph and Table. The graph lays the student's course out
+in four columns by part of the course from `/api/graph/{module}`, marks each week from
+the `done` list the path response now carries (never repeating the server's rule), and
+draws only the selected week's links: a week can have sixteen and a course over a
+hundred. A week whose earlier weeks are unfinished is "Not ready", never "Locked".
+
+**Course Finder steps.** The form is three steps (where you are, what you enjoy, your
+pace); results stay live throughout, and the pace sets the default length of every week
+plan. The best-ranked course leads as the closest match, described by the interests it
+covers and Strong or Partial, never a percentage. A trip to Explore and back keeps the
+answers; a new rung or signing out clears them.
+
+**Explore.** `#/explore` is a catalogue with its own address: level and subject-area
+filters with real counts, a search across course names and subjects, removable filter
+chips, linked from every student rail and both Finder buttons, with a way back.
+
+**Phone.** Below 860px a signed-in user gets a tab bar at the bottom (by role: My
+learning, Progress, Finder, Explore for students; Learners, Finder, and for admins
+Research and Admin) and the header nav steps aside.
 
 **Study levels.** Every student picks one at sign-up: `class_10`, `class_12`, `diploma`,
 `ug`, `pg` (`elpr/course_finder.py: STAGES`). Diploma and degree students also choose a
@@ -301,7 +328,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         194 tests
+tests/         196 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability
