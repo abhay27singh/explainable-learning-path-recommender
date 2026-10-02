@@ -96,15 +96,31 @@ the `done` list the path response now carries (never repeating the server's rule
 draws only the selected week's links: a week can have sixteen and a course over a
 hundred. A week whose earlier weeks are unfinished is "Not ready", never "Locked".
 
-**Course Finder steps.** The form is three steps (where you are, what you enjoy, your
-pace); results stay live throughout, and the pace sets the default length of every week
-plan. The best-ranked course leads as the closest match, described by the interests it
+**Header.** Brand, a context chip with the student's level and course (it opens My
+details), the four places in the order the Navigator screens use (Course Finder, My
+learning, Explore, Progress), a search box that opens Explore with the words in it, the
+theme switch, and a profile chip with the user's initial. No photos anywhere.
+
+**Dashboard.** The page header carries the actions (Add to my calendar, Record of study,
+Open the next week). Over the path, a control band holds the view switch, the course,
+weeks done and whether the next week is ready.
+
+**Course Finder steps.** The page is a planning form: questions A (where you are), B
+(what you enjoy, as icon cards) and C (your pace, as three cards), all visible, with an
+action bar under them and "N of 3 answered" in the page header. Results stay live, and
+the pace sets the default length of every week plan. The closest match is pinned in a
+right-hand column with the next three below it; under 1180px that column folds away and
+the match appears at the top of the list instead. The background fields redraw only when
+the rung or stream changes, so answering does not lose keyboard focus. The best-ranked course leads as the closest match, described by the interests it
 covers and Strong or Partial, never a percentage. A trip to Explore and back keeps the
 answers; a new rung or signing out clears them.
 
 **Explore.** `#/explore` is a catalogue with its own address: level and subject-area
-filters with real counts, a search across course names and subjects, removable filter
-chips, linked from every student rail and both Finder buttons, with a way back.
+filters with real counts, a search across course names and subjects, the six largest
+subject areas as quick filters, removable filter chips, and a page per course (duration,
+how many subjects over how many years, the NEP exit points or the entrance exam named in
+its eligibility, the syllabus with study links, a plan, and other courses in the same
+subject area). Linked from the header, every student rail and both Finder buttons.
 
 **Phone.** Below 860px a signed-in user gets a tab bar at the bottom (by role: My
 learning, Progress, Finder, Explore for students; Learners, Finder, and for admins
