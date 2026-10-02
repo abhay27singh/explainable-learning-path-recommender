@@ -996,8 +996,21 @@ const esc = v => String(v).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">"
 
 async function api(path, opts={}) {
   const r = await fetch(path, {credentials:"same-origin", ...opts});
+  if(r.status === 401 && !path.startsWith("/api/auth/")) sessionEnded();
   if(!r.ok){ let m; try{ m=(await r.json()).detail; }catch{ m=r.statusText; } throw new Error(m||"request failed"); }
   return r.json();
+}
+/* A sign-in lasts twelve hours. When it ran out the page carried on as if nothing had
+   happened: the name stayed in the header beside a bare "sign in required". Now the
+   page signs out too, says why, and after signing in returns to where the student was. */
+let returnTo = null;
+function sessionEnded(){
+  if(!me) return;
+  const here = location.hash.replace(/^#\/?/, "");
+  returnTo = here && !["login", "signup", "home"].includes(here) ? here : null;
+  clearLocalSession();
+  toast("Your sign-in has expired. Please sign in again.");
+  nav("login");
 }
 const post = (p, body) => api(p, {method:"POST", headers:{"content-type":"application/json"},
   body: body?JSON.stringify(body):undefined});
@@ -1107,7 +1120,7 @@ $("#form-login").onsubmit = async e => {
   e.preventDefault();
   e.target.dataset.busy = "1";
   const f = Object.fromEntries(new FormData(e.target));
-  try { me = await post("/api/auth/login", f); enter(); nav("dashboard"); }
+  try { me = await post("/api/auth/login", f); enter(); nav(returnTo || "dashboard"); returnTo = null; }
   catch(err){ showErr(e.target, err.message); }
   finally { e.target.dataset.busy = ""; }
 };
@@ -1130,17 +1143,23 @@ $("#hsearch").onsubmit = e => {
   if(location.hash === "#/explore" && $("#ex-filter")){ $("#ex-filter").value = exploreState.q; drawExplore(); }
   else nav("explore");
 };
-$("#signout").onclick = async () => {
-  try{ await post("/api/auth/logout"); }catch{}   // clear this browser regardless
+/* Forget the signed-in user in this browser. Shared by Sign out and by a session that
+   ran out, so the two can never leave different things behind. */
+function clearLocalSession(){
   me = null; known.clear(); current = null;
   saved.clear(); savedCourses = []; savedLoaded = false;
   myChecks = null;                 // the next person on this browser must not see these
   $("#tabbar").hidden = true; $("#tabbar").innerHTML = "";
-  finderState = {}; exploreState = {levels: new Set(), cats: new Set(), q: ""};
+  finderState = {}; exploreState = {levels: new Set(), cats: new Set(), q: "", detail: null};
   document.body.classList.remove("signed-in");
   $("#nav-admin").style.display = "none";
   $("#nav-research").style.display = "none";
   $("#nav-progress").style.display = "none";
+  $("#ctx").hidden = true;
+}
+$("#signout").onclick = async () => {
+  try{ await post("/api/auth/logout"); }catch{}   // clear this browser regardless
+  clearLocalSession();
   nav("home");
 };
 
