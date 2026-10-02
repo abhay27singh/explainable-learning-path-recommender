@@ -623,6 +623,45 @@
     text-decoration:underline;text-underline-offset:2px}
   @media(max-width:1180px){.graph-wrap{grid-template-columns:minmax(0,1fr)}.graph-insp{position:static}}
   @media(max-width:700px){.graph-cols{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}}
+  /* ---------------- Finder steps ---------------- */
+  .wiz-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:4px 0 8px}
+  .wiz-tab{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px;border-radius:8px;
+    border:1px solid var(--control-edge);background:var(--glass-input);font-size:12px;color:var(--ink-faint);text-align:left;box-shadow:none}
+  .wiz-tab b{font-size:11px;color:var(--ink-faint)}
+  .wiz-tab.on{border-color:var(--accent);color:var(--ink);background:var(--accent-soft)}
+  .wiz-tab.on b{color:var(--accent)}
+  .wiz-tab.done{color:var(--good)}
+  .wiz-tab.done b{color:var(--good)}
+  .wiz-bar{height:4px;border-radius:4px;background:var(--surface-alt);overflow:hidden;margin:0 0 6px}
+  .wiz-bar span{display:block;height:100%;background:var(--secondary);transition:width .2s ease}
+  .wiz-nav{margin-top:14px;justify-content:space-between}
+  .wiz-nav .primary{width:auto;padding:9px 16px}
+  .pace{display:flex;flex-direction:column;gap:6px}
+  .pace-opt{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--control-edge);border-radius:8px;
+    background:var(--glass-input);cursor:pointer;margin:0;font-weight:400;color:var(--ink)}
+  .pace-opt input{width:auto;margin:3px 0 0}
+  .pace-opt span{display:flex;flex-direction:column}
+  .pace-opt b{font-size:14px}
+  .pace-opt small{font-size:12px;color:var(--ink-faint)}
+  .pace-opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+  .top-match{border:2px solid var(--accent);border-radius:14px;padding:16px 18px;margin:0 0 14px;background:var(--glass-input)}
+  .top-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .top-match .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--secondary)}
+  .top-match h3{margin:2px 0 6px;font-size:19px}
+  /* ---------------- Explore catalogue ---------------- */
+  .facets h4{margin:16px 0 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+  .facets-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .facet{display:flex;align-items:center;gap:8px;margin:0;padding:5px 4px;font-size:13px;font-weight:400;color:var(--ink);cursor:pointer;border-radius:6px}
+  .facet:hover{background:var(--surface-alt)}
+  .facet input{width:auto;margin:0}
+  .facet span{flex:1}
+  .facet small{color:var(--ink-faint);font-variant-numeric:tabular-nums}
+  .ex-search{position:relative;margin:0 0 10px}
+  .ex-search svg{position:absolute;left:12px;top:50%;width:17px;height:17px;transform:translateY(-50%);stroke:var(--ink-faint);fill:none;stroke-width:2;stroke-linecap:round}
+  .ex-search input{padding:12px 14px 12px 38px;font-size:15px}
+  .ex-active{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+  .ex-active:empty{display:none}
+  .ex-chip{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:600}
 </style>
 </head>
 <body>
@@ -977,6 +1016,7 @@ $("#signout").onclick = async () => {
   me = null; known.clear(); current = null;
   saved.clear(); savedCourses = []; savedLoaded = false;
   myChecks = null;                 // the next person on this browser must not see these
+  finderState = {}; exploreState = {levels: new Set(), cats: new Set(), q: ""};
   document.body.classList.remove("signed-in");
   $("#nav-admin").style.display = "none";
   $("#nav-research").style.display = "none";
@@ -1177,7 +1217,7 @@ function bindAhead(root){
 function bindPlans(root){
   root.querySelectorAll("details.plan").forEach(d => d.ontoggle = () => {
     if(d.open && d.querySelector(".plan-body").textContent === "Loading")
-      loadPlan(d.closest(".course"), null);
+      loadPlan(d.closest(".course"), finderState.pace || null);
   });
 }
 
@@ -1234,46 +1274,105 @@ async function renderFinder(explore = false){
   // The Finder walks the ladder: where you are now, what you study there, what comes
   // next. A signed-in student starts on their own rung and cannot move it here.
   const own = me && me.role === "student" ? me.stage : null;
-  if(!$("#finder-form") || wrap.dataset.stage !== String(own)){
+  // A new rung starts the answers again; a trip to Explore and back keeps them.
+  const newRung = wrap.dataset.stage !== String(own) || !finderState.stage;
+  if(newRung){
     wrap.dataset.stage = String(own);
     finderState = {stage: own || "class_12", stream: (me && me.stream) || o.streams[0].value,
                    subjects: [], degree: o.degrees[0].value, interests: [], level: null};
     $("#finder-results").dataset.filled = "";
-    buildFinderForm(own);
   }
+  if(newRung || !$("#finder-form")) buildFinderForm(own);
   if(explore) showExplore("all"); else showLadder();
 }
 
 let finderState = {};
 
+/* The Finder as three steps: where you are, what you enjoy, your pace. The results on
+   the right stay live the whole time, so a step is a way to focus, not a gate. */
+const PACES = [
+  {weeks: 36, label: "Lighter", note: "36 weeks: room for school, work or a second course"},
+  {weeks: 24, label: "Steady", note: "24 weeks: the default"},
+  {weeks: 12, label: "Faster", note: "12 weeks: a full load each week"},
+];
 function buildFinderForm(own){
   const o = finderOptions, s = finderState;
+  s.step = s.step || 1;
+  s.pace = s.pace || 24;
   $("#finder-form-wrap").innerHTML = `<form id="finder-form">
     <h2 style="margin:0 0 4px">Find a course</h2>
-    <p class="caption" style="margin:0 0 6px">Where you are now, what you study there, and what you can do next.</p>
-    <label for="finder-stage">Where you are now</label>
-    ${own ? `<div class="fixed">${esc(stageLabel(own))}</div>
-      <p class="caption" style="margin:6px 0 0">Change this under My details.</p>`
-      : `<select id="finder-stage" name="stage">${o.stages.map(x =>
-          `<option value="${esc(x.value)}"${x.value === s.stage ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`}
-    <div id="finder-background"></div>
-    <div id="finder-interests"></div>
-    <div style="margin-top:8px"><button class="small" type="button" id="finder-explore" style="width:100%">Explore all courses</button></div>
+    <p class="caption" style="margin:0 0 10px">Three short steps. The courses on the right update as you go.</p>
+    <div class="wiz-steps" role="tablist">${["Where you are", "What you enjoy", "Your pace"].map((t, i) =>
+      `<button type="button" class="wiz-tab" data-step="${i + 1}" role="tab"><b>${i + 1}</b><span>${t}</span></button>`).join("")}</div>
+    <div class="wiz-bar"><span></span></div>
+
+    <section class="wiz" data-step="1">
+      <label for="finder-stage">Where you are now</label>
+      ${own ? `<div class="fixed">${esc(stageLabel(own))}</div>
+        <p class="caption" style="margin:6px 0 0">Change this under My details.</p>`
+        : `<select id="finder-stage" name="stage">${o.stages.map(x =>
+            `<option value="${esc(x.value)}"${x.value === s.stage ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`}
+      <div id="finder-background"></div>
+      <div class="row wiz-nav"><button type="button" class="primary wiz-go" data-to="2">Next: what you enjoy</button></div>
+    </section>
+
+    <section class="wiz" data-step="2" hidden>
+      <div id="finder-interests"></div>
+      <div class="row wiz-nav"><button type="button" class="wiz-go" data-to="1">Back</button>
+        <button type="button" class="primary wiz-go" data-to="3">Next: your pace</button></div>
+    </section>
+
+    <section class="wiz" data-step="3" hidden>
+      <label>How fast you want to study</label>
+      <p class="caption" style="margin:0 0 8px">Sets how every "Plan it week by week" below is split. Any plan can still be changed.</p>
+      <div class="pace">${PACES.map(x => `<label class="pace-opt"><input type="radio" name="pace" value="${x.weeks}"${
+        x.weeks === s.pace ? " checked" : ""}><span><b>${x.label}</b><small>${esc(x.note)}</small></span></label>`).join("")}</div>
+      <div class="row wiz-nav"><button type="button" class="wiz-go" data-to="2">Back</button>
+        <button type="submit" class="primary">See my matches</button></div>
+    </section>
+
+    <div style="margin-top:14px"><button class="small" type="button" id="finder-explore" style="width:100%">Explore all courses</button></div>
     <div id="finder-msg" class="caption" style="margin:8px 0 0"></div>
   </form>`;
   const f = $("#finder-form");
   f.addEventListener("change", e => {
     const s = finderState;
-    if(e.target.name === "stage"){ s.stage = e.target.value; s.level = null; }
+    if(e.target.name === "stage"){ s.stage = e.target.value; s.level = null; setTimeout(() => wizardStep(1)); }
     if(e.target.name === "stream") s.stream = e.target.value;
     if(e.target.name === "degree") s.degree = e.target.value;
+    if(e.target.name === "pace") s.pace = +e.target.value;     // plans are cached by length, so no clearing
     s.subjects = [...f.querySelectorAll('input[name="subject"]:checked')].map(x => x.value);
     s.interests = [...f.querySelectorAll('input[name="interest"]:checked')].map(x => x.value);
     clearTimeout(finderTimer);
     finderTimer = setTimeout(showLadder, 200);
   });
-  f.onsubmit = e => { e.preventDefault(); showLadder(); };
+  f.onsubmit = async e => {
+    e.preventDefault();
+    await showLadder();
+    const to = $(".top-match") || $("#finder-courses") || $("#finder-results");
+    to.scrollIntoView({behavior: "smooth", block: "center"});
+  };
+  f.querySelectorAll(".wiz-go, .wiz-tab").forEach(b => b.onclick = () => wizardStep(+(b.dataset.to || b.dataset.step)));
   $("#finder-explore").onclick = () => nav("explore");
+  wizardStep(s.step);
+}
+function wizardStep(n){
+  const levels = (finderOptions.next_levels[finderState.stage] || []).length;
+  const last = levels ? 3 : 1;                 // at the top of the ladder there is nothing to choose
+  n = Math.min(Math.max(1, n), last);
+  finderState.step = n;
+  document.querySelectorAll("#finder-form .wiz").forEach(sec => sec.hidden = +sec.dataset.step !== n);
+  document.querySelectorAll("#finder-form .wiz-tab").forEach(t => {
+    const k = +t.dataset.step;
+    t.classList.toggle("on", k === n);
+    t.classList.toggle("done", k < n);
+    t.hidden = k > last;
+    t.setAttribute("aria-selected", String(k === n));
+  });
+  const go = document.querySelector('#finder-form .wiz[data-step="1"] .wiz-nav');
+  if(go) go.hidden = last === 1;
+  const bar = document.querySelector("#finder-form .wiz-bar span");
+  if(bar) bar.style.width = `${Math.round(n / last * 100)}%`;
 }
 
 /* The background a rung needs: class 12 asks for the stream and subjects, a degree
@@ -1307,8 +1406,7 @@ function finderBackground(){
     <p class="caption" style="margin:0 0 6px">Optional. It decides the order the courses come in, not which ones you may do.</p>
     <div class="chipset scroll">${o.interests.map(x =>
       `<label class="pick"><input type="checkbox" name="interest" value="${esc(x.value)}"${
-        s.interests.includes(x.value) ? " checked" : ""}>${esc(x.label)}</label>`).join("")}</div>
-    <div style="margin-top:18px"><button class="primary" type="submit">Find courses</button></div>` : "";
+        s.interests.includes(x.value) ? " checked" : ""}>${esc(x.label)}</label>`).join("")}</div>` : "";
 }
 
 /* Right-hand panel: the subjects of this rung, then the courses of the next one. */
@@ -1583,7 +1681,7 @@ async function showLadder(){
       ${plan.next.streams.map(st => streamCard(st, examList && examList.exams)).join("")}
     </div>` : ""}
     ${examsBlock(examList, s.stage)}
-    ${levels.length ? `<div class="block"><h3>Courses you can do next</h3>
+    ${levels.length ? `<div class="block" id="finder-courses"><h3>Courses you can do next</h3>
       <p class="muted small">The academic path and the skill path both count. NEP 2020 treats them
         as equal, and a skill course can be taken alongside school or a degree.</p>
       ${levels.length > 1 ? `<div class="row" style="margin-bottom:10px">${levels.map(l =>
@@ -1601,14 +1699,37 @@ async function showLadder(){
   bindExams(el, examStream);
 }
 
+function topMatch(out){
+  const c = out.courses[0];
+  if(!c) return "";
+  const asked = out.interests.length;
+  return `<div class="course top-match" data-key="${esc(c.key)}">
+    <div class="top-head">
+      <div><div class="eyebrow">Closest match</div><h3>${esc(c.name)}</h3></div>
+      <span class="gchip ${c.fit === "Strong match" ? "done" : "ready"}">${esc(c.fit)}</span>
+    </div>
+    <p class="muted small" style="margin:0 0 10px">Matches ${c.matched.length} of the ${asked} ${asked === 1 ? "interest" : "interests"} you picked: ${esc(c.matched.join(", "))}.</p>
+    <div class="chips">${[c.level_label, c.duration, c.track_label].filter(Boolean).map(chip).join("")}</div>
+    <p class="need">Usually needs: ${esc(c.eligibility || "")}</p>
+    ${c.years ? `<details class="working"><summary>What you will study, with free study links</summary>${yearList(c.years)}</details>
+      <details class="working plan"><summary>Plan it week by week</summary><div class="plan-body">Loading</div></details>` : ""}
+    <div class="actions">${saveBtn(c.key)}</div>
+    <p class="caption" style="margin:8px 0 0">Ranked by how many of your interests each course covers, among the
+      courses your background qualifies you for. Rules, not the model.</p>
+  </div>`;
+}
 function finderCourses(out){
-  return `${out.courses.length ? out.courses.map(c => courseCard(c, saveBtn(c.key))).join("")
+  return `${out.courses.length ? topMatch(out) + out.courses.slice(1).map(c => courseCard(c, saveBtn(c.key))).join("")
       : `<div class="empty">No course at this level matches those interests for your background.</div>`}
     ${out.also_consider.length ? `<h3 style="margin:18px 0 6px">Also consider</h3>
       <p class="caption" style="margin:0 0 10px">These match your interests but usually need a different background.</p>
       ${out.also_consider.map(c => courseCard(c)).join("")}` : ""}`;
 }
 
+/* Explore is a catalogue: filters on the left with real counts, a search across course
+   names and subjects at the top, the active filters as removable chips. Every count is
+   the number of courses in the catalogue, nothing else. */
+let exploreState = {levels: new Set(), cats: new Set(), q: ""};
 async function showExplore(level){
   const el = $("#finder-results");
   el.dataset.filled = "1";
@@ -1621,36 +1742,80 @@ async function showExplore(level){
     }catch(e){ el.innerHTML = `<div class="err">Could not load the course list.</div>`; return; }
   }
   const x = exploreCache;
+  if(level && level !== "all") exploreState.levels = new Set([level]);
+  exploreFacets(x);
   el.innerHTML = `
     ${pageHead("Explore all courses", `All ${x.count} courses, whatever your background, with free study links.`,
       `<button class="small" data-go="finder">${me && me.role === "student" ? "Back to what I can do next" : "Back to the Course Finder"}</button>`,
       "Course Finder · rule-based catalogue")}
-    <div class="row" style="margin:0 0 12px">${[["all", "All levels"], ...x.levels.map(l => [l.level, l.label])].map(([v, lab]) =>
-      `<button class="small ex-level${v === level ? " on" : ""}" data-l="${esc(v)}">${esc(lab)}</button>`).join("")}</div>
-    <input id="ex-filter" placeholder="Filter by course or subject, for example economics or data structures" autocomplete="off" style="margin-bottom:14px" />
+    <div class="ex-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <input id="ex-filter" type="search" aria-label="Search courses and subjects"
+        placeholder="Search courses and subjects, for example economics or data structures" autocomplete="off" value="${esc(exploreState.q)}" /></div>
+    <div class="ex-active" id="ex-active"></div>
+    <p class="caption" id="ex-count" style="margin:0 0 10px"></p>
     <div id="ex-list"></div>
     <p class="caption" style="margin:14px 0 0">${esc(x.method)}. ${esc(x.note)}</p>
     <div style="margin-top:12px">${signupCta()}</div>`;
-  const draw = () => {
-    const q = $("#ex-filter").value.trim().toLowerCase();
-    let shown = 0;
-    const html = x.levels.filter(l => level === "all" || l.level === level).map(l => {
-      const cats = l.categories.map(cat => {
-        const cs = cat.courses.filter(c => !q || c.name.toLowerCase().includes(q) || c.category.toLowerCase().includes(q)
-          || c.years.some(y => y.subjects.some(sb => sb.name.toLowerCase().includes(q))));
-        shown += cs.length;
-        return cs.length ? `<h3 style="margin:16px 0 8px">${esc(cat.category)}</h3>${
-          cs.map(c => courseCard(c, saveBtn(c.key))).join("")}` : "";
-      }).join("");
-      return cats ? `<h2>${esc(l.label)}</h2>${cats}` : "";
-    }).join("");
-    $("#ex-list").innerHTML = shown ? html : `<div class="empty">No course or subject matches that filter.</div>`;
-    bindSave($("#ex-list"));
-    bindPlans($("#ex-list"));
+  $("#ex-filter").oninput = e => { exploreState.q = e.target.value; drawExplore(); };
+  drawExplore();
+}
+
+function exploreFacets(x){
+  const cats = new Map();
+  x.levels.forEach(l => l.categories.forEach(c => cats.set(c.category, (cats.get(c.category) || 0) + c.courses.length)));
+  const box = (name, value, label, n, on) => `<label class="facet"><input type="checkbox" name="${name}" value="${esc(value)}"${
+    on ? " checked" : ""}><span>${esc(label)}</span><small>${n}</small></label>`;
+  $("#finder-form-wrap").innerHTML = `<div class="facets">
+    <div class="facets-head"><h2 style="margin:0">Filters</h2>
+      <button type="button" class="small" id="ex-clear">Clear all</button></div>
+    <h4>Level</h4>
+    ${x.levels.map(l => box("lvl", l.level, l.label, l.categories.reduce((n, c) => n + c.courses.length, 0),
+      exploreState.levels.has(l.level))).join("")}
+    <h4>Subject area</h4>
+    ${[...cats].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([c, n]) =>
+      box("cat", c, c, n, exploreState.cats.has(c))).join("")}
+  </div>`;
+  const wrap = $("#finder-form-wrap");
+  wrap.querySelectorAll(".facet input").forEach(i => i.onchange = () => {
+    const set = i.name === "lvl" ? exploreState.levels : exploreState.cats;
+    i.checked ? set.add(i.value) : set.delete(i.value);
+    drawExplore();
+  });
+  $("#ex-clear").onclick = () => {
+    exploreState = {levels: new Set(), cats: new Set(), q: ""};
+    exploreFacets(x);
+    const f = $("#ex-filter"); if(f) f.value = "";
+    drawExplore();
   };
-  el.querySelectorAll(".ex-level").forEach(b => b.onclick = () => showExplore(b.dataset.l));
-  $("#ex-filter").oninput = draw;
-  draw();
+}
+
+function drawExplore(){
+  const x = exploreCache, st = exploreState, q = st.q.trim().toLowerCase();
+  let shown = 0;
+  const html = x.levels.filter(l => !st.levels.size || st.levels.has(l.level)).map(l => {
+    const cats = l.categories.filter(cat => !st.cats.size || st.cats.has(cat.category)).map(cat => {
+      const cs = cat.courses.filter(c => !q || c.name.toLowerCase().includes(q) || c.category.toLowerCase().includes(q)
+        || c.years.some(y => y.subjects.some(sb => sb.name.toLowerCase().includes(q))));
+      shown += cs.length;
+      return cs.length ? `<h3 style="margin:16px 0 8px">${esc(cat.category)}</h3>${
+        cs.map(c => courseCard(c, saveBtn(c.key))).join("")}` : "";
+    }).join("");
+    return cats ? `<h2>${esc(l.label)}</h2>${cats}` : "";
+  }).join("");
+  const label = new Map(x.levels.map(l => [l.level, l.label]));
+  $("#ex-active").innerHTML = [...[...st.levels].map(v => ["lvl", v, label.get(v)]), ...[...st.cats].map(v => ["cat", v, v])]
+    .map(([k, v, lab]) => `<button type="button" class="small ex-chip" data-k="${k}" data-v="${esc(v)}"
+      aria-label="Remove the ${esc(lab)} filter">${esc(lab)} <span aria-hidden="true">&times;</span></button>`).join("");
+  $("#ex-count").textContent = `${shown} ${shown === 1 ? "course" : "courses"} shown`;
+  $("#ex-list").innerHTML = shown ? html : `<div class="empty">No course matches those filters. Try fewer, or a shorter search.</div>`;
+  $("#ex-active").querySelectorAll(".ex-chip").forEach(b => b.onclick = () => {
+    (b.dataset.k === "lvl" ? st.levels : st.cats).delete(b.dataset.v);
+    const box = $(`#finder-form-wrap .facet input[name="${b.dataset.k}"][value="${CSS.escape(b.dataset.v)}"]`);
+    if(box) box.checked = false;
+    drawExplore();
+  });
+  bindSave($("#ex-list"));
+  bindPlans($("#ex-list"));
 }
 
 /* ---------------- charts ---------------- */
