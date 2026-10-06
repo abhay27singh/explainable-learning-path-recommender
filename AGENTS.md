@@ -19,7 +19,7 @@ paper.
 ## Commands
 
 ```bash
-make test                                   # 286 tests, pytest
+make test                                   # 289 tests, pytest
 make api                                    # http://localhost:8420
 make stop                                   # stops whatever is listening on 8420
 .venv/bin/python -m pytest tests/test_stages.py -q

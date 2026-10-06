@@ -138,3 +138,32 @@ def test_the_progress_calendar_covers_a_year():
     cal = calendar_days([], TODAY, weeks=CALENDAR_WEEKS)
     assert len(cal) >= 52 * 7
     assert cal[0]["weekday"] == 0 and cal[-1]["date"] == TODAY.isoformat()
+
+
+def test_the_weekly_summary_is_made_of_whole_sentences(tmp_path):
+    """Regression: with no week rising, the summary said "It fell by 5 points or more in
+    31 weeks." with nothing for "it" to mean, and with no pass it said "You passed 0
+    tests and marked 1 as hard"."""
+    import sqlite3
+    import time
+
+    from api.service import Service
+    from elpr.db.app_store import AppStore
+
+    service = Service()
+    service.store = AppStore(tmp_path / "app.db")
+    user = service.store.register("learner", "passw0rd", "L", "student", module="DDD")
+    weeks = [n["concept"] for n in service.module_graph("DDD")["nodes"]]
+    service.store.add_event(user.id, weeks[0], "study")
+    service.store.add_event(user.id, weeks[1], "assessment", False, 20)
+    con = sqlite3.connect(tmp_path / "app.db")
+    con.execute("UPDATE study_events SET created_at = ? WHERE id = 1", (time.time() - 10 * 86400,))
+    con.commit()
+    con.close()
+
+    week = service.progress_for(user)["week"]
+    lines = week["summary"]
+    assert all(line.endswith(".") and line[0].isupper() for line in lines), lines
+    assert not any(line.startswith("It ") for line in lines) or week["moved_up"]
+    assert "passed 0" not in " ".join(lines) and "You found 1 week hard." in lines
+    assert lines[-1].startswith("Your next step is ")

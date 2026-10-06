@@ -159,3 +159,25 @@ def test_the_right_column_stays_in_view_without_covering_the_strip():
     wide = media_block_holding(css, ".railside.stick{align-self:stretch}")
     assert ".railside.stick > .railside-in{position:sticky" in wide
     assert '<aside class="railside stick"><div class="railside-in">' in functions()["renderStudent"]
+
+
+def test_progress_says_each_thing_once_in_sentences():
+    """The heading said "Computer Science · 7 of 35 weeks done", the course card said it
+    again as numbers, the activity card was a row of label and number pairs, and the
+    streak appeared twice. Each is now one sentence, said once."""
+    fns = functions()
+    page = fns["renderProgress"]
+    assert "You have finished ${path.n_done} of the ${path.n_weeks} weeks" in page
+    assert "milestoneBlock(progress, {streak: false})" in page, "the activity card says the streak"
+    assert "act-stats" not in PAGE and "cf-figs" not in PAGE and "railcourse" not in PAGE
+    assert "-day streak" in fns["activityCard"]
+    assert 'class="tiles"' not in fns["renderSchoolProgress"]
+
+
+def test_progress_keeps_its_right_column_in_view_too():
+    """Recent activity moved beside the calendar, which leaves the right column short
+    enough to stay in view on a laptop screen."""
+    page = functions()["renderProgress"]
+    assert '<aside class="railside stick"><div class="railside-in">' in page
+    side = page.split('<aside class="railside stick">')[1].split("</aside>")[0]
+    assert "${recent}" not in side

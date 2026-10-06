@@ -473,9 +473,11 @@ class Service:
         else:
             lines.append(f"In the last 7 days you recorded {plural(n, 'activity', 'activities')} "
                          f"across {plural(len(studied), 'week', 'weeks')} of your course.")
-            if passed or hard:
-                lines.append(f"You passed {plural(passed, 'test', 'tests')} and marked "
-                             f"{hard} as hard.")
+            # Regression: "You passed 0 tests and marked 1 as hard." Say only what happened.
+            did = ([f"passed {plural(passed, 'test', 'tests')}"] if passed else []) \
+                + ([f"found {plural(hard, 'week', 'weeks')} hard"] if hard else [])
+            if did:
+                lines.append(f"You {' and '.join(did)}.")
             if first_week:
                 lines.append("This is your first week of activity, so there is no earlier "
                              "week to compare with.")
@@ -484,12 +486,16 @@ class Service:
                     lines.append(f"Your chance of doing well rose by 5 points or more in "
                                  f"{plural(len(up), 'week', 'weeks')} of the course.")
                 if down:
+                    # Regression: "It fell ..." stood alone when nothing rose, so "it" had
+                    # nothing to refer to.
                     lines.append(f"It fell by 5 points or more in "
-                                 f"{plural(len(down), 'week', 'weeks')}.")
+                                 f"{plural(len(down), 'week', 'weeks')}." if up else
+                                 f"Your chance of doing well fell by 5 points or more in "
+                                 f"{plural(len(down), 'week', 'weeks')} of the course.")
                 if not up and not down:
                     lines.append("No week's chance of doing well changed by 5 points or more.")
         if next_step:
-            lines.append(f"Suggested next step: {next_step}.")
+            lines.append(f"Your next step is {next_step}.")
 
         all_passed = sum(1 for e in events if e["kind"] == "assessment" and e["correct"])
         return {

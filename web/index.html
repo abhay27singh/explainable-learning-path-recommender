@@ -357,13 +357,6 @@
   .viz-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px;align-items:start}
   /* Activity: the count and the streaks in one line above a year of days, the way a
      contribution graph reads. */
-  .act-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 28px;flex-wrap:wrap;margin:0 0 14px}
-  .act-head h3{margin:0;font-size:15px;font-weight:600;color:var(--ink-soft)}
-  .act-head h3 b{font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums;margin-right:4px}
-  .act-stats{display:flex;gap:26px;margin:0;flex-wrap:wrap}
-  .act-stats div{display:flex;flex-direction:column;gap:2px}
-  .act-stats dt{font-size:12px;color:var(--ink-faint)}
-  .act-stats dd{margin:0;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
   .cal-scroll{overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
   .cal-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px}
   .viz-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink-soft);margin:0 0 10px}
@@ -954,10 +947,6 @@
     .ms-part span:not(.gchip){font-size:12px;color:var(--ink-faint)}
   }
   /* ---------------- progress: course so far, week map ---------------- */
-  .cf-figs{display:flex;gap:10px 28px;flex-wrap:wrap;margin:4px 0 12px}
-  .cf-figs div{display:flex;flex-direction:column}
-  .cf-figs b{font-family:var(--sans);font-size:28px;line-height:1.1;font-weight:700;color:var(--ink)}
-  .cf-figs span{font-size:12px;color:var(--ink-faint)}
   .st-bar{display:flex;gap:2px;height:14px;border-radius:4px;overflow:hidden;background:var(--surface-alt)}
   .st-seg{display:block;height:100%}
   .st-seg.done{background:var(--st-done)}
@@ -2959,12 +2948,9 @@ function courseFigure(m, now, module){
     return {...col, ...ps, ready: r, rest: col.nodes.length - ps.done - r};
   });
   return `<figure class="viz course-fig"><h3>Your course so far</h3>
-    <p class="sub">${n} weeks of ${esc(modName(module))}. A week is ready to start when everything it builds on is done.</p>
-    <div class="cf-figs">
-      <div><b>${c.done}</b><span>of ${n} weeks done</span></div>
-      <div><b>${ready}</b><span>ready to start</span></div>
-      <div><b>${c.locked}</b><span>not ready yet</span></div>
-    </div>
+    <p class="sub">${ready === 1 ? "1 week is" : `${ready} weeks are`} ready to start now${c.locked
+      ? `, and ${c.locked} more ${c.locked === 1 ? "waits" : "wait"} for the weeks ${c.locked === 1 ? "it builds" : "they build"} on` : ""}.
+      A week is ready when everything it builds on is done.</p>
     ${stBar(c.done, ready, c.locked, "Whole course")}
     <div class="viz-legend"><span><i class="k-done"></i>Done</span><span><i class="k-ready"></i>Ready to start</span>
       <span><i class="k-rest"></i>Not ready yet</span></div>
@@ -3115,8 +3101,6 @@ function activityCard(p){
   const size = 14, pitch = 17, padL = 30, padT = 18;
   const cols = Math.ceil(cal.length / 7), W = padL + cols * pitch, H = padT + 7 * pitch;
   const dfmt = d => new Date(d + "T00:00:00").toLocaleDateString(undefined, {day: "numeric", month: "short", year: "numeric"});
-  // A month gets a label only with room for it: the year starts part way through a
-  // month, and that sliver's label used to run into the next one ("SepOct").
   // A month gets a label only with room for it. The year starts part way through a
   // month, and that sliver's label used to run into the next one ("SepOct"), so when
   // two starts are too close the earlier, shorter one gives way.
@@ -3135,15 +3119,14 @@ function activityCard(p){
       stroke="var(--rule)" stroke-width="${d.count ? 0 : 1}" tabindex="0" role="img" aria-label="${dfmt(d.date)}: ${d.count}" data-tip="${esc(JSON.stringify(tip))}"/>`;
   }).join("");
   const rows = cal.filter(d => d.count).map(d => [dfmt(d.date), d.count]);
-  return `<figure class="viz activity">
-    <div class="act-head">
-      <h3><b>${total}</b>${total === 1 ? "activity" : "activities"} in the past year</h3>
-      <dl class="act-stats">
-        <div><dt>Active days</dt><dd>${active}</dd></div>
-        <div><dt>Current streak</dt><dd>${s.current}</dd></div>
-        <div><dt>Longest streak</dt><dd>${s.longest}</dd></div>
-      </dl>
-    </div>
+  const days = n => `${n} ${n === 1 ? "day" : "days"}`;
+  const streak = s.current
+    ? (s.current >= s.longest ? ` You are on a ${s.current}-day streak, your longest so far.`
+      : ` You are on a ${s.current}-day streak. Your longest was ${days(s.longest)}.`)
+    : s.longest ? ` Your longest streak was ${days(s.longest)}.` : "";
+  return `<figure class="viz activity"><h3>Your activity</h3>
+    <p class="sub">${total ? `You recorded ${total} ${total === 1 ? "activity" : "activities"} on ${days(active)}
+      in the past year.${streak}` : "Nothing recorded yet. Each day you record something fills a square."}</p>
     <div class="cal-scroll"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:${Math.round(W * 0.8)}px;max-width:${Math.round(W * 1.5)}px;height:auto;display:block" role="group" aria-label="Activity over the past year">${months}${dayNames}${cells}</svg></div>
     <div class="cal-foot">
       <span class="caption">A day counts toward a streak when you record at least one activity.</span>
@@ -3160,7 +3143,7 @@ function weekFigure(p){
   const up = w.moved_up.length > 5 ? `${w.moved_up.slice(0, 5).join(", ")} and ${w.moved_up.length - 5} more` : w.moved_up.join(", ");
   return `<figure class="viz"><h3>This week</h3><p class="sub">From the activities you recorded in the last 7 days.</p>
     <ul class="plain">${w.summary.map(l => `<li>${esc(l)}</li>`).join("")}</ul>
-    ${up ? `<p class="caption" style="margin:10px 0 0">Improved: ${esc(up)}</p>` : ""}
+    ${up ? `<p class="caption" style="margin:10px 0 0">The weeks that rose: ${esc(up)}.</p>` : ""}
   </figure>`;
 }
 
@@ -3532,21 +3515,13 @@ function nextStepsBlock(plan, examList = null){
     </div></div>`;
 }
 
-function schoolRail(plan, where){
+function schoolRail(where){
   return railShell(
     `<button class="railitem on" aria-current="page">${RAIL_ICON.learning}<span>My learning</span></button>
      ${railGo("progress", "Progress", "progress")}
      ${railGo("finder", "Course Finder", "finder")}
      ${railGo("explore", "Explore all courses", "explore")}`,
-    `<div>
-      <div class="grouphead">Where you are</div>
-      <div class="railcourse">
-        <div>${esc(where || "Level not set")}</div>
-        <div class="caption">${plan.now.subjects.length
-          ? `${plan.now.subjects.length} ${plan.now.subjects.length === 1 ? "subject" : "subjects"} with study links`
-          : "Add your stream to see your subjects"}</div>
-      </div>
-    </div>`,
+    "",
     "",
     railMe(me.display_name, where || "Level not set"));
 }
@@ -3566,7 +3541,7 @@ async function renderSchoolStudent(root){
     .filter(Boolean).join(" · ");
   root.innerHTML = `<div class="page wide">
     <div class="workspace two narrow">
-      ${schoolRail(plan, sub)}
+      ${schoolRail(sub)}
       <div class="wsmain">
         ${pageHead(`Hi ${me.display_name}`, sub, "", "My learning")}
         ${studyNowBlock(plan)}
@@ -3680,13 +3655,13 @@ function quizBlock(step){
       <button class="primary small" type="submit" data-c="${step.concept}" style="margin-top:10px">Save score</button>
     </form></div>`;
 }
-function milestoneBlock(p){
+function milestoneBlock(p, {streak = true} = {}){
   if(!p) return "";
   const earned = p.badges.filter(b => b.earned), next = p.badges.find(b => !b.earned);
   const days = p.streak ? p.streak.current : 0;
   return `<div class="block"><h3>Milestones</h3>
     <p class="muted small">${earned.length ? `You have reached ${earned.length} of ${p.badges.length}.`
-      : `You have not reached any of the ${p.badges.length} yet.`}${days > 1 ? ` You have studied ${days} days in a row.` : ""}</p>
+      : `You have not reached any of the ${p.badges.length} yet.`}${streak && days > 1 ? ` You have studied ${days} days in a row.` : ""}</p>
     ${earned.length ? `<div class="badges" style="margin-top:10px">${earned.map(b =>
       `<span class="badge-chip earned">${esc(b.name)}</span>`).join("")}</div>` : ""}
     ${next ? `<p class="caption" style="margin:10px 0 0">To reach "${esc(next.name)}", ${esc(next.rule.charAt(0).toLowerCase() + next.rule.slice(1))}.</p>` : ""}
@@ -4338,8 +4313,8 @@ function scoreChart(history, names, done = new Set()){
   const latest = new Map(all.map(m => [m.concept, m]));
   const open = [...latest.values()].filter(m => !m.pass && !done.has(m.concept)).length;
   return `<figure class="viz"><h3>Quiz scores</h3>
-    <p class="sub">${all.length > marks.length ? `Your latest ${marks.length} of ${all.length} marks` : "Every mark you entered"}, oldest first.
-      Blue passed; amber is below the pass mark of 40.</p>
+    <p class="sub">${all.length > marks.length ? `These are your latest ${marks.length} of ${all.length} marks` : "These are all the marks you entered"}, oldest first.
+      A blue bar is a pass; an amber bar is below the pass mark of 40.</p>
     <div class="qchart" role="group" aria-label="Quiz scores">
       <div class="qrow qscale" aria-hidden="true"><span></span><span class="qtrack bare"><span>0</span><span class="qpass-lab">pass mark 40</span><span>100</span></span><span></span></div>
       ${rows}</div>
@@ -4409,16 +4384,14 @@ async function renderSchoolProgress(root){
     <div class="workspace two narrow">
       ${railShell(`${railGo("learning", "My learning", "dashboard")}${railHere("progress", "Progress")}
           ${railGo("finder", "Course Finder", "finder")}${railGo("explore", "Explore all courses", "explore")}`,
-        `<div><div class="grouphead">Where you are</div><div class="railcourse"><div>${esc(sub || "Level not set")}</div>
-          <div class="caption">${checks.length} of ${units} units checked</div></div></div>`,
-        "", railMe(me.display_name, sub || "Level not set"))}
+        "", "", railMe(me.display_name, sub || "Level not set"))}
       <div class="wsmain">
-        ${pageHead("Progress", sub, "", "Progress · from your self-checks")}
-        ${exams.length ? (checks.length ? `<div class="tiles">
-            <div class="tile"><span class="ico">${TILE_ICON.done}</span><div class="v">${checks.length} of ${units}</div><div class="k">units checked</div></div>
-            <div class="tile"><span class="ico">${TILE_ICON.score}</span><div class="v">${passing}</div><div class="k">passed, ${pass} or more on the latest try</div></div>
-            <div class="tile"><span class="ico">${TILE_ICON.next}</span><div class="v">${checks.length - passing}</div><div class="k">need another look</div></div>
-          </div>`
+        ${pageHead("Progress", checks.length
+          ? `You have checked ${checks.length} of the ${units} units that have questions. ${passing === checks.length
+            ? "You passed every one." : passing ? `You passed ${passing}, and ${checks.length - passing} need another look.`
+            : "None is passed yet, so each needs another look."}`
+          : "Your self-check results appear here.")}
+        ${exams.length ? (checks.length ? ""
           : `<div class="callout">Nothing checked yet. Every unit below has a few questions, marked as soon as you answer.
               Start with a unit you have just studied.</div>`)
           + exams.map((e, i) => examBlock(e, syllabi[i])).join("")
@@ -4447,31 +4420,36 @@ async function renderProgress(){
   const m = graphModel(g, {done: new Set(path.done || []), now});
   const concepts = new Map(state.concepts.map(c => [c.concept, c]));
   const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
+  const when = at => new Date(at * 1000).toLocaleDateString(undefined, {day: "numeric", month: "short"});
   const hist = state.history.length
-    ? state.history.slice().reverse().slice(0, 6).map(h =>
-        `<li>${h.score !== null && h.score !== undefined
-          ? `Quiz on ${esc(names[h.concept_id] || "a week outside your course")}: ${h.score} out of 100 <span class="caption">${h.score >= 40 ? "passed" : "below the pass mark"}</span>`
-          : `${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}`}</li>`).join("")
+    ? state.history.slice().reverse().slice(0, 6).map(h => {
+        const wk = esc(names[h.concept_id] || "a week outside your course");
+        const said = h.score !== null && h.score !== undefined
+          ? `You scored ${h.score} out of 100 on the ${wk} quiz, ${h.score >= 40 ? "a pass" : "below the pass mark of 40"}.`
+          : h.kind === "assessment" ? (h.correct ? `You passed the test for ${wk}.` : `You found ${wk} hard.`)
+          : `You studied ${wk}.`;
+        return `<li>${said} <span class="caption">${when(h.created_at)}</span></li>`;
+      }).join("")
     : "<li>Nothing recorded yet.</li>";
   const scores = scoreChart(state.history, names, new Set(path.done || []));
-  const recent = `<div class="block" style="margin:0"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
+  const recent = `<div class="block"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
     ${state.n_events ? `<div class="row" style="margin-top:12px"><button class="small" id="undo">Undo last activity</button>
       ${state.n_events > 6 ? `<button class="small" data-go="record">All ${state.n_events} in your record</button>` : ""}</div>` : ""}</div>`;
   root.innerHTML = `<div class="page wide">
     <div class="workspace wk-prog">
       ${studentRail("progress", {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
       <div class="wsmain">
-        ${pageHead("Progress", `${modName(state.module)} · ${path.n_done} of ${path.n_weeks} weeks done`, "",
-          "Progress · from what you recorded")}
+        ${pageHead("Progress", `${path.n_done ? `You have finished ${path.n_done} of the ${path.n_weeks} weeks of ${modName(state.module)}.`
+          : `You have not finished a week of ${modName(state.module)} yet.`} Everything on this page comes from what you recorded.`)}
         ${activityCard(progress)}
+        ${recent}
       </div>
 
-      <aside class="railside">
+      <aside class="railside stick"><div class="railside-in">
         ${weekFigure(progress)}
-        ${milestoneBlock(progress)}
+        ${milestoneBlock(progress, {streak: false})}
         ${scores}
-        ${recent}
-      </aside>
+      </div></aside>
 
       <div class="wsmid">
         <div class="viz-row">${courseFigure(m, now, state.module)}${finishFigure(state.history, m)}</div>
