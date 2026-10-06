@@ -11,16 +11,19 @@ Access rules, enforced server-side rather than by hiding buttons:
 
 from __future__ import annotations
 
+import os
 import sys
 import threading
 import time
+from collections import deque
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from fastapi import Cookie, FastAPI, HTTPException, Query, Response
+from fastapi import Cookie, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from elpr.modules import module_display_map, subject_area
 from elpr.profile import clean as clean_profile, options as profile_options
@@ -36,7 +39,25 @@ from elpr.db.app_store import User  # noqa: E402
 if TYPE_CHECKING:                      # importing the service pulls in PyTorch, which
     from api.service import Service    # would delay the port opening by several seconds
 
-app = FastAPI(title="Explainable Learning Path Recommender", version="1.0.0")
+# Deployment switches, read once at start. Both default to the safe setting.
+#   ELPR_HTTPS=1     the site is served over HTTPS: session cookies are marked Secure and
+#                    browsers are told to use HTTPS from then on (HSTS).
+#   ELPR_API_DOCS=1  publish the generated API pages (/docs, /redoc, /openapi.json). Off
+#                    by default, because they list every route to anyone who asks.
+#   ELPR_TRUST_PROXY=1  behind a reverse proxy, take the client's address from
+#                    X-Forwarded-For for rate limits. Never set it without a proxy, or a
+#                    client could pick its own address.
+#   ELPR_SITE_URL    the public address, such as https://example.in. Link previews,
+#                    robots.txt and the sitemap use it; without it, the address the
+#                    request arrived on, which behind a proxy is the internal one.
+HTTPS = os.environ.get("ELPR_HTTPS") == "1"
+SITE_URL = os.environ.get("ELPR_SITE_URL", "").rstrip("/")
+API_DOCS = os.environ.get("ELPR_API_DOCS") == "1"
+TRUST_PROXY = os.environ.get("ELPR_TRUST_PROXY") == "1"
+
+app = FastAPI(title="Explainable Learning Path Recommender", version="1.0.0",
+              docs_url="/docs" if API_DOCS else None, redoc_url="/redoc" if API_DOCS else None,
+              openapi_url="/openapi.json" if API_DOCS else None)
 # The course list is 112 KB of JSON and the page itself 98 KB; both compress to about
 # a tenth of that, which matters on a phone connection.
 app.add_middleware(GZipMiddleware, minimum_size=1024)
@@ -64,6 +85,86 @@ def load() -> None:
               f"in {time.perf_counter() - start:.1f}s")
 
     threading.Thread(target=warm, name="warm-model", daemon=True).start()
+
+
+# Every response says what the browser may do with it. The page has inline script and
+# style and loads nothing from anywhere else, so the policy can be this narrow.
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; "
+        "base-uri 'self'; form-action 'self'; frame-ancestors 'none'"),
+}
+
+
+class RateLimit:
+    """At most `limit` requests per `window` seconds for each key, in memory.
+
+    One process, one machine: enough for this site. Behind several workers each keeps
+    its own count, so the real limit is that many times higher."""
+
+    MAX_KEYS = 50_000
+
+    def __init__(self, limit: int, window: float):
+        self.limit, self.window = limit, window
+        self.hits: dict[str, deque] = {}
+
+    def allow(self, key: str, now: float | None = None) -> bool:
+        now = time.monotonic() if now is None else now
+        q = self.hits.setdefault(key, deque())
+        while q and now - q[0] >= self.window:
+            q.popleft()
+        if len(q) >= self.limit:
+            return False
+        q.append(now)
+        if len(self.hits) > self.MAX_KEYS:
+            # Never grow without end: forget keys with nothing recent, then the oldest half.
+            for k in [k for k, v in self.hits.items() if not v]:
+                del self.hits[k]
+            for k in list(self.hits)[: max(0, len(self.hits) - self.MAX_KEYS // 2)]:
+                del self.hits[k]
+        return True
+
+
+# What each limit protects: sign-up from account spam, the What-if from tying up the
+# model, self-check marking from answer guessing by script, and everything else from
+# plain flooding. Sign-in has its own per-username throttle in the store.
+RATE_LIMITS = [
+    ("POST", "/api/auth/register", RateLimit(5, 3600), "too many new accounts from here, try again in an hour"),
+    ("GET", "/api/me/what-if", RateLimit(20, 60), "too many what-if checks in a minute, wait a moment"),
+    ("POST", "/api/selfcheck", RateLimit(30, 60), "too many self-checks in a minute, wait a moment"),
+    ("*", "/api/", RateLimit(300, 60), "too many requests, wait a moment"),
+]
+
+
+def client_key(request) -> str:
+    if TRUST_PROXY:
+        forwarded = request.headers.get("x-forwarded-for", "")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+@app.middleware("http")
+async def guard(request, call_next):
+    """Rate limits before the work, security headers after it."""
+    path, method, who = request.url.path, request.method, client_key(request)
+    for m, prefix, limiter, message in RATE_LIMITS:
+        if (m == "*" or m == method) and path.startswith(prefix) and not limiter.allow(who):
+            response = JSONResponse({"detail": message}, status_code=429)
+            break
+    else:
+        response = await call_next(request)
+    for name, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    if HTTPS:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
 
 
 @app.middleware("http")
@@ -193,7 +294,7 @@ def register(body: Registration, response: Response) -> dict:
 
     token = s.store.create_session(user.id)
     s.store.log(user.id, "signed up", f"{user.role}, {stage or 'no level'}")
-    response.set_cookie(COOKIE, token, httponly=True, samesite="lax", max_age=12 * 3600)
+    response.set_cookie(COOKIE, token, httponly=True, samesite="lax", max_age=12 * 3600, secure=HTTPS)
     return _me(user)
 
 
@@ -214,7 +315,7 @@ def login(body: Credentials, response: Response) -> dict:
         raise HTTPException(401, "incorrect username or password")
     s.store.log(user.id, "signed in")
     token = s.store.create_session(user.id)
-    response.set_cookie(COOKIE, token, httponly=True, samesite="lax", max_age=12 * 3600)
+    response.set_cookie(COOKIE, token, httponly=True, samesite="lax", max_age=12 * 3600, secure=HTTPS)
     return _me(user)
 
 
@@ -222,7 +323,7 @@ def login(body: Credentials, response: Response) -> dict:
 def logout(response: Response, elpr_session: str | None = Cookie(None)) -> dict:
     if elpr_session:
         _service().store.end_session(elpr_session)
-    response.delete_cookie(COOKIE)
+    response.delete_cookie(COOKIE, httponly=True, samesite="lax", secure=HTTPS)
     return {"ok": True}
 
 
@@ -984,14 +1085,70 @@ def metrics(elpr_session: str | None = Cookie(None)) -> dict:
     return out
 
 
+def site_base(request: Request) -> str:
+    return SITE_URL or str(request.base_url).rstrip("/")
+
+
+NOT_FOUND_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found · Learning Path Recommender</title>
+<meta name="robots" content="noindex"><link rel="icon" href="/favicon.ico">
+<style>:root{color-scheme:light dark;--bg:#F3F9FE;--ink:#0F243D;--soft:#536B85;--accent:#0369A1}
+@media (prefers-color-scheme: dark){:root{--bg:#0A1526;--ink:#F0F6FC;--soft:#C7E3F8;--accent:#38BDF8}}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--ink);
+font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;padding:0 16px}
+main{max-width:460px}h1{font-size:28px;margin:0 0 8px}p{color:var(--soft);margin:0 0 20px}
+a{color:var(--accent);font-weight:600}</style></head>
+<body><main><h1>That page is not here</h1><p>The address may be mistyped, or the page has moved.
+Everything on this site starts from the home page.</p><a href="/">Go to the home page</a></main></body></html>"""
+
+
+@app.exception_handler(StarletteHTTPException)
+async def not_found(request: Request, exc: StarletteHTTPException):
+    """A person who mistypes an address gets a page, not a line of JSON. The API keeps
+    answering in JSON, because the page reads its errors from there."""
+    if exc.status_code == 404 and not request.url.path.startswith("/api/"):
+        return HTMLResponse(NOT_FOUND_PAGE, status_code=404)
+    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code,
+                        headers=getattr(exc, "headers", None))
+
+
 if WEB.exists():
     app.mount("/static", StaticFiles(directory=WEB), name="static")
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon() -> FileResponse:
+        # Browsers ask for this address whatever the page says, and it used to 404.
+        return FileResponse(WEB / "icons" / "favicon.ico", media_type="image/x-icon")
+
+    @app.get("/robots.txt", include_in_schema=False)
+    def robots(request: Request) -> PlainTextResponse:
+        base = site_base(request)
+        return PlainTextResponse(f"User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: {base}/sitemap.xml\n")
+
+    @app.get("/sitemap.xml", include_in_schema=False)
+    def sitemap(request: Request) -> Response:
+        # The site is one page; its sections live after the # and search engines read
+        # them from the page itself, so the sitemap is that one address.
+        base = site_base(request)
+        xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+               '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+               f"<url><loc>{base}/</loc></url></urlset>\n")
+        return Response(xml, media_type="application/xml")
+
+    _page_cache: dict = {}
+
     @app.get("/")
-    def index() -> FileResponse:
+    def index(request: Request) -> HTMLResponse:
         # The page is the whole application, so a cached copy means a student keeps
         # seeing yesterday's version after an update. Never cache it.
-        return FileResponse(WEB / "index.html",
+        # Link previews (WhatsApp, Telegram) need full addresses for the page and its
+        # picture, so the site's own address is filled in as the page is sent.
+        path = WEB / "index.html"
+        stamp = path.stat().st_mtime_ns
+        if _page_cache.get("stamp") != stamp:
+            _page_cache.update(stamp=stamp, text=path.read_text())
+        base = site_base(request)
+        return HTMLResponse(_page_cache["text"].replace("{{BASE_URL}}", base),
                             headers={"Cache-Control": "no-store, must-revalidate"})
 
     @app.get("/api/version")

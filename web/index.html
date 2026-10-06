@@ -4,6 +4,21 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Learning Path Recommender</title>
+<meta name="description" content="A free weekly study path for students in India, from class 10 to postgraduate. It says what to study next and why, with a Course Finder for 64 courses and revision plans for JEE Main, NEET UG and CUET UG." />
+<meta name="theme-color" content="#F3F9FE" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0A1526" media="(prefers-color-scheme: dark)" />
+<link rel="canonical" href="{{BASE_URL}}/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Learning Path Recommender" />
+<meta property="og:title" content="Learning Path Recommender" />
+<meta property="og:description" content="Your next week of study, and why it comes next. For students in India, from class 10 to postgraduate. Free." />
+<meta property="og:url" content="{{BASE_URL}}/" />
+<meta property="og:image" content="{{BASE_URL}}/static/icons/share.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Learning Path Recommender: your next week of study, and why it comes next." />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230369A1'/%3E%3Cpath d='M7 24 L16 16 L25 8' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='7' cy='24' r='3.2' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='white'/%3E%3Ccircle cx='25' cy='8' r='3.2' fill='white'/%3E%3C/svg%3E" />
 <link rel="preload" href="/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
 
@@ -148,7 +163,7 @@
 
   /* ---------- site header ---------- */
   header.site{position:sticky;top:0;z-index:40;height:var(--header);background:var(--veil);
-    border-bottom:1px solid var(--rule);backdrop-filter:saturate(1.2) blur(6px)}
+    border-bottom:1px solid var(--rule);-webkit-backdrop-filter:saturate(1.2) blur(6px);backdrop-filter:saturate(1.2) blur(6px)}
   header.site .in{max-width:1180px;margin:0 auto;height:100%;padding:0 22px;display:flex;align-items:center;gap:22px}
   .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--ink);text-decoration:none;white-space:nowrap}
   .brand svg{width:28px;height:28px;flex:none}
@@ -318,7 +333,12 @@
   .course-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
   .course h3{margin:0;font-size:16px}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 8px}
-  .chip{font-size:12px;color:var(--ink-soft);background:var(--surface-alt);border-radius:6px;padding:2px 9px;white-space:nowrap}
+  .chip{font-size:12px;color:var(--ink-soft);background:var(--surface-alt);border-radius:6px;padding:2px 9px;white-space:nowrap;
+    max-width:100%;overflow-wrap:anywhere}
+  /* A chip longer than its row wraps rather than widen the page, as the NSQF
+     "qualification pack from the relevant Sector Skill Council" chip did on phones. */
+  .chips .chip{white-space:normal}
+  .cd-top > div{min-width:0}
   .chip.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
   .course .need{margin:0;font-size:13px;color:var(--ink-soft)}
   .course .actions{margin-top:12px}
@@ -649,11 +669,18 @@
   /* ---------------- phone tab bar ---------------- */
   .tabbar{display:none}
   @media(max-width:860px){
-    body.signed-in .tabbar:not([hidden]){display:grid;grid-auto-flow:column;grid-auto-columns:1fr;position:fixed;left:0;right:0;bottom:0;
+    .tabbar:not([hidden]){display:grid;grid-auto-flow:column;grid-auto-columns:1fr;position:fixed;left:0;right:0;bottom:0;
       z-index:45;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));background:var(--glass-strong);
       -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-top:1px solid var(--glass-edge);box-shadow:0 -6px 20px rgba(15,23,42,.06)}
-    body.signed-in{padding-bottom:calc(70px + env(safe-area-inset-bottom,0px))}
-    body.signed-in header.site nav.links{display:none}
+    body{padding-bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+    /* The bar at the bottom is the phone's menu, for visitors and students alike, so the
+       header keeps to one row: the name, the theme switch and the main action. */
+    header.site nav.links{display:none}
+    body:not(.signed-in) header.site .right .btn.ghost{display:none}
+  }
+  @media(max-width:520px){
+    /* The home page's own "Get started" and the bar's "Sign in" cover it on a small phone. */
+    body:not(.signed-in) header.site .right .btn.primary{display:none}
     .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:0;border-radius:10px;
       background:none;box-shadow:none;color:var(--ink-faint);font-size:11px;font-weight:600}
     .tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -836,7 +863,7 @@
   table.cmp th[scope=row]{width:190px;color:var(--ink-faint);font-weight:600;font-size:12px;vertical-align:top}
   table.cmp td{vertical-align:top;font-size:13px}
   .cmp-n{display:none;font-size:13px;font-weight:600;color:var(--ink)}
-  @media(max-width:860px){body.signed-in .cmp-tray{bottom:calc(84px + env(safe-area-inset-bottom,0px))}.ex-stats{display:none}}
+  @media(max-width:860px){.cmp-tray{bottom:calc(84px + env(safe-area-inset-bottom,0px))}.ex-stats{display:none}}
   /* On a phone the names would stack into a third of the screen; the count is enough,
      and the comparison itself names them. */
   @media(max-width:600px){.cmp-pick{display:none}.cmp-n{display:inline}
@@ -1029,6 +1056,24 @@
   .acct div{display:flex;justify-content:space-between;gap:12px;font-size:13px}
   .acct dt{color:var(--ink-faint)}
   .acct dd{margin:0;color:var(--ink);font-weight:600;text-align:right;overflow-wrap:anywhere}
+  /* Footer note and touch sizes. */
+  footer.site .foot-note{display:block;padding-top:14px;margin-top:18px;border-top:1px solid rgba(199,227,248,.15);
+    font-size:12px;color:var(--footer-ink);opacity:.8}
+  /* On a touch screen every control is at least 44 pixels tall, the size a thumb can hit. */
+  @media (pointer: coarse){
+    button, .btn, .seg button, nav.links button, .railitem, .facet, .ex-q, .dur, .wi-wk, .lvl, .fstep{min-height:44px}
+    button.small, .btn.small{min-height:40px;padding-left:14px;padding-right:14px}
+    footer.site .cols a{display:inline-block;padding:8px 0}
+  }
+  /* A long name never widens the header: it is cut with an ellipsis, in full on hover.
+     Regression: a 60-character name made the page 721 pixels wide on a 375 pixel phone. */
+  .me-txt{min-width:0}
+  .me-txt b{display:block;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+  button.me{min-width:0;max-width:220px}
+  @media(max-width:860px){.me-txt b{max-width:110px}button.me{max-width:150px}}
+  /* Headings and names break inside a long word rather than widen the page. */
+  .dash-head > div, .page-head > div{min-width:0}
+  h1, h2, h3, .railme .nm, .acct dd{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -1140,9 +1185,9 @@
       <div style="margin-top:20px"><button class="primary" type="submit">Sign in</button></div>
     </form>
     <div class="auth-err"></div>
-    <p class="alt">New here? <a data-go="signup">Create an account</a></p>
+    <p class="alt">New here? <a href="#/signup" data-go="signup">Create an account</a></p>
     <p class="security">Research demonstration. Do not reuse a password from anywhere else.
-      <a data-go="privacy">Privacy</a><a data-go="terms">Terms</a></p>
+      <a href="#/privacy" data-go="privacy">Privacy</a><a href="#/terms" data-go="terms">Terms</a></p>
   </div></div>
 </div>
 
@@ -1173,9 +1218,9 @@
       <div style="margin-top:20px"><button class="primary" type="submit">Create account</button></div>
     </form>
     <div class="auth-err"></div>
-    <p class="alt">Already have an account? <a data-go="login">Sign in</a></p>
+    <p class="alt">Already have an account? <a href="#/login" data-go="login">Sign in</a></p>
     <p class="security">Research demonstration. Do not reuse a password from anywhere else.
-      <a data-go="privacy">Privacy</a><a data-go="terms">Terms</a></p>
+      <a href="#/privacy" data-go="privacy">Privacy</a><a href="#/terms" data-go="terms">Terms</a></p>
   </div></div>
 </div>
 
@@ -1199,6 +1244,15 @@
 
 <div class="view" id="view-admin">
   <div class="page"><div id="admin" class="empty">loading</div></div>
+</div>
+
+<div class="view" id="view-notfound">
+  <div class="page legal">
+    <h2>That page is not here</h2>
+    <p class="muted">The address may be mistyped, or the page has moved.</p>
+    <div class="row"><a class="btn small" href="#/home" data-go="home">Go to the home page</a>
+      <a class="btn small" href="#/finder" data-go="finder">Open the Course Finder</a></div>
+  </div>
 </div>
 
 <div class="view" id="view-privacy">
@@ -1243,22 +1297,24 @@
     <p>The source code is released publicly for inspection and reproduction. The Open University Learning Analytics Dataset is used under CC-BY 4.0 and is attributed to Kuzilek, Hlosta and Zdrahal (2017). Inter and Plus Jakarta Sans are used under the SIL Open Font License. If you build on this work, cite the paper and the dataset.</p>
     <h3>Contact</h3>
     <p>Reach the maintainer through the issues page of the public source repository:
-      <code>github.com/abhay27singh/explainable-learning-path-recommender</code>.</p>
+      <a href="https://github.com/abhay27singh/explainable-learning-path-recommender/issues" target="_blank" rel="noopener">github.com/abhay27singh/explainable-learning-path-recommender/issues</a>.</p>
   </div>
 </div>
 
 <footer class="site">
   <div class="in">
     <div>
-      <a class="brand" data-go="home">Learning Path Recommender</a>
+      <a href="#/home" class="brand" data-go="home">Learning Path Recommender</a>
       <p>An independent project for students in India. Every recommendation is free to use
         and comes with a clear explanation.</p>
     </div>
     <div class="cols">
-      <div><h4>Product</h4><a data-go="finder">Course Finder</a><a data-go="signup" class="guest-only">Get started</a><a data-go="dashboard" class="auth-only">My learning</a></div>
-      <div><h4>Legal</h4><a data-go="privacy">Privacy</a><a data-go="terms">Terms</a></div>
+      <div><h4>Product</h4><a href="#/finder" data-go="finder">Course Finder</a><a href="#/explore" data-go="explore">Explore courses</a><a href="#/signup" data-go="signup" class="guest-only">Get started</a><a href="#/dashboard" data-go="dashboard" class="auth-only">My learning</a></div>
+      <div><h4>Legal</h4><a href="#/privacy" data-go="privacy">Privacy</a><a href="#/terms" data-go="terms">Terms</a>
+        <a href="https://github.com/abhay27singh/explainable-learning-path-recommender/issues" target="_blank" rel="noopener">Contact</a></div>
     </div>
   </div>
+  <div class="in foot-note"><span>&copy; <span id="foot-year">2026</span> Learning Path Recommender. An independent student project.</span></div>
 </footer>
 
 <script>
@@ -1273,7 +1329,10 @@ async function api(path, opts={}) {
   if(r.status === 401 && !path.startsWith("/api/auth/")) sessionEnded();
   if(!r.ok){
     let m; try{ m=(await r.json()).detail; }catch{ m=r.statusText; }
-    throw Object.assign(new Error(m||"request failed"), {status: r.status});
+    // The server words its errors as phrases ("incorrect username or password"); the
+    // page shows them as sentences.
+    const text = m ? String(m).charAt(0).toUpperCase() + String(m).slice(1) : "Something went wrong. Try again.";
+    throw Object.assign(new Error(text), {status: r.status});
   }
   return r.json();
 }
@@ -1323,11 +1382,18 @@ document.querySelectorAll(".theme-pick").forEach(b => b.onclick = () => {
   applyTheme(b.dataset.mode);
 });
 applyTheme(readTheme());
+$("#foot-year").textContent = new Date().getFullYear();
 window.matchMedia("(prefers-color-scheme: dark)")
   .addEventListener("change", () => { if(!readTheme()) applyTheme(null); });
 
 /* ---------------- routing ---------------- */
-const PUBLIC = new Set(["home","login","signup","finder","privacy","terms"]);
+const PUBLIC = new Set(["home","login","signup","finder","privacy","terms","notfound"]);
+// The tab title names the page, so a student with several tabs open can tell them apart.
+const PAGE_TITLES = {home: "", login: "Sign in", signup: "Create your account", finder: "Course Finder",
+  explore: "Explore courses", dashboard: "My learning", details: "My details", progress: "Progress",
+  record: "Record of study", research: "Research results", admin: "Accounts", privacy: "Privacy policy",
+  terms: "Terms and conditions", notfound: "Page not found"};
+const SITE_NAME = "Learning Path Recommender";
 function nav(name){
   if(location.hash === "#/" + name) show(name); else location.hash = "/" + name;
 }
@@ -1365,11 +1431,16 @@ function show(name){
   const details = name === "details";
   if(details) name = "dashboard";
   if(name === "dashboard") studentTab = details ? "details" : "path";
-  if(!document.getElementById("view-" + name)) name = me ? "dashboard" : "home";
+  if(name && name !== "notfound" && !document.getElementById("view-" + name)) name = "notfound";
+  else if(!name) name = me ? "dashboard" : "home";
   if(!PUBLIC.has(name) && !me) name = "login";
   if((name === "admin" || name === "research") && (!me || me.role !== "admin")) name = "dashboard";
   if(me && (name === "login" || name === "signup" || name === "home")) name = "dashboard";
   closeSheet();                                    // a sheet never outlives the page it opened on
+  const titled = explore && name === "finder" ? "explore" : details && name === "dashboard" ? "details"
+    : name === "dashboard" && me && me.role !== "student" ? "learners" : name;
+  const label = titled === "learners" ? "Learners" : PAGE_TITLES[titled];
+  document.title = label ? `${label} · ${SITE_NAME}` : SITE_NAME;
   const hash = "#/" + (explore && name === "finder" ? "explore" : details && name === "dashboard" ? "details" : name);
   if(location.hash !== hash) history.replaceState(null, "", hash);
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "view-" + name));
@@ -1453,7 +1524,7 @@ function clearLocalSession(){
   me = null; known.clear(); current = null;
   saved.clear(); savedCourses = []; savedLoaded = false;
   myChecks = null;                 // the next person on this browser must not see these
-  $("#tabbar").hidden = true; $("#tabbar").innerHTML = "";
+  renderTabbar();                  // back to the visitor's bar
   finderState = {}; exploreState = freshExplore(); examAllCache = null;
   document.body.classList.remove("signed-in");
   $("#nav-admin").style.display = "none";
@@ -1535,6 +1606,7 @@ async function bootstrap(){
     const who = await api("/api/auth/me");
     if(who.signed_in){ me = who; enter(); }
   }catch{}
+  if(!me) renderTabbar();          // visitors get the phone bar too
   route();
 }
 
@@ -1543,11 +1615,18 @@ async function bootstrap(){
    places move to a bar at the bottom of the screen, within reach of a thumb. Same
    places as the header, by role, and only once signed in. */
 const TAB_ICON = {
+  home: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7"></path><path d="M5 10v10h14V10"></path></svg>`,
+  signin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"></path><path d="M10 16l4-4-4-4M14 12H3"></path></svg>`,
   research: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>`,
   admin: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 20a6 6 0 0 1 12 0"></path><path d="M17 11h4M19 9v4"></path></svg>`,
 };
 function tabsFor(user){
-  if(!user) return [];
+  if(!user) return [
+    ["home", "Home", "home"],
+    ["finder", "Finder", "finder"],
+    ["explore", "Explore", "explore"],
+    ["login", "Sign in", "signin"],
+  ];
   if(user.role === "student") return [
     ["dashboard", "My learning", "learning"],
     ["progress", "Progress", "progress"],
@@ -1580,6 +1659,7 @@ function enter(){
   savedLoaded = false;
   document.body.classList.add("signed-in");
   $("#who").textContent = me.display_name;
+  $("#me-chip").title = me.role === "student" ? `${me.display_name}: my details` : me.display_name;
   $("#rolebadge").textContent = me.role === "student" ? "Student" : me.role === "admin" ? "Admin" : "Adviser";
   // Students open My details from their name; advisers and admins have no such page.
   $("#me-chip").disabled = me.role !== "student";

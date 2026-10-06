@@ -162,3 +162,11 @@ def test_the_calendar_file_has_one_event_per_week(main):
     assert body.count("BEGIN:VEVENT") == 6
     assert "JEE Main revision" in body
     assert body.startswith("BEGIN:VCALENDAR\r\n")
+
+
+def test_each_exam_links_to_its_own_official_nta_site():
+    """Regression: CUET UG pointed at exams.nta.ac.in/CUET-UG/, which NTA retired and
+    which now returns 404. Each exam has its own site on nta.nic.in."""
+    sites = {key: exams.EXAMS[key].source for key in exams.EXAMS}
+    assert sites == {"jee_main": "https://jeemain.nta.nic.in/", "neet_ug": "https://neet.nta.nic.in/",
+                     "cuet_ug": "https://cuet.nta.nic.in/"}

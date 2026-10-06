@@ -148,7 +148,8 @@ CUET_UG = Exam(
     streams=("pcm", "pcb", "pcmb", "commerce", "arts"),
     leads_to="undergraduate admission at central, state and participating private "
              "universities, including Delhi University, BHU and JNU",
-    source="https://exams.nta.ac.in/CUET-UG/",
+    # NTA moved CUET UG to its own site; the old exams.nta.ac.in/CUET-UG/ page now 404s.
+    source="https://cuet.nta.nic.in/",
     note="Domain papers follow the subjects taken in class 12, so they are added once the "
          "class 12 stream is known. Universities differ in which papers they ask for, so "
          "check the ones being applied to.",

@@ -48,7 +48,7 @@ class Service:
                 int(k): v["label"] for k, v in self.catalogue.items()
             }
 
-        self.adjacency = torch.load(ARTIFACTS / "graph" / "adjacency.pt")["prerequisite"]
+        self.adjacency = torch.load(ARTIFACTS / "graph" / "adjacency.pt", weights_only=True)["prerequisite"]
         self.sequences = pd.read_parquet(PROCESSED / "sequences.parquet")
         self.features = pd.read_parquet(PROCESSED / "student_features.parquet")
         self.matrix, _ = build_student_matrix(self.features)

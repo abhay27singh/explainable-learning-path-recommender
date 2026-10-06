@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 221 tests. `make api` serves http://localhost:8420.
+`make test` runs 235 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -119,6 +119,17 @@ as passed tests and runs the model again. It writes nothing and logs nothing. Th
 shows weeks done, weeks ready and the model's average before and after, which weeks would
 open, where the path would go on from, and a before and after dot per part. It says the
 model lifts most weeks for a pass, which is the engagement signal the paper describes.
+
+**Security and launch hygiene.** `guard` middleware in `api/main.py` applies rate limits
+(`RATE_LIMITS`, in memory, per client address) before the work and security headers
+(`SECURITY_HEADERS`, CSP included) after it. API docs are off unless `ELPR_API_DOCS=1`;
+`ELPR_HTTPS=1` adds Secure cookies and HSTS; `ELPR_SITE_URL` fixes the address used in
+link previews, `robots.txt` and `sitemap.xml`. A missing page gets `NOT_FOUND_PAGE` (the
+API still answers 404 in JSON); inside the page, an unknown `#/` address shows
+`view-notfound`. Every page sets its own tab title. Icons and the share picture come from
+`scripts/10_icons.py`; backups from `scripts/11_backup.py` (SQLite's backup call plus an
+integrity check). `tests/test_security.py` covers all of it. Visitors on a phone get the
+same bottom bar as students (Home, Finder, Explore, Sign in).
 
 **Updates reach open tabs.** Moving between pages never reloads `index.html`, so a tab
 left open kept running its first copy after an update. `/api/version` reports when the
@@ -414,7 +425,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         221 tests
+tests/         235 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

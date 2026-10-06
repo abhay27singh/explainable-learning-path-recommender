@@ -171,7 +171,9 @@ class MasteryEngine:
     def from_checkpoint(
         cls, path: Path, adjacency: torch.Tensor, device: torch.device | None = None
     ) -> "MasteryEngine":
-        blob = torch.load(path, map_location="cpu")
+        # weights_only: a checkpoint is data, never code to run. torch 2.2 (the last build
+        # for Intel Macs) has known flaws in loading anything else.
+        blob = torch.load(path, map_location="cpu", weights_only=True)
         config = KGDKTConfig(**blob["config"])
         model = KGDKT(config)
         model.load_state_dict(blob["state_dict"])

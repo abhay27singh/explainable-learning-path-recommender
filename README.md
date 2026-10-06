@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 221 tests
+make test                                       # 235 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -157,6 +157,35 @@ can only be created from the command line, with the password typed at a hidden p
 The remaining checkpoints (every fold and every baseline, 39 MB) are needed only to
 reproduce the paper's tables, not to run the site. Training runs on a free Colab T4: see
 [`RUNBOOK.md`](RUNBOOK.md).
+
+## Going live
+
+The site runs as one process behind a reverse proxy (Caddy or nginx) that holds the
+HTTPS certificate. The padlock comes from that certificate, not from this code.
+
+```bash
+ELPR_SITE_URL=https://your-domain.in make serve   # no auto-reload, HTTPS settings on
+.venv/bin/python scripts/08_admin.py create <username>
+.venv/bin/python scripts/11_backup.py             # run daily from cron; copy backups off the machine
+```
+
+| Setting | What it does |
+|---|---|
+| `ELPR_SITE_URL` | The public address. Link previews (WhatsApp, Telegram), `robots.txt` and `sitemap.xml` use it. |
+| `ELPR_HTTPS=1` | Session cookies are marked Secure and browsers are told to stay on HTTPS (HSTS). Only behind HTTPS. |
+| `ELPR_TRUST_PROXY=1` | Rate limits read the client address from `X-Forwarded-For`. Only behind a proxy. |
+| `ELPR_API_DOCS=1` | Publishes `/docs`, `/redoc` and `/openapi.json`. Off by default. |
+
+What is already in place: scrypt password hashes, 12-hour httpOnly sessions, per-username
+sign-in throttling, rate limits on sign-up (5 an hour per address), the What-if (20 a
+minute), self-check marking (30 a minute) and the API overall (300 a minute), security
+headers with a narrow Content Security Policy, a database readable by its owner only,
+model files loaded as data only, a 404 page, `favicon.ico`, `robots.txt` and
+`sitemap.xml`. After launch, add the domain to Google Search Console and submit
+`/sitemap.xml`. The pinned torch 2.2 is the last build for Intel Macs and has known
+flaws in loading untrusted model files; the site loads only its own, with
+`weights_only=True`, and a Linux server can take a newer torch once it has been tested
+there.
 
 ## Web application
 

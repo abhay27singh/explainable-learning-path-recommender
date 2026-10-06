@@ -171,6 +171,12 @@ class AppStore:
         path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
         self._connect().executescript(SCHEMA)
+        # Accounts and password hashes: readable by the account the server runs as,
+        # nobody else on the machine. A fresh SQLite file is world-readable otherwise.
+        try:
+            path.chmod(0o600)
+        except OSError:
+            pass
         self._migrate_roles()
         self._migrate_stage()
         # failed sign-ins per username, in memory only: cleared by a restart, which is

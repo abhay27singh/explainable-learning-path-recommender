@@ -6,8 +6,12 @@ data/raw/
 data/oulad.duckdb
 data/processed/
 
-# Application database: real accounts and passwords. Never commit this.
+# Application database: real accounts and passwords. Never commit this, or its backups.
 data/app.db
+data/backups/
+# Secrets and deployment settings, if ever kept in a file.
+.env
+.env.*
 
 # Trained checkpoints — 39 MB. Share separately; see docs/portability.md.
 # The one checkpoint the web app loads (1.9 MB) is committed, so the site runs
