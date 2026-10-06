@@ -63,6 +63,31 @@ def test_deleting_an_account_removes_its_study_history(store):
     assert store.delete_account("learner") is False, "second delete is a no-op"
 
 
+def test_deleting_a_student_removes_what_advisers_recorded_about_them(store):
+    """Regression: the privacy page promises deletion is complete, but adviser notes
+    and logged recommendations are keyed by the student's id, not the account, and
+    stayed behind after the account went."""
+    store.register("pupil", "passw0rd", "P", "student", module="CCC", stage="ug")
+    store.register("guide", "passw0rd", "G", "adviser")
+    pupil, guide = store.user_by_username("pupil"), store.user_by_username("guide")
+    store.add_note(pupil.student_id, guide.id, "revise week 3")
+    store.log_recommendation(guide.id, pupil.student_id, "greedy", {"k": 3})
+    assert store.delete_account("pupil")
+    con = store._connect()
+    assert con.execute("SELECT COUNT(*) FROM learner_notes").fetchone()[0] == 0
+    assert con.execute("SELECT COUNT(*) FROM recommendation_log").fetchone()[0] == 0
+
+
+def test_deleting_an_adviser_keeps_their_notes_without_their_name(store):
+    store.register("pupil", "passw0rd", "P", "student", module="CCC", stage="ug")
+    store.register("guide", "passw0rd", "G", "adviser")
+    pupil, guide = store.user_by_username("pupil"), store.user_by_username("guide")
+    store.add_note(pupil.student_id, guide.id, "revise week 3")
+    assert store.delete_account("guide")
+    notes = store.notes(pupil.student_id)
+    assert [n["text"] for n in notes] == ["revise week 3"] and not notes[0]["author"]
+
+
 def test_password_reset_invalidates_existing_sessions(store):
     user = store.register("learner", "passw0rd", "Learner", "student", module="DDD")
     token = store.create_session(user.id)

@@ -131,3 +131,10 @@ def test_the_api_refuses_a_pass_without_a_mark(tmp_path):
     events = main.service.store.events(main.service.store.authenticate("claimer", "passw0rd").id)
     assert [(e["correct"], e["score"]) for e in events] == [(1, 72), (0, None)], \
         "a mark still passes, and finding a week hard still needs no mark"
+
+    # Regression: a reading event with correct=true went through, stored a pass flag the
+    # model never reads, and wrote "passed" into the admin log. Reading has no outcome.
+    with pytest.raises(HTTPException) as reading:
+        main.record_study(main.StudyEvent(concept_id=5, kind="study", correct=True), token)
+    assert reading.value.status_code == 400
+    main.record_study(main.StudyEvent(concept_id=5, kind="study"), token)

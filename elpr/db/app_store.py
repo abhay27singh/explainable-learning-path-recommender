@@ -643,11 +643,18 @@ class AppStore:
         con = self._connect()
         with con:
             row = con.execute(
-                "SELECT id FROM users WHERE username = ?", (username.strip().lower(),)
+                "SELECT id, student_id FROM users WHERE username = ?", (username.strip().lower(),)
             ).fetchone()
             if row is None:
                 return False
             uid = row["id"]
+            # What others recorded about this student goes too: advisers' notes and the
+            # recommendations they asked for. Notes an adviser wrote stay with the
+            # student they are about, without the deleted author's name.
+            if row["student_id"] is not None:
+                con.execute("DELETE FROM learner_notes WHERE student_id = ?", (row["student_id"],))
+                con.execute("DELETE FROM recommendation_log WHERE student_id = ?", (row["student_id"],))
+            con.execute("UPDATE learner_notes SET author_id = NULL WHERE author_id = ?", (uid,))
             con.execute("DELETE FROM sessions WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM learner_profiles WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM study_events WHERE user_id = ?", (uid,))

@@ -155,6 +155,22 @@ def _studies(s: Service, stage: str | None, module: str | None,
     return stage, module, None
 
 
+def _course_student(s: Service, student: int) -> User:
+    """A registered student's account, when they are on a course the model knows.
+
+    A school student has no course, so there is no weekly path to show. The model's own
+    state falls back to the first course, which put an invented Psychology path in front
+    of an adviser who opened a class 12 student."""
+    target = s.store.user_by_student_id(student)
+    if target is None:
+        raise HTTPException(404, "unknown learner")
+    if not target.module:
+        level = course_finder.STAGES.get(_stage(target) or "", "school")
+        raise HTTPException(409, f"{target.display_name or 'This student'} is at {level} and "
+                                 "not on a course yet, so there is no weekly path to show")
+    return target
+
+
 def _stage(user: User | None) -> str | None:
     """Accounts made before levels existed were all on a university course."""
     if user is None or user.role != "student":
@@ -314,9 +330,7 @@ def learner_path(student: int, steps: int = Query(5, ge=1, le=8), known: str | N
     if user.role not in ("adviser", "admin") and user.student_id != student:
         raise HTTPException(403, "you may only view your own record")
     if s.is_registered(student):
-        target = s.store.user_by_student_id(student)
-        if target is None:
-            raise HTTPException(404, "unknown learner")
+        target = _course_student(s, student)
         return s.learning_path(lambda ov: s.registered_state(target, ov), steps,
                                _overrides(known))
     try:
@@ -355,6 +369,8 @@ def record_study(body: StudyEvent, elpr_session: str | None = Cookie(None)) -> d
         raise HTTPException(400, "kind must be study or assessment")
     if body.score is not None and body.kind != "assessment":
         raise HTTPException(400, "a score belongs to a test, not to reading")
+    if body.correct is not None and body.kind != "assessment":
+        raise HTTPException(400, "reading a week has no pass or fail: record a quiz instead")
     # A pass is evidence the model learns from, so it needs a mark from a real quiz.
     # "I found it hard" stays a plain claim: it only ever holds a week in place.
     if body.kind == "assessment" and body.correct is True and body.score is None:
@@ -798,7 +814,7 @@ def students(q: str = "", limit: int = Query(40, le=200),
     _require_adviser(elpr_session)
     s = _service()
     registered = [
-        {"id_student": r["student_id"], "module": r["module"] or "n/a",
+        {"id_student": r["student_id"], "module": r["module"] or "n/a", "stage": r["stage"],
          "presentation": "registered", "n_events": r["n_events"] or 0,
          "n_assessments": r["n_assessments"] or 0,
          "outcome": "in progress", "display_name": r["display_name"],
@@ -822,9 +838,7 @@ def mastery(student: int, module: str | None = None, upto: float = 1.0,
         raise HTTPException(403, "you may only view your own record")
 
     if s.is_registered(student):
-        target = s.store.user_by_student_id(student)
-        if target is None:
-            raise HTTPException(404, "unknown learner")
+        target = _course_student(s, student)
         mod, state = s.registered_state(target, _overrides(known))
         scope = state.scope()
         return {
@@ -858,9 +872,7 @@ def recommend(student: int, k: int = Query(3, le=10), planner: str = "greedy",
 
     start = time.perf_counter()
     if s.is_registered(student):
-        target = s.store.user_by_student_id(student)
-        if target is None:
-            raise HTTPException(404, "unknown learner")
+        target = _course_student(s, student)
         mod, state = s.registered_state(target, _overrides(known))
         engine = s.planners.get(planner, s.planners["greedy"])
         actions = engine.score(state)[:k]

@@ -361,7 +361,8 @@
   details.viz-table summary,details.working summary{cursor:pointer;font-size:13px;color:var(--ink-faint)}
   details.viz-table table{margin-top:8px;font-size:12px}
   details.working{margin-top:12px}
-  .study-links a{margin-left:9px;font-size:12px;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+  .study-links{display:inline-flex;flex-wrap:wrap;column-gap:9px;row-gap:2px;max-width:100%}
+  .study-links a{margin-left:0;font-size:12px;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
   .study-links a:hover{border-bottom-color:var(--accent)}
   .badges{display:flex;flex-wrap:wrap;gap:6px}
   .badge-chip{font-size:12px;padding:4px 9px;border:1px solid var(--rule);border-radius:6px;color:var(--ink-faint)}
@@ -903,7 +904,7 @@
     </div>
     <div class="facts">
       <div class="fact"><b>5 levels</b><span>class 10, class 12, diploma, undergraduate and postgraduate</span></div>
-      <div class="fact"><b>43</b><span>diploma, undergraduate and postgraduate courses to explore</span></div>
+      <div class="fact"><b id="fact-courses">64</b><span>academic and skill courses to explore, each with free study links</span></div>
       <div class="fact"><b>Week 1</b><span>is where every course path starts, one week at a time</span></div>
     </div>
   </section>
@@ -1024,39 +1025,46 @@
 <div class="view" id="view-privacy">
   <div class="page legal">
     <h2>Privacy policy</h2>
-    <p class="caption">Last updated 13 September 2026. This is a university research demonstration, not a commercial service.</p>
-    <h3>What this system stores about you</h3>
-    <p>If you create an account, the system stores the username you choose, a password hash produced with scrypt, the role you select, any background details you choose to give, and the record of weeks you mark as studied, passed, failed, or already known. It stores nothing else. There is no email address, no analytics, no advertising identifier, and no third-party tracking of any kind.</p>
-    <h3>What it does not store</h3>
-    <p>Your password is never written to disk in readable form. Nothing you do here is sent to any external service. No data leaves the machine this application runs on.</p>
-    <h3>Security limitations you should know before registering</h3>
-    <p>This deployment is demonstration grade. It has no TLS, so if it is served over a network rather than locally, traffic including your password travels in plain text. It has no rate limiting on sign-in attempts and no account recovery. For these reasons you should choose a password you do not use anywhere else.</p>
+    <p class="caption">Last updated 6 October 2026. An independent student project, not a commercial service.</p>
+    <h3>Using the site without an account</h3>
+    <p>The Course Finder, Explore, the entrance exam plans and the self-check questions all work without an account. Nothing you choose there is stored.</p>
+    <h3>What an account stores</h3>
+    <p>The username and display name you choose, a password hash produced with scrypt, and your role. For a student: your level of study, your class 12 stream or your course, and anything you choose to add under My details, such as an age band or your highest education.</p>
+    <p>Then what you do here: the weeks you mark as studied or found hard, the quiz marks you enter, your self-check results, and the courses you save. A short activity log records when you sign up, sign in, fail to sign in, and record or change something, so an admin can answer "I cannot sign in". It never holds a password or your answers to a self-check.</p>
+    <p>If an adviser looks at your path, the request is logged. Advisers can also write notes about a student; those notes are private to advisers and admins.</p>
+    <p>There is no email address, no analytics, no advertising identifier and no third-party tracking of any kind.</p>
+    <h3>What it does not store or send</h3>
+    <p>Your password is never written down in readable form. Fonts and every page are served from this site. Nothing you do here is sent to another service. Study links open other sites, such as NCERT, Khan Academy, YouTube, NPTEL, SWAYAM, Skill India and NSDC, which have their own privacy policies.</p>
+    <h3>Security you should know about</h3>
+    <p>A sign-in lasts twelve hours. After eight wrong passwords for one username within fifteen minutes, that username has to wait before trying again. There is no account recovery, and this site has no encryption of its own, so served over a network without HTTPS a password would travel in plain text. Choose a password you do not use anywhere else.</p>
     <h3>Research data</h3>
     <p>The 25,101 learner records shown to advisers come from the Open University Learning Analytics Dataset, which is published under CC-BY 4.0 and contains no personally identifying information. Those learners are represented by anonymised numeric identifiers assigned by the dataset authors. No attempt is made, and none should be made, to re-identify them.</p>
     <h3>Deleting your data</h3>
-    <p>Ask the project maintainer to remove your account and study history. Because the store is a single local database file, deletion is immediate and complete.</p>
+    <p>Ask the maintainer, or an admin, to delete your account. Deleting it removes everything listed above that belongs to it, at once: study history, quiz marks, self-check results, saved courses, background details and the activity log.</p>
     <h3>Automated decisions</h3>
-    <p>Recommendations produced here are advisory. They carry no weight in any assessment, grade, or progression decision, and they are not used for any purpose beyond showing you what the model predicts.</p>
+    <p>Recommendations are advisory. They carry no weight in any assessment, grade, admission or progression decision, and they are not used for anything beyond showing you what to study next.</p>
   </div>
 </div>
 
 <div class="view" id="view-terms">
   <div class="page legal">
     <h2>Terms and conditions</h2>
-    <p class="caption">Last updated 13 September 2026.</p>
+    <p class="caption">Last updated 6 October 2026.</p>
     <h3>What this is</h3>
-    <p>An academic prototype accompanying the paper <i>Explainable AI-Based Personalized Learning Path Recommendation System for University Students</i>. It demonstrates and reproduces the results reported in that paper. It is not a commercial product.</p>
-    <h3>Use of the system</h3>
-    <p>You may create an account to explore the recommender. Do not attempt to re-identify any learner in the research dataset, do not upload personal data about other people, and do not use the system to make decisions affecting anyone's education or employment.</p>
-    <h3>Accuracy of recommendations</h3>
-    <p>The model predicts the probability of successful completion, which is driven substantially by engagement rather than by understanding. Recommendations are estimates from historical data at one institution and may be wrong for any given learner. They are not academic advice and are no substitute for a human adviser. The Course Finder is rule-based and describes common eligibility patterns that vary by institution.</p>
+    <p>A free learning planner for students in India, built as an independent project alongside the paper <i>Explainable AI-Based Personalized Learning Path Recommendation System for University Students</i>, whose results it reproduces on an admin-only page. It is not a commercial product.</p>
+    <h3>Use of the site</h3>
+    <p>You may create an account to plan and track your own learning. Do not attempt to re-identify any learner in the research dataset, do not enter personal data about other people, and do not use the site to make decisions affecting anyone's education or employment.</p>
+    <h3>The weekly path</h3>
+    <p>The model predicts the chance of completing each week successfully, which is driven substantially by engagement rather than by understanding. It learned from historical data at one university and may be wrong for any given student. It is not academic advice and is no substitute for a teacher or adviser.</p>
+    <h3>The Course Finder and entrance exams</h3>
+    <p>The Course Finder is rule-based, not the model. It describes common eligibility patterns, which vary by institution and change from year to year. Exam pages give the published outline of each syllabus and a revision plan; they state no dates, cut-offs or ranks, and the official notice from the conducting body always takes precedence. Self-check questions are written for revision and are not past papers.</p>
     <h3>Availability and warranty</h3>
-    <p>The system is provided as is, without warranty of any kind. It may be taken offline, reset, or changed at any time, and stored accounts and study history may be cleared without notice.</p>
+    <p>The site is provided as is, without warranty of any kind. It may be taken offline, reset or changed at any time, and stored accounts and study history may be cleared without notice.</p>
     <h3>Licensing and attribution</h3>
-    <p>The source code is released publicly for inspection and reproduction. The Open University Learning Analytics Dataset is used under CC-BY 4.0 and is attributed to Kuzilek, Hlosta and Zdrahal (2017). If you build on this work, cite the paper and the dataset.</p>
+    <p>The source code is released publicly for inspection and reproduction. The Open University Learning Analytics Dataset is used under CC-BY 4.0 and is attributed to Kuzilek, Hlosta and Zdrahal (2017). Inter and Plus Jakarta Sans are used under the SIL Open Font License. If you build on this work, cite the paper and the dataset.</p>
     <h3>Contact</h3>
-    <p>This is an independently built project. Reach the maintainer through the issues page of
-      the public source repository: <code>github.com/abhay27singh/explainable-learning-path-recommender</code>.</p>
+    <p>Reach the maintainer through the issues page of the public source repository:
+      <code>github.com/abhay27singh/explainable-learning-path-recommender</code>.</p>
   </div>
 </div>
 
@@ -1084,7 +1092,10 @@ const esc = v => String(v).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">"
 async function api(path, opts={}) {
   const r = await fetch(path, {credentials:"same-origin", ...opts});
   if(r.status === 401 && !path.startsWith("/api/auth/")) sessionEnded();
-  if(!r.ok){ let m; try{ m=(await r.json()).detail; }catch{ m=r.statusText; } throw new Error(m||"request failed"); }
+  if(!r.ok){
+    let m; try{ m=(await r.json()).detail; }catch{ m=r.statusText; }
+    throw Object.assign(new Error(m||"request failed"), {status: r.status});
+  }
   return r.json();
 }
 /* A sign-in lasts twelve hours. When it ran out the page carried on as if nothing had
@@ -2956,6 +2967,7 @@ async function renderSchoolStudent(root){
   bindSave(root);
   bindPlans(root);
   bindAhead(root);
+  bindExams(root, me.stream);
 }
 
 /* ---------------- the workspace rails ----------------
@@ -3592,7 +3604,7 @@ async function showOverview(){
   const quiet = ordered.filter(r => r.quiet);
   const rows = ordered.map(r=>`<tr>
       <td>${esc(r.display_name)} ${quietChip(r)}</td><td class="n">${r.student_id}</td>
-      <td>${esc(modName(r.module))}</td><td class="n">${r.n_events||0}</td>
+      <td>${esc(whereLabel(r))}</td><td class="n">${r.n_events||0}</td>
       <td class="n">${r.n_assessments||0}</td>
       <td class="n">${r.last_active? new Date(r.last_active*1000).toLocaleString() : "never"}</td></tr>`).join("");
   $("#detail").classList.remove("empty");
@@ -3614,11 +3626,16 @@ async function showOverview(){
     <p class="caption" style="margin-top:6px">Select any learner on the left to see their path.</p>`;
 }
 
+/* A registered student who is not on a course yet is at school: say which year rather
+   than "n/a", which is what an adviser saw before. */
+const whereLabel = r => r.module && r.module !== "n/a" ? modName(r.module)
+  : r.stage ? stageLabel(r.stage) || "Not on a course" : "Not on a course";
+
 async function loadList(q){
   const d = await api(`/api/students?q=${encodeURIComponent(q)}&limit=25`);
   const item = r => `<div class="learner${current===r.id_student?" on":""}${r.registered?" new":""}" data-id="${r.id_student}">
       <div class="id">${r.registered? esc(r.display_name) : r.id_student}</div>
-      <div class="meta">${r.registered? `id ${r.id_student} · ` : ""}${esc(modName(r.module))} · ${r.n_events} events · ${esc(r.outcome)}</div>
+      <div class="meta">${r.registered? `id ${r.id_student} · ` : ""}${esc(whereLabel(r))} · ${r.n_events} ${r.n_events === 1 ? "event" : "events"} · ${esc(r.outcome)}</div>
       ${r.quiet ? `<div class="meta">${quietChip(r)}</div>` : ""}
     </div>`;
   $("#list").innerHTML =
@@ -3692,7 +3709,10 @@ async function showLearner(){
       api(`/api/recommend?student=${current}&k=3&planner=${planner}&known=${k}`).then(humanize),
       api(`/api/students/${current}/notes`).then(r => r.notes).catch(() => [])]);
   }catch(e){
-    detail.innerHTML = `<div class="err">Could not load this learner: ${esc(e.message || e)}</div>`;
+    // 409 is a school student: nothing failed, there is simply no course path yet.
+    detail.innerHTML = e.status === 409
+      ? `<div class="empty">${esc(e.message)}.</div>`
+      : `<div class="err">Could not load this learner: ${esc(e.message || e)}</div>`;
     return;
   }
   const t = mastery.thresholds ?? rec.thresholds;
@@ -3743,7 +3763,9 @@ async function renderAdmin(){
     const d = await api("/api/admin/accounts");
     el.classList.remove("empty");
     const s = d.stats;
-    const when = t => t ? new Date(t*1000).toISOString().slice(0,16).replace("T"," ") : "never";
+    // Local time, like every other date on the site. This alone used to print UTC.
+    const when = t => t ? new Date(t*1000).toLocaleString(undefined,
+      {day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"}) : "never";
     el.innerHTML = `
       ${pageHead("Accounts", "Every account on this site, with its activity.", "", "Administration")}
       <div class="tiles">
@@ -3752,7 +3774,7 @@ async function renderAdmin(){
         <div class="tile"><div class="v">${s.n_advisers}</div><div class="k">advisers</div></div>
         <div class="tile"><div class="v">${s.n_events}</div><div class="k">study events</div></div>
       </div>
-      <div class="block"><table class="admin-table"><thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Level</th><th>Course</th>
+      <div class="block"><div class="scroll"><table class="admin-table"><thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Level</th><th>Course</th>
         <th class="n">Events</th><th>Last active</th><th></th></tr></thead><tbody>
         ${d.accounts.map(a=>`<tr>
           <td><code>${esc(a.username)}</code></td><td>${esc(a.display_name)}</td>
@@ -3761,7 +3783,7 @@ async function renderAdmin(){
           <td><div class="row"><button class="small log" data-u="${esc(a.username)}">Log</button>
             ${a.username===me.username ? "" : `<button class="small del" data-u="${esc(a.username)}">Delete</button>`}</div></td>
         </tr>`).join("")}
-      </tbody></table>
+      </tbody></table></div>
       <p class="caption">Deleting an account also removes its study history and its log. This cannot be undone. Passwords are never shown here and are not recoverable: reset one with <code>python scripts/08_admin.py passwd USERNAME</code>.</p></div>
       <div class="block" id="admin-log" hidden></div>`;
     el.querySelectorAll(".log").forEach(b => b.onclick = async () => {
