@@ -127,7 +127,10 @@ itself at the address being opened if it changed.
 
 **My details** has its own address, `#/details`, drawn by the dashboard view. It used to
 be a tab on `#/dashboard`, which kept reopening until a refresh. The student's name in the
-header opens it; for advisers and admins the name is plain text.
+header and the profile card in the sidebar open it; for advisers and admins the name is
+plain text. It is drawn as its own page, "My details" with an account card on the right,
+and nothing in the header is highlighted, because it once looked so like My learning that
+students thought the click had failed.
 
 **Header.** Brand, a context chip with the student's level and course (it opens My
 details), the four places in the order the Navigator screens use (Course Finder, My

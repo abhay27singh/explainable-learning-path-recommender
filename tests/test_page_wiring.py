@@ -46,6 +46,11 @@ def test_my_details_has_its_own_address():
     assert 'go("details", "My details", "details", "details")' in fns["studentRail"]
     setters = [name for name, body in fns.items() if 'studentTab = "details"' in body]
     assert setters == [], f"only the router may open My details: {setters}"
+    # Regression: the page still looked like My learning (its heading, its highlight in
+    # the header, the quiz box on the right), so students thought the click had failed.
+    assert 'pageHead("My details"' in fns["renderStudent"]
+    assert 'details ? "details" : name' in fns["show"], "the header must not highlight My learning"
+    assert 'class="railme" data-go="details"' in SCRIPT, "the profile card opens My details too"
 
 
 def test_an_open_tab_can_tell_the_page_has_changed():

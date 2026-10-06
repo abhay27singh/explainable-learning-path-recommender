@@ -1021,6 +1021,14 @@
   .strip-legend .tk{color:var(--good)}
   .strip-legend i.k-out{background:none;box-shadow:inset 0 0 0 2px var(--ink);border-radius:3px}
   .sp-cells .hit[data-concept]{cursor:pointer}
+  button.railme{width:100%;border:0;background:none;box-shadow:none;text-align:left;font:inherit;color:inherit;
+    padding:6px;border-radius:10px;cursor:pointer}
+  button.railme:hover{background:var(--surface-alt)}
+  button.railme .who,button.railme .nm,button.railme .sub{display:block}
+  .acct{display:grid;gap:8px;margin:8px 0 0}
+  .acct div{display:flex;justify-content:space-between;gap:12px;font-size:13px}
+  .acct dt{color:var(--ink-faint)}
+  .acct dd{margin:0;color:var(--ink);font-weight:600;text-align:right;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -1366,7 +1374,7 @@ function show(name){
   if(location.hash !== hash) history.replaceState(null, "", hash);
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "view-" + name));
   document.querySelectorAll("nav.links button").forEach(b =>
-    b.classList.toggle("on", b.dataset.go === (explore && name === "finder" ? "explore" : name)));
+    b.classList.toggle("on", b.dataset.go === (explore && name === "finder" ? "explore" : details ? "details" : name)));
   document.querySelectorAll(".railitem[data-go]").forEach(b =>
     b.classList.toggle("on", b.dataset.go === (explore ? "explore" : details ? "details" : name)));
   if(name === "dashboard") renderHome();
@@ -1562,8 +1570,7 @@ function renderTabbar(){
 function markTab(){
   const here = location.hash.replace(/^#\/?/, "") || "dashboard";
   document.querySelectorAll("#tabbar .tab").forEach(b => {
-    const on = b.dataset.go === here || (here === "record" && b.dataset.go === "progress")
-      || (here === "details" && b.dataset.go === "dashboard");
+    const on = b.dataset.go === here || (here === "record" && b.dataset.go === "progress");
     b.classList.toggle("on", on);
     if(on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   });
@@ -3430,10 +3437,11 @@ const railGo = (icon, label, to) =>
   `<button class="railitem" data-go="${to}">${RAIL_ICON[icon]}<span>${label}</span></button>`;
 const railHere = (icon, label) =>
   `<button class="railitem on" aria-current="page">${RAIL_ICON[icon]}<span>${label}</span></button>`;
-const railMe = (name, sub) => `<div class="railme">
+// The card with the student's name opens My details, like their name in the header.
+const railMe = (name, sub) => `<button type="button" class="railme" data-go="details" title="My details">
   <span class="disc" aria-hidden="true">${esc((name || "?").trim().charAt(0).toUpperCase())}</span>
-  <div class="who"><div class="nm">${esc(name)}</div><div class="sub">${esc(sub)}</div></div>
-</div>
+  <span class="who"><span class="nm">${esc(name)}</span><span class="sub">${esc(sub)}</span></span>
+</button>
 <hr>`;
 const railShell = (nav, panel, foot = "", me_ = "") => `<aside class="rail">
   ${me_}
@@ -3923,6 +3931,22 @@ function bindPathViews(root, ctx){
   if(pathView !== "timeline") show(pathView);
 }
 
+/* The right column of My details: who is signed in and what the site keeps about them,
+   in place of the quiz box and milestones that belong to My learning. */
+function accountBlock(module){
+  return `<div class="block"><h3>Your account</h3>
+    <dl class="acct">
+      <div><dt>Name</dt><dd>${esc(me.display_name)}</dd></div>
+      <div><dt>Username</dt><dd>${esc(me.username)}</dd></div>
+      <div><dt>Level</dt><dd>${esc(stageLabel(me.stage) || "Not set")}</dd></div>
+      ${module ? `<div><dt>Course</dt><dd>${esc(modName(module))}</dd></div>` : ""}
+    </dl>
+    <p class="caption" style="margin:10px 0 0">What the site keeps about you, and how to have it deleted, is on the
+      <a href="#/privacy" data-go="privacy">privacy page</a>.</p>
+    <div class="row" style="margin-top:12px"><button class="small" data-go="dashboard">Back to My learning</button></div>
+  </div>`;
+}
+
 /* One course graph per module, fetched once and shared by every view that needs it. */
 const courseGraph = async module => graphCache[module] = graphCache[module]
   || await api(`/api/graph/${encodeURIComponent(module)}`).then(humanize);
@@ -3984,16 +4008,18 @@ async function renderStudent(){
       ${studentRail(studentTab, {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
 
       <div class="wsmain">
-        <div class="dash-head">
+        ${studentTab === "details"
+          ? pageHead("My details", [me.display_name, stageLabel(me.stage), modName(state.module)].filter(Boolean).join(" · "), "", "Your account")
+          : `<div class="dash-head">
           <div><div class="eyebrow">My learning · ${[stageLabel(me.stage), modName(state.module)].filter(Boolean).map(esc).join(" · ")}</div>
             <h1>Hi ${esc(me.display_name)}</h1>
             <p class="muted">${path.n_done} of ${path.n_weeks} weeks done${step ? `. ${esc(weekOf(step.label))} is next.` : "."}</p></div>
-          <div class="head-actions" ${studentTab === "path" ? "" : "hidden"} id="head-actions">
+          <div class="head-actions" id="head-actions">
             <a class="btn small" href="/api/me/path.ics?weeks=${path.steps.length}&start=${todayISO()}">Add to my calendar</a>
             <button class="small" data-go="record">Record of study</button>
             ${step ? `<button class="primary" id="open-week" style="width:auto;padding:9px 16px">Open ${esc(weekOf(step.label))}</button>` : ""}
           </div>
-        </div>
+        </div>`}
 
         <div data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
           ${gm ? phoneSummary(gm, path, state.module, step ? step.concept : null) : ""}
@@ -4021,9 +4047,10 @@ async function renderStudent(){
       </div>
 
       <aside class="railside">
+        ${studentTab === "details" ? accountBlock(state.module) : `
         ${step ? quizBlock(step) : ""}
         ${marks.length ? recentScores(marks) : ""}
-        ${milestoneBlock(progress)}
+        ${milestoneBlock(progress)}`}
         ${shortlistRail(savedCourses)}
       </aside>
 
