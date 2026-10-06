@@ -133,8 +133,8 @@ and nothing in the header is highlighted, because it once looked so like My lear
 students thought the click had failed.
 
 **Header.** Brand, a context chip with the student's level and course (it opens My
-details), the four places in the order the Navigator screens use (Course Finder, My
-learning, Explore, Progress), a search box that opens Explore with the words in it, the
+details), the four places in the same order as the sidebar and the phone tab bar (My
+learning, Progress, Course Finder, Explore), a search box that opens Explore with the words in it, the
 theme switch, and a profile chip with the user's initial. No photos anywhere.
 
 **Dashboard.** The page header carries the actions (Add to my calendar, Record of study,
