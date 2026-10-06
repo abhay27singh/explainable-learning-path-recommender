@@ -204,3 +204,16 @@ def test_the_week_map_shows_the_level_not_the_raw_figure():
     studied. For a student's own record the raw figures sit near zero."""
     body = functions()["weekMap"]
     assert "chance of doing well" not in body and "LEVEL(c.mastery, t)" in body
+
+
+def test_long_pages_use_a_wide_screen_without_overlong_lines():
+    """The text stopped at about 70 characters a line, as it should, but sat on the left
+    of a wide screen with nothing beside it. On a wide screen the section list now stands
+    beside it and the two are centred; the line length stays readable."""
+    css = re.search(r"<style>(.*?)</style>", PAGE, re.S).group(1)
+    wide = media_block_holding(css, ".page.legal.has-bar{display:grid")
+    assert "justify-content:center" in wide and "minmax(0,720px)" in wide
+    assert 'page.classList.add("has-bar")' in functions()["sectionBar"]
+    # Regression: the marker waited for an animation frame, which a hidden tab never
+    # draws, and stopped following after one scroll in the background.
+    assert 'addEventListener("scroll", markSection' in SCRIPT

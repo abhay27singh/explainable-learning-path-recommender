@@ -549,6 +549,22 @@
   .secbar button:hover{color:var(--ink);background:var(--surface-alt)}
   .secbar button[aria-current="true"]{color:var(--accent);background:var(--accent-soft);font-weight:600}
   .legal h3{scroll-margin-top:calc(var(--header-live,var(--header)) + 64px)}
+  /* On a wide screen the section list stands beside the text like a book's contents, and
+     the two are centred together. The text keeps a readable line of about 70 characters:
+     run across the whole screen, a line was some 250 characters and hard to follow. */
+  @media (min-width:1100px){
+    .page.legal.has-bar{display:grid;grid-template-columns:220px minmax(0,720px);column-gap:56px;
+      justify-content:center;align-items:start}
+    .page.legal.has-bar > *{grid-column:2}
+    .page.legal.has-bar > .secbar{grid-column:1;grid-row:1 / span 120;align-self:stretch;position:static;
+      margin:0;border:0;background:none}
+    .page.legal.has-bar .secbar-in{position:sticky;top:calc(var(--header-live,var(--header)) + 24px);
+      flex-direction:column;gap:2px;overflow:visible;padding:4px 0 0}
+    .page.legal.has-bar .secbar-in::before{content:"On this page";font-size:11px;font-weight:700;
+      letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);padding:0 10px 8px}
+    .page.legal.has-bar .secbar button{white-space:normal;text-align:left;line-height:1.35}
+    .page.legal.has-bar > h3{margin-top:12px;scroll-margin-top:calc(var(--header-live,var(--header)) + 24px)}
+  }
   /* ================= Liquid glass =================
      One layer over everything above, so every page and every role gets it at once.
      Panels are translucent and blur what is behind them; a pane inside a pane gets a
@@ -4539,6 +4555,7 @@ function sectionBar(view){
   const heads = [...page.querySelectorAll("h3")];
   if(heads.length < 4) return;
   heads.forEach((h, i) => { h.id = h.id || `${view.id}-s${i + 1}`; });
+  page.classList.add("has-bar");
   const bar = document.createElement("nav");
   bar.className = "secbar";
   bar.setAttribute("aria-label", "On this page");
@@ -4554,7 +4571,11 @@ function sectionBar(view){
 function markSection(){
   const bar = document.querySelector(".view.on .secbar");
   if(!bar) return;
-  const below = bar.getBoundingClientRect().bottom + 24;
+  // Across the top, a heading counts as reached once it passes under the bar; standing
+  // beside the text, once it is in the top quarter of the window, where the eye is.
+  const beside = getComputedStyle(bar.firstElementChild).flexDirection === "column";
+  const below = beside ? document.querySelector("header.site").getBoundingClientRect().bottom + Math.min(200, innerHeight / 4)
+    : bar.getBoundingClientRect().bottom + 24;
   const buttons = [...bar.querySelectorAll("button")];
   let here = buttons[0];
   for(const b of buttons) if(document.getElementById(b.dataset.sec).getBoundingClientRect().top <= below) here = b;
@@ -4562,15 +4583,13 @@ function markSection(){
   if(innerHeight + scrollY >= document.documentElement.scrollHeight - 4) here = buttons[buttons.length - 1];
   buttons.forEach(b => { if(b === here) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
   const row = bar.firstElementChild;                 // keep the marked one in view on a phone
-  if(here.offsetLeft < row.scrollLeft || here.offsetLeft + here.offsetWidth > row.scrollLeft + row.clientWidth)
+  if(!beside && (here.offsetLeft < row.scrollLeft || here.offsetLeft + here.offsetWidth > row.scrollLeft + row.clientWidth))
     row.scrollLeft = here.offsetLeft - 16;
 }
-let secTick = false;
-addEventListener("scroll", () => {
-  if(secTick) return;
-  secTick = true;
-  requestAnimationFrame(() => { secTick = false; markSection(); });
-}, {passive: true});
+// Straight from the scroll event: a dozen position reads cost nothing. Regression: it
+// waited for an animation frame, which a hidden tab never draws, and after one scroll in
+// the background the bar stopped following for good.
+addEventListener("scroll", markSection, {passive: true});
 // The header is taller on a phone, where it wraps; the bar sits under whatever height it has.
 new ResizeObserver(([e]) => document.documentElement.style.setProperty("--header-live",
   `${Math.round(e.target.getBoundingClientRect().height)}px`)).observe(document.querySelector("header.site"));
