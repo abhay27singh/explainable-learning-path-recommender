@@ -35,7 +35,7 @@ from pydantic import BaseModel, Field
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from elpr.db.app_store import User  # noqa: E402
+from elpr.db.app_store import INVITE_DAYS, User  # noqa: E402
 
 if TYPE_CHECKING:                      # importing the service pulls in PyTorch, which
     from api.service import Service    # would delay the port opening by several seconds
@@ -133,12 +133,13 @@ class RateLimit:
 
 
 # What each limit protects: sign-up from account spam, the What-if from tying up the
-# model, self-check marking from answer guessing by script, and everything else from
-# plain flooding. Sign-in has its own per-username throttle in the store.
+# model, self-check marking from answer guessing by script, class codes from guessing
+# one's way into an adviser's class, and everything else from plain flooding. Sign-in has its own per-username throttle in the store.
 RATE_LIMITS = [
     ("POST", "/api/auth/register", RateLimit(5, 3600), "too many new accounts from here, try again in an hour"),
     ("GET", "/api/me/what-if", RateLimit(20, 60), "too many what-if checks in a minute, wait a moment"),
     ("POST", "/api/selfcheck", RateLimit(30, 60), "too many self-checks in a minute, wait a moment"),
+    ("POST", "/api/me/advisers", RateLimit(10, 3600), "too many class codes tried, try again in an hour"),
     ("*", "/api/", RateLimit(300, 60), "too many requests, wait a moment"),
 ]
 
@@ -229,17 +230,26 @@ def _require_adviser(token: str | None) -> User:
 
 
 # Regression: anyone could sign up as an adviser and at once read every student's name,
-# level, history and path, and the notes about them. An admin now approves each one.
+# level, history and path, and the notes about them. An adviser now needs an invite from
+# an admin, then the admin's approval, and even then sees only the students who joined
+# their class.
 ADVISER_WAITING = "an admin has not approved this adviser account yet"
 
 
-def _may_view(user: User, student: int) -> None:
-    """A student sees only their own record; an approved adviser or an admin sees any."""
+def _may_view(s: Service, user: User, student: int) -> None:
+    """Who may open a learner's record.
+
+    A student: their own. An admin: anyone. An approved adviser: the anonymised dataset
+    learners, and a registered student only once that student has joined their class."""
     if user.role == "student":
         if user.student_id != student:
             raise HTTPException(403, "you may only view your own record")
-    elif not user.approved:
+        return
+    if not user.approved:
         raise HTTPException(403, ADVISER_WAITING)
+    if user.role == "adviser" and s.is_registered(student) \
+            and not s.store.adviser_can_see(user.id, student):
+        raise HTTPException(403, "this student has not joined your class")
 
 
 def _require_admin(token: str | None) -> User:
@@ -282,6 +292,8 @@ class Registration(Credentials):
     module: str | None = None
     stage: str | None = None
     stream: str | None = None
+    invite: str | None = Field(default=None, max_length=40)       # advisers: from an admin
+    class_code: str | None = Field(default=None, max_length=20)   # students: from an adviser
 
 
 def _studies(s: Service, stage: str | None, module: str | None,
@@ -343,9 +355,13 @@ def register(body: Registration, response: Response) -> dict:
     stage = module = stream = None
     if body.role == "student":
         stage, module, stream = _studies(s, body.stage, body.module, body.stream)
+    if body.role == "adviser" and not (body.invite or "").strip():
+        raise HTTPException(400, "an adviser account needs an invite code from an admin")
     try:
         user = s.store.register(
-            body.username, body.password, body.display_name, body.role, module, stage, stream
+            body.username, body.password, body.display_name, body.role, module, stage, stream,
+            invite=body.invite if body.role == "adviser" else None,
+            class_code=((body.class_code or "").strip() or None) if body.role == "student" else None,
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -509,7 +525,7 @@ def learner_path(student: int, steps: int = Query(5, ge=1, le=8), known: str | N
                  elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
     s = _service()
-    _may_view(user, student)
+    _may_view(s, user, student)
     if s.is_registered(student):
         target = _course_student(s, student)
         return s.learning_path(lambda ov: s.registered_state(target, ov), steps,
@@ -981,6 +997,102 @@ def approve_adviser(username: str, elpr_session: str | None = Cookie(None)) -> d
     return {"approved": target.username}
 
 
+class InviteBody(BaseModel):
+    note: str = Field(min_length=1, max_length=80)
+
+
+@app.post("/api/admin/invites")
+def create_invite(body: InviteBody, elpr_session: str | None = Cookie(None)) -> dict:
+    """A one-time code for one named person to sign up as an adviser. Shown once."""
+    admin = _require_admin(elpr_session)
+    store = _service().store
+    try:
+        invite = store.create_invite(admin.id, body.note)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    store.log(admin.id, "made an adviser invite", invite["note"])
+    return invite
+
+
+@app.get("/api/admin/invites")
+def list_invites(elpr_session: str | None = Cookie(None)) -> dict:
+    _require_admin(elpr_session)
+    return {"invites": _service().store.invites(), "days": INVITE_DAYS}
+
+
+@app.delete("/api/admin/invites/{invite_id}")
+def revoke_invite(invite_id: int, elpr_session: str | None = Cookie(None)) -> dict:
+    admin = _require_admin(elpr_session)
+    store = _service().store
+    if not store.revoke_invite(invite_id):
+        raise HTTPException(404, "no unused invite with that number")
+    store.log(admin.id, "withdrew an adviser invite", str(invite_id))
+    return {"revoked": invite_id}
+
+
+@app.get("/api/adviser/class")
+def my_class(elpr_session: str | None = Cookie(None)) -> dict:
+    """The code an adviser gives students so they can join, and so be seen."""
+    user = _require_adviser(elpr_session)
+    if user.role != "adviser":
+        raise HTTPException(400, "admins see every student and have no class")
+    return {"code": _service().store.class_code(user.id)}
+
+
+@app.post("/api/adviser/class/new")
+def new_class_code(elpr_session: str | None = Cookie(None)) -> dict:
+    """Replace a code that went further than it should. Students already in stay."""
+    user = _require_adviser(elpr_session)
+    if user.role != "adviser":
+        raise HTTPException(400, "admins see every student and have no class")
+    store = _service().store
+    code = store.new_class_code(user.id)
+    store.log(user.id, "made a new class code")
+    return {"code": code}
+
+
+class JoinBody(BaseModel):
+    code: str = Field(min_length=1, max_length=20)
+
+
+def _student(token: str | None) -> User:
+    user = _require(token)
+    if user.role != "student":
+        raise HTTPException(400, "only students join an adviser's class")
+    return user
+
+
+@app.get("/api/me/advisers")
+def my_advisers(elpr_session: str | None = Cookie(None)) -> dict:
+    """The advisers who can see this student's record."""
+    user = _student(elpr_session)
+    return {"advisers": _service().store.advisers_of(user.id)}
+
+
+@app.post("/api/me/advisers")
+def join_class(body: JoinBody, elpr_session: str | None = Cookie(None)) -> dict:
+    user = _student(elpr_session)
+    store = _service().store
+    try:
+        adviser = store.join_class(user.id, body.code)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    store.log(user.id, "joined a class", adviser.display_name)
+    store.log(adviser.id, "a student joined the class", user.display_name)
+    return {"joined": adviser.display_name, "advisers": store.advisers_of(user.id)}
+
+
+@app.delete("/api/me/advisers/{adviser_id}")
+def leave_class(adviser_id: int, elpr_session: str | None = Cookie(None)) -> dict:
+    """Stop an adviser seeing this student's record, and the notes written about it."""
+    user = _student(elpr_session)
+    store = _service().store
+    if not store.leave_class(user.id, adviser_id):
+        raise HTTPException(404, "you are not in that adviser's class")
+    store.log(user.id, "left a class", str(adviser_id))
+    return {"advisers": store.advisers_of(user.id)}
+
+
 @app.get("/api/admin/accounts")
 def admin_accounts(elpr_session: str | None = Cookie(None)) -> dict:
     """Every registered account, with activity. Never returns salts or hashes."""
@@ -1005,7 +1117,7 @@ def admin_delete_account(username: str,
 @app.get("/api/students")
 def students(q: str = "", limit: int = Query(40, le=200),
              elpr_session: str | None = Cookie(None)) -> dict:
-    _require_adviser(elpr_session)
+    user = _require_adviser(elpr_session)
     s = _service()
     registered = [
         {"id_student": r["student_id"], "module": r["module"] or "n/a", "stage": r["stage"],
@@ -1014,7 +1126,7 @@ def students(q: str = "", limit: int = Query(40, le=200),
          "outcome": "in progress", "display_name": r["display_name"],
          "registered": True, "quiet": r["quiet"], "quiet_days": r["quiet_days"],
          "never_started": r["never_started"]}
-        for r in s.store.registered_students()
+        for r in s.store.registered_students(adviser_id=_class_of(user))
         if not q or str(r["student_id"]).startswith(q)
         or q.lower() in (r["display_name"] or "").lower()
     ]
@@ -1027,7 +1139,7 @@ def mastery(student: int, module: str | None = None, upto: float = UPTO,
             known: str | None = None, elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
     s = _service()
-    _may_view(user, student)
+    _may_view(s, user, student)
 
     if s.is_registered(student):
         target = _course_student(s, student)
@@ -1060,7 +1172,7 @@ def recommend(student: int, k: int = Query(3, ge=1, le=10), planner: str = "gree
               elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
     s = _service()
-    _may_view(user, student)
+    _may_view(s, user, student)
 
     start = time.perf_counter()
     if s.is_registered(student):
@@ -1095,7 +1207,8 @@ class NoteBody(BaseModel):
 @app.get("/api/students/{student}/notes")
 def learner_notes(student: int, elpr_session: str | None = Cookie(None)) -> dict:
     """Adviser notes on one learner. Advisers and admins only, never the student."""
-    _require_adviser(elpr_session)
+    user = _require_adviser(elpr_session)
+    _may_view(_service(), user, student)
     return {"student": student, "notes": _service().store.notes(student)}
 
 
@@ -1104,6 +1217,7 @@ def add_learner_note(student: int, body: NoteBody,
                      elpr_session: str | None = Cookie(None)) -> dict:
     user = _require_adviser(elpr_session)
     s = _service()
+    _may_view(s, user, student)
     try:
         note_id = s.store.add_note(student, user.id, body.text)
     except ValueError as exc:
@@ -1117,6 +1231,7 @@ def delete_learner_note(student: int, note_id: int,
     """An adviser may delete their own notes; an admin may delete any."""
     user = _require_adviser(elpr_session)
     s = _service()
+    _may_view(s, user, student)
     removed = s.store.delete_note(note_id, user.id)
     if not removed and user.role == "admin":
         removed = s.store.delete_note_any(note_id)
@@ -1127,10 +1242,19 @@ def delete_learner_note(student: int, note_id: int,
 
 @app.get("/api/adviser/overview")
 def overview(elpr_session: str | None = Cookie(None)) -> dict:
-    _require_adviser(elpr_session)
+    user = _require_adviser(elpr_session)
     s = _service()
-    return {"registered": s.store.registered_students(), "stats": s.store.stats(),
+    registered = s.store.registered_students(adviser_id=_class_of(user))
+    # Counts over the adviser's own students: the site's totals are the admin's business.
+    stats = {"n_students": len(registered),
+             "n_events": sum(r["n_events"] or 0 for r in registered)}
+    return {"registered": registered, "stats": stats,
             "quiet_after_days": s.store.QUIET_AFTER_DAYS}
+
+
+def _class_of(user: User) -> int | None:
+    """Whose class to list: an adviser's own, or everyone's for an admin."""
+    return None if user.role == "admin" else user.id
 
 
 # ---------------------------------------------------------------- results

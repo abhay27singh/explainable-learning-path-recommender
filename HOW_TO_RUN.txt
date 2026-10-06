@@ -71,6 +71,19 @@ it is never shown on screen or saved in a file:
     .venv/bin/python scripts/08_admin.py create <username>
 
 
+ADD AN ADVISER
+--------------
+
+Advisers cannot sign up on their own. Sign in as an admin, open Admin, and under "Invite
+an adviser" make an invite for that person. Give them the code it shows (it is shown once,
+works once, and lasts 7 days). They choose "Academic adviser" on the sign-up page and enter
+it. Their account then appears on the Accounts page as Waiting: check it is the right
+person and press Approve.
+
+The adviser then sees a class code on their Learners page. Students enter it when they
+sign up, or later under My details, and only then does the adviser see their record.
+
+
 BACK UP THE ACCOUNTS
 --------------------
 

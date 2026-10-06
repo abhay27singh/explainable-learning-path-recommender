@@ -56,6 +56,11 @@ def test_a_new_adviser_can_see_no_student_until_approved(main):
     assert main.me(token)["approved"] is False, "the page needs this to explain the wait"
 
     main.approve_adviser("newadv", _token(main, "boss"))
+    # Approved, but Asha has not joined this adviser's class, so her record stays closed.
+    assert _status(calls["record"]) == 403 and main.students("", 40, token)["registered"] == []
+    store = main.service.store
+    store.join_class(store.user_by_username("asha").id,
+                     store.class_code(store.user_by_username("newadv").id))
     assert {name: _status(call) for name, call in calls.items()} == dict.fromkeys(calls, 200)
 
 

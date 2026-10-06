@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 266 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
+`make test` runs 284 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
 `HOW_TO_RUN.txt` has the start and stop steps in plain words.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
@@ -168,6 +168,24 @@ have labels; the theme switch lost its capsule shape. All 204 self-check answers
 checked by hand; the dependency check found advisories only for torch 2.2.2, which is
 pinned because it is the last build for Intel Macs and loads only this repository's own
 files with `weights_only=True`. On a Linux server a newer torch is the better choice.
+
+**Adviser invites and classes.** Approval alone left one wrong approval able to read every
+student, so access now needs both sides. The admin's side: an adviser can only sign up with
+a one-time invite (`adviser_invites`, only a SHA-256 of the code is stored, 7 days,
+`INVITE_DAYS`) made for a named person, then waits for approval; the Accounts page shows
+what each waiting adviser was invited as. The student's side: an approved adviser has a
+class code (`users.class_code`, 8 characters without 0, O, 1, I or L) and sees only the
+registered students who joined with it (`adviser_students`, checked in `_may_view`, the
+learner list, the overview and the notes). Students join at sign-up or under My details and
+can leave there; joining is rate-limited. The anonymised dataset learners stay open to every
+approved adviser. On the first start with classes, existing approved advisers kept the
+students they could already see (`_keep_existing_links`), so `demo_adviser` still has the
+four demo students. ID uploads were considered and rejected: an ID shows who someone is,
+not that they work at the school, an admin cannot tell a real card from an edited photo, and
+storing ID documents (Aadhaar copies especially) would make the database far worse to leak.
+The same audit found a school student's page squeezed into a 236 pixel column on phones
+(`.workspace.two` outranked the phone rule) and footer links running together on touch
+screens; both fixed, with tests.
 
 **Updates reach open tabs.** Moving between pages never reloads `index.html`, so a tab
 left open kept running its first copy after an update. `/api/version` reports when the
@@ -463,7 +481,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         266 tests
+tests/         284 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

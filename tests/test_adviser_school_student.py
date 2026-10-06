@@ -20,10 +20,12 @@ def main(tmp_path):
     main.service = Service()
     main.service.store = AppStore(tmp_path / "app.db")
     store = main.service.store
-    store.register("ravi", "passw0rd", "Ravi", "student", stage="class_12", stream="pcb")
-    store.register("asha", "passw0rd", "Asha", "student", module="CCC", stage="ug")
-    store.register("meera", "passw0rd", "Meera", "adviser")
+    ravi = store.register("ravi", "passw0rd", "Ravi", "student", stage="class_12", stream="pcb")
+    asha = store.register("asha", "passw0rd", "Asha", "student", module="CCC", stage="ug")
+    meera = store.register("meera", "passw0rd", "Meera", "adviser")
     store.approve_adviser("meera")
+    for student in (ravi, asha):
+        store.join_class(student.id, store.class_code(meera.id))
     return main
 
 

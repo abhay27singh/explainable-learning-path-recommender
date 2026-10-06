@@ -483,7 +483,7 @@
   .workspace:has(.wsmid) > .rail{grid-row:1 / span 3}
   .wsfull[hidden],.wsmid[hidden]{display:none}
   @media (max-width:1090px){
-    .workspace{grid-template-columns:216px minmax(0,1fr)}
+    .workspace, .workspace.two{grid-template-columns:216px minmax(0,1fr)}
     .railside{grid-column:2}
     .wsfull{grid-column:2}
     .workspace:has(.wsmid) > .railside{grid-column:2;grid-row:auto}
@@ -496,7 +496,10 @@
     .score-form.score-inline{display:flex}
     p.score-inline{display:block}
     .railside .quizbox{display:none}
-    .workspace{grid-template-columns:minmax(0,1fr)}
+    /* .two as well. Regression: ".workspace.two" outranks ".workspace", so a school
+       student's page kept its 236 pixel rail column on a phone with the rail hidden, and
+       everything sat in that column beside an empty strip. */
+    .workspace, .workspace.two{grid-template-columns:minmax(0,1fr)}
     .rail{display:none}
     .railside{grid-column:1}
   }
@@ -1060,6 +1063,10 @@
   button.railme:hover{background:var(--surface-alt)}
   button.railme .who,button.railme .nm,button.railme .sub{display:block}
   .acct{display:grid;gap:8px;margin:8px 0 0}
+  /* A code people read aloud and type: monospaced, spaced, large. */
+  .code-big{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:.08em;color:var(--ink);
+    margin:4px 0 8px;overflow-wrap:anywhere}
+  .adv-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0}
   .acct div{display:flex;justify-content:space-between;gap:12px;font-size:13px}
   .acct dt{color:var(--ink-faint)}
   .acct dd{margin:0;color:var(--ink);font-weight:600;text-align:right;overflow-wrap:anywhere}
@@ -1070,7 +1077,7 @@
   @media (pointer: coarse){
     button, .btn, .seg button, nav.links button, .railitem, .facet, .ex-q, .dur, .wi-wk, .lvl, .fstep{min-height:44px}
     button.small, .btn.small{min-height:40px;padding-left:14px;padding-right:14px}
-    footer.site .cols a{display:inline-block;padding:8px 0}
+    footer.site .cols a{padding:8px 0;margin:0}    /* still one link per line */
   }
   /* A long name never widens the header: it is cut with an ellipsis, in full on hover.
      Regression: a 60-character name made the page 721 pixels wide on a 375 pixel phone. */
@@ -1213,9 +1220,12 @@
         <option value="student">Student</option>
         <option value="adviser">Academic adviser</option>
       </select>
-      <p class="caption" id="adviser-note" style="margin:6px 0 0" hidden>An admin checks each
-        adviser account before it can see any student's record. Until then the Course Finder
-        and Explore work as usual.</p>
+      <p class="caption" id="adviser-note" style="margin:6px 0 0" hidden>Adviser accounts need an
+        invite code from an admin, and the admin approves the account before it can take students.
+        After that you see only the students who join your class.</p>
+      <div id="invite-wrap" style="display:none"><label for="reg-invite">Invite code from an admin</label>
+        <input id="reg-invite" name="invite" autocomplete="off" autocapitalize="characters"
+          spellcheck="false" maxlength="40" required disabled /></div>
       <div id="stage-wrap"><label for="reg-stage">Where are you in your studies?</label>
         <select name="stage" id="reg-stage" required></select>
         <p class="caption" style="margin:6px 0 0">Class 10, Class 12, Diploma, Undergraduate
@@ -1225,6 +1235,11 @@
       <div id="module-wrap"><label for="reg-module">Course I am studying</label>
         <select name="module" id="reg-module"></select>
         <p class="caption" style="margin:6px 0 0">Course names are illustrative. The university kept the real titles private.</p></div>
+      <div id="class-wrap"><label for="reg-class">Class code from your adviser (optional)</label>
+        <input id="reg-class" name="class_code" autocomplete="off" autocapitalize="characters"
+          spellcheck="false" maxlength="20" />
+        <p class="caption" style="margin:6px 0 0">Only if a teacher or counsellor gave you one. It lets
+          them see your record; you can leave later under My details.</p></div>
       <div style="margin-top:20px"><button class="primary" type="submit">Create account</button></div>
     </form>
     <div class="auth-err"></div>
@@ -1274,7 +1289,7 @@
     <h3>What an account stores</h3>
     <p>The username and display name you choose, a password hash produced with scrypt, and your role. For a student: your level of study, your class 12 stream or your course, and anything you choose to add under My details, such as an age band or your highest education.</p>
     <p>Then what you do here: the weeks you mark as studied or found hard, the quiz marks you enter, your self-check results, and the courses you save. A short activity log records when you sign up, sign in, fail to sign in, and record or change something, so an admin can answer "I cannot sign in". It never holds a password or your answers to a self-check.</p>
-    <p>An adviser account can see students only after an admin has approved it. If an adviser looks at your path, the request is logged. Advisers can also write notes about a student; those notes are private to advisers and admins.</p>
+    <p>An adviser sees your record only if you join their class with the code they give you, and only after an admin has approved their account. You can leave a class at any time under My details, and that adviser can no longer see your record. If an adviser looks at your path, the request is logged. Advisers can also write notes about a student; those notes are private to advisers and admins.</p>
     <p>There is no email address, no analytics, no advertising identifier and no third-party tracking of any kind.</p>
     <h3>What it does not store or send</h3>
     <p>Your password is never written down in readable form. Fonts and every page are served from this site. Nothing you do here is sent to another service. Study links open other sites, such as NCERT, Khan Academy, YouTube, NPTEL, SWAYAM, Skill India and NSDC, which have their own privacy policies.</p>
@@ -1558,6 +1573,8 @@ function syncSignup(){
   show("#stage-wrap", student);
   show("#module-wrap", student && courseStage(stage));
   show("#stream-wrap", student && stage === "class_12");
+  show("#class-wrap", student);
+  show("#invite-wrap", !student);
   $("#adviser-note").hidden = student;
 }
 $("#reg-role").onchange = syncSignup;
@@ -3554,6 +3571,7 @@ async function renderSchoolStudent(root){
         ${examsBlock(examList, me.stage)}
         ${shortlistBlock(savedCourses)}
         ${studiesForm()}
+        ${advisersBlock()}
       </div>
     </div>
   </div>`;
@@ -3563,6 +3581,7 @@ async function renderSchoolStudent(root){
     else nav("finder");
   };
   bindStudies();
+  bindAdvisers();
   bindSave(root);
   bindPlans(root);
   bindAhead(root);
@@ -4090,6 +4109,46 @@ function bindPathViews(root, ctx){
 
 /* The right column of My details: who is signed in and what the site keeps about them,
    in place of the quiz box and milestones that belong to My learning. */
+/* Which advisers can see this student's record. The student decides: a class code lets
+   that adviser in, and leaving shuts them out again. */
+const advisersBlock = () => `<div class="block" id="my-advisers"><h3>Advisers who can see your record</h3>
+  <div id="adv-list"><p class="muted small">Loading</p></div>
+  <form id="join-form" class="row" style="align-items:flex-end;margin-top:10px">
+    <div style="flex:1;min-width:0"><label for="join-code" style="margin-top:0">Class code from your adviser</label>
+      <input id="join-code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" required /></div>
+    <button class="small" type="submit">Join</button>
+  </form>
+  <p class="caption" id="join-msg" style="margin:6px 0 0">Joining lets that adviser see your name, level,
+    course and study record, and write notes about you. You can leave at any time.</p>
+</div>`;
+async function bindAdvisers(){
+  const box = $("#adv-list");
+  if(!box) return;
+  const when = t => new Date(t * 1000).toLocaleDateString(undefined, {day: "numeric", month: "short", year: "numeric"});
+  const draw = list => {
+    box.innerHTML = list.length ? list.map(a => `<div class="adv-row">
+        <span>${esc(a.display_name)} <span class="caption">since ${when(a.joined_at)}</span></span>
+        <button type="button" class="small adv-leave" data-id="${a.id}">Leave</button></div>`).join("")
+      : `<p class="muted small" style="margin:0">No adviser can see your record.</p>`;
+    box.querySelectorAll(".adv-leave").forEach(b => b.onclick = async () => {
+      if(!confirm("Leave this class? That adviser will no longer see your record.")) return;
+      try{ draw((await api(`/api/me/advisers/${b.dataset.id}`, {method: "DELETE"})).advisers); toast("You left the class"); }
+      catch(err){ toast(err.message); }
+    });
+  };
+  try{ draw((await api("/api/me/advisers")).advisers); }
+  catch(err){ box.innerHTML = `<div class="err">${esc(err.message)}</div>`; }
+  $("#join-form").onsubmit = async e => {
+    e.preventDefault();
+    const input = $("#join-code");
+    try{
+      const out = await post("/api/me/advisers", {code: input.value});
+      draw(out.advisers);
+      input.value = "";
+      toast(`You joined ${out.joined}'s class`);
+    }catch(err){ toast(err.message); }
+  };
+}
 function accountBlock(module){
   return `<div class="block"><h3>Your account</h3>
     <dl class="acct">
@@ -4198,6 +4257,7 @@ async function renderStudent(){
 
         <div data-tabpanel="details" ${studentTab === "details" ? "" : "hidden"}>
           ${studiesForm()}
+          ${advisersBlock()}
           ${savedCourses.length ? shortlistBlock(savedCourses) : ""}
           ${profileForm(form.fields, mine.profile || {}, mine.module, form.note)}
         </div>
@@ -4254,6 +4314,7 @@ async function renderStudent(){
     $("#path-view").scrollIntoView({behavior: "smooth", block: "start"});
   });
   bindStudies();
+  bindAdvisers();
   bindSave(root);
   bindPlans(root);
   bindAhead(root);
@@ -4539,6 +4600,12 @@ async function renderAdviser(){
   $("#view-dashboard").innerHTML = `
     <main class="split">
       <aside>
+        ${me.role === "adviser" ? `<div class="block" style="margin-bottom:14px">
+          <h3 style="margin-top:0">Your class code</h3>
+          <p class="code-big" id="class-code">Loading</p>
+          <p class="caption" style="margin:0 0 10px">Give it to your students. They enter it under My details,
+            and only then can you see their record.</p>
+          <button type="button" class="small" id="class-new">Make a new code</button></div>` : ""}
         <label for="q" style="margin-top:0">Search learners</label>
         <input id="q" placeholder="id, name or course" autocomplete="off" />
         <div id="list" style="margin-top:10px"></div>
@@ -4548,6 +4615,20 @@ async function renderAdviser(){
   $("#q").oninput = e => loadList(e.target.value);
   loadList("");
   showOverview();
+  if(me.role === "adviser") bindClassCode();
+}
+
+/* An adviser's class code. A new one stops the old one working for anyone not yet in
+   the class, for when a code has gone further than it should. */
+async function bindClassCode(){
+  const code = $("#class-code");
+  try{ code.textContent = (await api("/api/adviser/class")).code; }
+  catch(err){ code.textContent = ""; toast(err.message); }
+  $("#class-new").onclick = async () => {
+    if(!confirm("Make a new class code? The old one stops working. Students already in your class stay.")) return;
+    try{ code.textContent = (await post("/api/adviser/class/new")).code; toast("New class code made"); }
+    catch(err){ toast(err.message); }
+  };
 }
 
 function renderAdviserWaiting(){
@@ -4556,7 +4637,8 @@ function renderAdviserWaiting(){
     <div class="block">
       <p>An admin checks each adviser account before it can open a student's record, because
         those records belong to students, and some of them are under 18. Once your account is
-        approved, your learners appear here.</p>
+        approved you get a class code to give your students, and each one appears here when
+        they join.</p>
       <p class="muted">Meanwhile the <a href="#/finder" data-go="finder">Course Finder</a> and
         <a href="#/explore" data-go="explore">Explore</a> work as usual.</p>
       <div class="row"><button type="button" class="small" id="adviser-recheck">Check again</button></div>
@@ -4570,6 +4652,7 @@ function renderAdviserWaiting(){
 
 async function showOverview(){
   const o = await api("/api/adviser/overview");
+  const own = me.role === "adviser";            // an admin sees every student, not a class
   // students who have gone quiet first: they are the ones worth chasing
   const ordered = o.registered.slice().sort((a, b) => (b.quiet_days || 0) - (a.quiet_days || 0));
   const quiet = ordered.filter(r => r.quiet);
@@ -4580,19 +4663,20 @@ async function showOverview(){
       <td class="n">${r.last_active? new Date(r.last_active*1000).toLocaleString() : "never"}</td></tr>`).join("");
   $("#detail").classList.remove("empty");
   $("#detail").innerHTML = `
-    ${pageHead("Overview", "Registered students first, quietest at the top, then the dataset learners.", "", "Adviser")}
+    ${pageHead("Overview", `${own ? "Students in your class" : "Registered students"} first, quietest at the top, then the dataset learners.`, "", "Adviser")}
     <div class="tiles">
-      <div class="tile"><div class="v">${o.stats.n_students}</div><div class="k">registered students</div></div>
+      <div class="tile"><div class="v">${o.stats.n_students}</div><div class="k">${own ? "students in your class" : "registered students"}</div></div>
       <div class="tile"><div class="v">${o.stats.n_events}</div><div class="k">activities recorded</div></div>
       <div class="tile"><div class="v">${quiet.length}</div><div class="k">quiet ${o.quiet_after_days}+ days</div></div>
       <div class="tile"><div class="v">25,101</div><div class="k">dataset learners</div></div>
     </div>
-    <div class="block"><h3>Registered students</h3>
-      <p class="muted small">Learners who created an account, the quietest first. "Quiet" means
+    <div class="block"><h3>${own ? "Your class" : "Registered students"}</h3>
+      <p class="muted small">${own ? "Students who joined with your class code" : "Learners who created an account"}, the quietest first. "Quiet" means
         nothing recorded for ${o.quiet_after_days} days or more.</p>
       ${o.registered.length?`<div class="scroll"><table><thead><tr><th>Name</th><th class="n">ID</th>
         <th>Course</th><th class="n">Activities</th><th class="n">Tests</th><th class="n">Last active</th>
-        </tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">No students have registered yet.</div>'}
+        </tr></thead><tbody>${rows}</tbody></table></div>`
+        : `<div class="empty">${own ? "No students in your class yet. Give them your class code." : "No students have registered yet."}</div>`}
     </div>
     <p class="caption" style="margin-top:6px">Select any learner on the left to see their path.</p>`;
 }
@@ -4732,7 +4816,7 @@ const renderHome = () => me.role === "student" ? renderStudent() : renderAdviser
 async function renderAdmin(){
   const el = $("#admin");
   try{
-    const d = await api("/api/admin/accounts");
+    const [d, inv] = await Promise.all([api("/api/admin/accounts"), api("/api/admin/invites")]);
     el.classList.remove("empty");
     const s = d.stats;
     const waiting = d.accounts.filter(a => a.role === "adviser" && !a.approved).length;
@@ -4742,7 +4826,8 @@ async function renderAdmin(){
     el.innerHTML = `
       ${pageHead("Accounts", "Every account on this site, with its activity.", "", "Administration")}
       ${waiting ? `<div class="callout"><b>${waiting} adviser ${waiting === 1 ? "account is" : "accounts are"} waiting for approval.</b>
-        An approved adviser can read every student's record, so approve only people you know.</div>` : ""}
+        Check each one is the person you invited before approving. An approved adviser sees only
+        the students who join their class.</div>` : ""}
       <div class="tiles">
         <div class="tile"><div class="v">${s.n_users}</div><div class="k">accounts</div></div>
         <div class="tile"><div class="v">${s.n_students}</div><div class="k">students</div></div>
@@ -4753,7 +4838,8 @@ async function renderAdmin(){
         <th class="n">Events</th><th>Last active</th><th></th></tr></thead><tbody>
         ${d.accounts.map(a=>`<tr>
           <td><code>${esc(a.username)}</code></td><td>${esc(a.display_name)}</td>
-          <td>${esc(a.role)}${a.role === "adviser" && !a.approved ? ` <span class="chip flag">Waiting</span>` : ""}</td><td>${esc(stageLabel(a.stage) || (a.role === "student" && a.module ? "Undergraduate" : ""))}</td><td>${esc(modName(a.module))}</td>
+          <td>${esc(a.role)}${a.role === "adviser" && !a.approved ? ` <span class="chip flag">Waiting</span>` : ""}${
+            a.invited_for ? `<div class="caption" style="margin:2px 0 0">Invited as ${esc(a.invited_for)}</div>` : ""}</td><td>${esc(stageLabel(a.stage) || (a.role === "student" && a.module ? "Undergraduate" : ""))}</td><td>${esc(modName(a.module))}</td>
           <td class="n">${a.n_events}</td><td>${when(a.last_active)}</td>
           <td><div class="row">${a.role === "adviser" && !a.approved
             ? `<button class="small primary approve" data-u="${esc(a.username)}">Approve</button>` : ""}
@@ -4762,7 +4848,42 @@ async function renderAdmin(){
         </tr>`).join("")}
       </tbody></table></div>
       <p class="caption">Deleting an account also removes its study history and its log. This cannot be undone. Passwords are never shown here and are not recoverable: reset one with <code>python scripts/08_admin.py passwd USERNAME</code>.</p></div>
+      <div class="block" id="invite-block"><h3>Invite an adviser</h3>
+        <p class="muted small">An adviser can only sign up with an invite. Each code works once, within
+          ${inv.days} days, and is shown only when you make it. When they have signed up, approve them above.</p>
+        <form id="invite-form" class="row" style="align-items:flex-end">
+          <div style="flex:1;min-width:0"><label for="invite-note" style="margin-top:0">Who is it for?</label>
+            <input id="invite-note" maxlength="80" required autocomplete="off" /></div>
+          <button class="small primary" type="submit">Make invite</button>
+        </form>
+        <p class="caption" style="margin:6px 0 0">Their name and role, so you recognise them when they sign up.</p>
+        <div id="invite-new"></div>
+        ${inv.invites.length ? `<div class="scroll" style="margin-top:12px"><table><thead><tr><th>For</th><th>Made</th><th>State</th><th></th></tr></thead>
+          <tbody>${inv.invites.map(i => `<tr><td>${esc(i.note)}</td><td>${when(i.created_at)}</td>
+            <td>${i.state === "used" ? `Used${i.used_by ? ` by <code>${esc(i.used_by)}</code>` : ""}`
+              : i.state === "expired" ? "Expired" : `Open until ${when(i.expires_at)}`}</td>
+            <td>${i.state === "open" ? `<button class="small inv-revoke" data-id="${i.id}">Withdraw</button>` : ""}</td></tr>`).join("")}
+          </tbody></table></div>` : ""}
+      </div>
       <div class="block" id="admin-log" hidden></div>`;
+    $("#invite-form").onsubmit = async e => {
+      e.preventDefault();
+      let made;
+      try{ made = await post("/api/admin/invites", {note: $("#invite-note").value}); }
+      catch(err){ toast(err.message); return; }
+      await renderAdmin();
+      $("#invite-new").innerHTML = `<div class="callout" style="margin-top:12px">
+        <p class="code-big" style="margin:0 0 4px">${esc(made.code)}</p>
+        Give this code to ${esc(made.note)}. It works once, until ${when(made.expires_at)}, and will not be shown again.</div>`;
+      $("#invite-new").scrollIntoView({block: "nearest"});
+    };
+    el.querySelectorAll(".inv-revoke").forEach(b => b.onclick = async () => {
+      if(!confirm("Withdraw this invite? The code will stop working.")) return;
+      try{ await api(`/api/admin/invites/${b.dataset.id}`, {method: "DELETE"}); }
+      catch(err){ toast(err.message); return; }
+      toast("Invite withdrawn");
+      renderAdmin();
+    });
     el.querySelectorAll(".log").forEach(b => b.onclick = async () => {
       const box = $("#admin-log");
       box.hidden = false;

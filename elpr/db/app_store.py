@@ -46,6 +46,12 @@ MIN_PASSWORD = 8
 SIGNIN_WINDOW_SECONDS = 15 * 60
 SIGNIN_MAX_FAILURES = 8
 
+# Codes people read off a board or a message and type, so no 0 and O, no 1, I and L.
+CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+# An adviser invite works once, within a week. Only a hash of it is stored, so a copy of
+# the database is no way to sign up as an adviser.
+INVITE_DAYS = 7
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,6 +147,26 @@ CREATE TABLE IF NOT EXISTS recommendation_log (
     payload     TEXT NOT NULL,
     created_at  REAL NOT NULL
 );
+
+-- One-time codes an admin gives a named person so they can sign up as an adviser.
+CREATE TABLE IF NOT EXISTS adviser_invites (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    code_hash   TEXT UNIQUE NOT NULL,
+    note        TEXT NOT NULL,              -- who it is for, in the admin's words
+    created_by  INTEGER REFERENCES users(id),
+    created_at  REAL NOT NULL,
+    expires_at  REAL NOT NULL,
+    used_by     INTEGER REFERENCES users(id),
+    used_at     REAL
+);
+
+-- The advisers a student lets see their record, by joining the adviser's class.
+CREATE TABLE IF NOT EXISTS adviser_students (
+    adviser_id  INTEGER NOT NULL REFERENCES users(id),
+    student_uid INTEGER NOT NULL REFERENCES users(id),
+    joined_at   REAL NOT NULL,
+    PRIMARY KEY (adviser_id, student_uid)
+);
 """
 
 
@@ -165,6 +191,24 @@ def _user(row) -> User:
                 bool(row["approved"]))
 
 
+def _new_code(groups: int) -> str:
+    return "-".join("".join(secrets.choice(CODE_ALPHABET) for _ in range(4))
+                    for _ in range(groups))
+
+
+def _plain_code(code: str) -> str:
+    """The code without spaces, dashes or case, so "abcd efgh" matches ABCD-EFGH."""
+    return "".join(ch for ch in code.upper() if ch.isalnum())
+
+
+def _show_code(plain: str) -> str:
+    return "-".join(plain[i:i + 4] for i in range(0, len(plain), 4))
+
+
+def _code_hash(code: str) -> str:
+    return hashlib.sha256(_plain_code(code).encode()).hexdigest()
+
+
 def _hash(password: str, salt: bytes) -> bytes:
     # scrypt with the parameters recommended for interactive logins.
     return hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1, dklen=32)
@@ -174,7 +218,10 @@ class AppStore:
     def __init__(self, path: Path = DB_PATH):
         path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
-        self._connect().executescript(SCHEMA)
+        con = self._connect()
+        had_classes = con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table'"
+                                  " AND name = 'adviser_students'").fetchone() is not None
+        con.executescript(SCHEMA)
         # Accounts and password hashes: readable by the account the server runs as,
         # nobody else on the machine. A fresh SQLite file is world-readable otherwise.
         try:
@@ -183,6 +230,8 @@ class AppStore:
             pass
         self._migrate_roles()
         self._migrate_stage()
+        if not had_classes:
+            self._keep_existing_links()
         # failed sign-ins per username, in memory only: cleared by a restart, which is
         # acceptable for a single-process deployment and stated as such.
         self._failures: dict[str, list[float]] = {}
@@ -200,10 +249,26 @@ class AppStore:
         if "approved" not in columns:
             with con:
                 con.execute("ALTER TABLE users ADD COLUMN approved INTEGER NOT NULL DEFAULT 1")
+        if "class_code" not in columns:
+            with con:
+                con.execute("ALTER TABLE users ADD COLUMN class_code TEXT")
+        con.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_class_code ON users(class_code)")
         events = {r["name"] for r in con.execute("PRAGMA table_info(study_events)")}
         if "score" not in events:
             with con:
                 con.execute("ALTER TABLE study_events ADD COLUMN score REAL")
+
+    def _keep_existing_links(self) -> None:
+        """Before classes, every approved adviser saw every student. On the first start
+        with classes those advisers keep the students they could already see, so nothing
+        in use breaks; a student can leave under My details. Later sign-ups join by code."""
+        con = self._connect()
+        with con:
+            con.execute(
+                "INSERT OR IGNORE INTO adviser_students (adviser_id, student_uid, joined_at)"
+                " SELECT a.id, s.id, ? FROM users a, users s"
+                " WHERE a.role = 'adviser' AND a.approved = 1 AND s.role = 'student'",
+                (time.time(),))
 
     def _migrate_roles(self) -> None:
         """Widen the role CHECK constraint on databases created before admin existed.
@@ -246,7 +311,13 @@ class AppStore:
     def register(
         self, username: str, password: str, display_name: str, role: str,
         module: str | None = None, stage: str | None = None, stream: str | None = None,
+        invite: str | None = None, class_code: str | None = None,
     ) -> User:
+        """Create an account. An adviser's invite is used up, and a student who gives a
+        class code joins that class, in the same step: neither happens without the other.
+
+        The API insists on an invite for every adviser; this store does not, so tests and
+        the command line can still make one directly."""
         username = username.strip().lower()
         if not username or len(username) < 3:
             raise ValueError("username must be at least 3 characters")
@@ -265,6 +336,17 @@ class AppStore:
             ).fetchone()
             if existing:
                 raise ValueError("that username is taken")
+            now = time.time()
+            invite_row = adviser_row = None
+            if role == "adviser" and invite is not None:
+                invite_row = con.execute(
+                    "SELECT id FROM adviser_invites WHERE code_hash = ? AND used_at IS NULL"
+                    " AND expires_at > ?", (_code_hash(invite), now)).fetchone()
+                if invite_row is None:
+                    raise ValueError("that invite code does not work: it may be mistyped, used "
+                                     "already or more than a week old. Ask an admin for a new one")
+            if role == "student" and class_code:
+                adviser_row = self._class_owner(con, class_code)
 
             # Anyone can sign up as an adviser, and an adviser can read every student's
             # record, so the account waits until an admin approves it.
@@ -273,7 +355,7 @@ class AppStore:
                 "INSERT INTO users (username, display_name, role, salt, password_hash,"
                 " module, stage, stream, created_at, approved) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (username, display_name or username, role, salt,
-                 _hash(password, salt), module, stage, stream, time.time(), int(approved)),
+                 _hash(password, salt), module, stage, stream, now, int(approved)),
             )
             user_id = cursor.lastrowid
             student_id = None
@@ -282,18 +364,131 @@ class AppStore:
                 con.execute(
                     "UPDATE users SET student_id = ? WHERE id = ?", (student_id, user_id)
                 )
+            if invite_row is not None:
+                con.execute("UPDATE adviser_invites SET used_by = ?, used_at = ? WHERE id = ?",
+                            (user_id, now, invite_row["id"]))
+            if adviser_row is not None:
+                con.execute("INSERT INTO adviser_students (adviser_id, student_uid, joined_at)"
+                            " VALUES (?,?,?)", (adviser_row["id"], user_id, now))
         return User(user_id, username, display_name or username, role, module, student_id,
                     stage, stream, approved)
 
     def approve_adviser(self, username: str) -> bool:
-        """Let an adviser account see students. False when there is no such adviser."""
+        """Let an adviser account take students, and give it a class code to share.
+        False when there is no such adviser."""
         con = self._connect()
         with con:
             cursor = con.execute(
                 "UPDATE users SET approved = 1 WHERE username = ? AND role = 'adviser'",
                 (username.strip().lower(),),
             )
+        if cursor.rowcount != 1:
+            return False
+        self.class_code(self.user_by_username(username).id)
+        return True
+
+    # -- adviser invites and classes ----------------------------------------------
+    # An adviser signs up with an invite an admin made for them, waits for the admin to
+    # approve the account, and then sees only the students who joined their class with
+    # its code. A student can leave a class at any time.
+    def create_invite(self, admin_id: int, note: str, now: float | None = None) -> dict:
+        """A new invite. The code is returned here once and never stored."""
+        note = " ".join(note.split())[:80]
+        if not note:
+            raise ValueError("say who the invite is for")
+        now = time.time() if now is None else now
+        code = _new_code(3)
+        con = self._connect()
+        with con:
+            cursor = con.execute(
+                "INSERT INTO adviser_invites (code_hash, note, created_by, created_at, expires_at)"
+                " VALUES (?,?,?,?,?)", (_code_hash(code), note, admin_id, now,
+                                        now + INVITE_DAYS * 86400))
+        return {"id": cursor.lastrowid, "code": code, "note": note,
+                "expires_at": now + INVITE_DAYS * 86400}
+
+    def invites(self, now: float | None = None) -> list[dict]:
+        """Every invite, newest first, with who used it. Never the code itself."""
+        now = time.time() if now is None else now
+        rows = self._connect().execute(
+            "SELECT i.id, i.note, i.created_at, i.expires_at, i.used_at,"
+            "       u.username AS used_by, c.username AS created_by"
+            " FROM adviser_invites i LEFT JOIN users u ON u.id = i.used_by"
+            " LEFT JOIN users c ON c.id = i.created_by ORDER BY i.id DESC").fetchall()
+        return [{**dict(r), "state": "used" if r["used_at"] else
+                 "expired" if r["expires_at"] <= now else "open"} for r in rows]
+
+    def revoke_invite(self, invite_id: int) -> bool:
+        """Withdraw an invite nobody has used yet."""
+        con = self._connect()
+        with con:
+            cursor = con.execute("DELETE FROM adviser_invites WHERE id = ? AND used_at IS NULL",
+                                 (invite_id,))
         return cursor.rowcount == 1
+
+    def class_code(self, adviser_id: int) -> str:
+        """The code students type to join this adviser's class, made the first time."""
+        row = self._connect().execute(
+            "SELECT class_code FROM users WHERE id = ? AND role = 'adviser'", (adviser_id,)
+        ).fetchone()
+        if row is None:
+            raise ValueError("only advisers have a class")
+        return _show_code(row["class_code"]) if row["class_code"] else self.new_class_code(adviser_id)
+
+    def new_class_code(self, adviser_id: int) -> str:
+        """A fresh code. Students already in the class stay; the old code stops working."""
+        con = self._connect()
+        for _ in range(10):
+            code = _plain_code(_new_code(2))
+            try:
+                with con:
+                    con.execute("UPDATE users SET class_code = ? WHERE id = ? AND role = 'adviser'",
+                                (code, adviser_id))
+                return _show_code(code)
+            except sqlite3.IntegrityError:        # the same code as another adviser's
+                continue
+        raise RuntimeError("could not make a class code")
+
+    @staticmethod
+    def _class_owner(con: sqlite3.Connection, code: str):
+        row = con.execute(
+            "SELECT * FROM users WHERE class_code = ? AND role = 'adviser' AND approved = 1",
+            (_plain_code(code),)).fetchone()
+        if row is None:
+            raise ValueError("that class code does not match any adviser. Check it with your adviser")
+        return row
+
+    def join_class(self, student_uid: int, code: str) -> User:
+        """Let the adviser whose code this is see the student's record."""
+        con = self._connect()
+        with con:
+            adviser = self._class_owner(con, code)
+            con.execute("INSERT OR IGNORE INTO adviser_students (adviser_id, student_uid, joined_at)"
+                        " VALUES (?,?,?)", (adviser["id"], student_uid, time.time()))
+        return _user(adviser)
+
+    def leave_class(self, student_uid: int, adviser_id: int) -> bool:
+        con = self._connect()
+        with con:
+            cursor = con.execute(
+                "DELETE FROM adviser_students WHERE student_uid = ? AND adviser_id = ?",
+                (student_uid, adviser_id))
+        return cursor.rowcount == 1
+
+    def advisers_of(self, student_uid: int) -> list[dict]:
+        """The advisers who can see this student's record, earliest first."""
+        rows = self._connect().execute(
+            "SELECT u.id, u.display_name, l.joined_at FROM adviser_students l"
+            " JOIN users u ON u.id = l.adviser_id WHERE l.student_uid = ?"
+            " ORDER BY l.joined_at, u.id", (student_uid,)).fetchall()
+        return [dict(r) for r in rows]
+
+    def adviser_can_see(self, adviser_id: int, student_id: int) -> bool:
+        """Whether a registered student (by learner id) is in this adviser's class."""
+        return self._connect().execute(
+            "SELECT 1 FROM adviser_students l JOIN users s ON s.id = l.student_uid"
+            " WHERE l.adviser_id = ? AND s.student_id = ?", (adviser_id, student_id)
+        ).fetchone() is not None
 
     def set_studies(self, user_id: int, stage: str, module: str | None,
                     stream: str | None = None) -> None:
@@ -424,11 +619,15 @@ class AppStore:
     # an ordinary busy week does not flag someone, short enough to act on.
     QUIET_AFTER_DAYS = 7
 
-    def registered_students(self, now: float | None = None) -> list[dict]:
+    def registered_students(self, now: float | None = None,
+                            adviser_id: int | None = None) -> list[dict]:
         """Registered students with their activity, and how long each has been quiet.
+        Given an adviser, only the students in that adviser's class.
 
         `quiet_days` counts from their last recorded activity, or from the day they
         signed up if they have never recorded anything, which is the case worth chasing."""
+        mine = ("" if adviser_id is None else
+                " AND u.id IN (SELECT student_uid FROM adviser_students WHERE adviser_id = ?)")
         rows = self._connect().execute(
             "SELECT u.id AS user_id, u.student_id, u.display_name, u.username, u.module,"
             "       u.stage, u.created_at,"
@@ -436,8 +635,9 @@ class AppStore:
             "       SUM(CASE WHEN e.kind = 'assessment' THEN 1 ELSE 0 END) AS n_assessments,"
             "       MAX(e.created_at) AS last_active"
             " FROM users u LEFT JOIN study_events e ON e.user_id = u.id"
-            " WHERE u.role = 'student'"
-            " GROUP BY u.id ORDER BY COALESCE(MAX(e.created_at), u.created_at) DESC"
+            " WHERE u.role = 'student'" + mine +
+            " GROUP BY u.id ORDER BY COALESCE(MAX(e.created_at), u.created_at) DESC",
+            () if adviser_id is None else (adviser_id,),
         ).fetchall()
         now = time.time() if now is None else now
         out = []
@@ -658,6 +858,7 @@ class AppStore:
         rows = con.execute(
             "SELECT u.id, u.username, u.display_name, u.role, u.module, u.stage, u.student_id,"
             "       u.created_at, u.approved,"
+            "       (SELECT note FROM adviser_invites i WHERE i.used_by = u.id) AS invited_for,"
             "       (SELECT COUNT(*) FROM study_events e WHERE e.user_id = u.id) AS n_events,"
             "       (SELECT MAX(e.created_at) FROM study_events e WHERE e.user_id = u.id)"
             "         AS last_active"
@@ -682,6 +883,10 @@ class AppStore:
                 con.execute("DELETE FROM learner_notes WHERE student_id = ?", (row["student_id"],))
                 con.execute("DELETE FROM recommendation_log WHERE student_id = ?", (row["student_id"],))
             con.execute("UPDATE learner_notes SET author_id = NULL WHERE author_id = ?", (uid,))
+            con.execute("DELETE FROM adviser_students WHERE adviser_id = ? OR student_uid = ?",
+                        (uid, uid))
+            con.execute("UPDATE adviser_invites SET used_by = NULL WHERE used_by = ?", (uid,))
+            con.execute("UPDATE adviser_invites SET created_by = NULL WHERE created_by = ?", (uid,))
             con.execute("DELETE FROM sessions WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM learner_profiles WHERE user_id = ?", (uid,))
             con.execute("DELETE FROM study_events WHERE user_id = ?", (uid,))

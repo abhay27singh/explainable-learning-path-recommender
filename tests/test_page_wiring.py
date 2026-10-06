@@ -100,3 +100,41 @@ def test_an_adviser_waiting_for_approval_is_told_why():
 def test_every_background_question_has_a_label_a_screen_reader_can_find():
     body = functions()["profileForm"]
     assert 'id="pf-${f.field}"' in body and '<label for="pf-${f.field}">' in body
+
+
+def test_the_invite_field_is_disabled_while_hidden():
+    """It is required for an adviser. Visible or enabled for a student, it would block
+    the student's sign-up without showing why, the way adviser sign-up once broke."""
+    wrap = re.search(r'<div id="invite-wrap"[^>]*>.*?</div>', PAGE, re.S).group(0)
+    assert 'style="display:none"' in wrap and "disabled" in wrap
+    sync = functions()["syncSignup"]
+    assert 'show("#invite-wrap", !student)' in sync and 'show("#class-wrap", student)' in sync
+
+
+def test_both_kinds_of_student_can_see_and_change_who_sees_their_record():
+    fns = functions()
+    for name in ("renderSchoolStudent", "renderStudent"):
+        assert "advisersBlock()" in fns[name] and "bindAdvisers()" in fns[name], name
+
+
+def test_an_adviser_is_shown_their_class_code_and_an_admin_can_invite():
+    fns = functions()
+    assert "bindClassCode()" in fns["renderAdviser"]
+    assert '"/api/admin/invites"' in fns["renderAdmin"] and "inv-revoke" in fns["renderAdmin"]
+
+
+def test_a_school_students_page_uses_the_full_width_of_a_phone():
+    """Regression: ".workspace.two" outranks ".workspace", so the one-column phone rule
+    missed the school student's page, which kept a 236 pixel column on a 375 pixel phone."""
+    css = re.search(r"<style>(.*?)</style>", PAGE, re.S).group(1)
+    phone = media_block_holding(css, ".railside .quizbox{display:none}")
+    assert ".workspace, .workspace.two{grid-template-columns:minmax(0,1fr)}" in phone
+
+
+def test_footer_links_stay_one_per_line_on_a_touch_screen():
+    """Regression: making them taller also made them inline, and they ran together as
+    "Course FinderExplore coursesMy learning"."""
+    css = re.search(r"<style>(.*?)</style>", PAGE, re.S).group(1)
+    touch = media_block_holding(css, "(pointer: coarse)")
+    rule = re.search(r"footer\.site \.cols a\{([^}]*)\}", touch).group(1)
+    assert "inline" not in rule
