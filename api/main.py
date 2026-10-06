@@ -256,7 +256,8 @@ def health() -> dict:
 
 # ---------------------------------------------------------------- my record
 @app.get("/api/me/state")
-def my_state(known: str | None = None, elpr_session: str | None = Cookie(None)) -> dict:
+def my_state(known: str | None = None, full: bool = False,
+             elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
     s = _service()
     if user.role != "student":
@@ -278,7 +279,8 @@ def my_state(known: str | None = None, elpr_session: str | None = Cookie(None)) 
              "in_scope": bool(scope[c])}
             for c in range(s.graph.n_concepts) if scope[c]
         ],
-        "history": events[-25:],
+        # The record of study lists every finished week, so it asks for all of them.
+        "history": events if full else events[-25:],
     }
 
 
@@ -320,6 +322,24 @@ def my_path(steps: int = Query(5, ge=1, le=8), known: str | None = None,
     if not user.module:
         raise HTTPException(400, "choose your course first")
     return s.course_path(user, steps, _overrides(known))
+
+
+@app.get("/api/me/what-if")
+def my_what_if(weeks: str, elpr_session: str | None = Cookie(None)) -> dict:
+    """A preview: the model run again as if the student had passed these weeks.
+
+    Read-only, so a GET. Nothing is stored and nothing is logged, because nothing
+    happened: the privacy page promises the log holds only what a student did."""
+    user = _require(elpr_session)
+    s = _service()
+    if user.role != "student":
+        raise HTTPException(400, "advisers have no learning record of their own")
+    if not user.module:
+        raise HTTPException(409, "a what-if needs a course, and you are not on one yet")
+    try:
+        return s.what_if(user, _overrides(weeks))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @app.get("/api/students/{student}/path")

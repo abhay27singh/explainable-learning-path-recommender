@@ -287,6 +287,62 @@ class Service:
 
         return self.learning_path(make, steps, known)
 
+    WHAT_IF_MAX = 6
+
+    def what_if(self, user: User, picked: tuple) -> dict:
+        """What the model would make of the student's record if they passed these weeks.
+
+        The weeks are added to a copy of their history as passed tests, one after
+        another, and the model is run again on it. Nothing is written: the store, the
+        cache and the path are untouched, so this is a preview, not a record. Weeks
+        outside the student's course, or already done, are refused or ignored."""
+        module = user.module
+        graph = self.module_graph(module)
+        weeks = [n["concept"] for n in graph["nodes"]]
+        inside = set(weeks)
+        picked = list(dict.fromkeys(int(c) for c in picked))
+        if not picked:
+            raise ValueError("pick at least one week")
+        if len(picked) > self.WHAT_IF_MAX:
+            raise ValueError(f"pick at most {self.WHAT_IF_MAX} weeks")
+        if any(c not in inside for c in picked):
+            raise ValueError("every week must belong to your course")
+
+        events = self.store.events(user.id)
+        done = set(self.done_concepts(user))
+        picked = [c for c in picked if c not in done]
+        last = max((float(e["day"]) for e in events), default=0.0)
+        hypothetical = [{"concept_id": c, "day": last + 3.0 * (i + 1), "kind": "assessment",
+                         "correct": 1, "score": None} for i, c in enumerate(picked)]
+        _, before = self._registered_mastery(user)
+        after = self.engine.mastery(self.registered_sequence(user, events + hypothetical))
+
+        preds: dict[int, list[int]] = {}
+        for e in graph["edges"]:
+            preds.setdefault(e["dst"], []).append(e["src"])
+
+        def status(c: int, finished: set) -> str:
+            if c in finished:
+                return "done"
+            return "ready" if all(p in finished for p in preds.get(c, [])) else "locked"
+
+        done_after = done | set(picked)
+        rows = [{"concept": c, "week": int(n["week"]), "label": n["label"],
+                 "before": round(float(before[c]), 4), "after": round(float(after[c]), 4),
+                 "status_before": status(c, done), "status_after": status(c, done_after)}
+                for c, n in zip(weeks, graph["nodes"])]
+        nxt = lambda finished: next((c for c in weeks if c not in finished), None)
+        return {
+            "module": module,
+            "picked": picked,
+            "weeks": rows,
+            "average_before": round(float(np.mean([r["before"] for r in rows])), 4),
+            "average_after": round(float(np.mean([r["after"] for r in rows])), 4),
+            "newly_ready": [r["concept"] for r in rows
+                            if r["status_before"] == "locked" and r["status_after"] == "ready"],
+            "next_before": nxt(done), "next_after": nxt(done_after),
+        }
+
     def done_concepts(self, user: User) -> tuple:
         """Weeks the student has finished, oldest first: studied or passed, unless the
         latest record for that week says they found it hard."""

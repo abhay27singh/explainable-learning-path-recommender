@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 213 tests
+make test                                       # 219 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -202,9 +202,10 @@ ice canvas, a glacial navy dark theme, amber for warnings, Plus Jakarta Sans hea
 system asks for reduced transparency), and a navy dark theme. Pages use the full width
 of the window, and on a phone the main places sit in a tab bar at the bottom.
 
-- **Prerequisite graph.** Beside the week list, every week of the student's course as
-  the model's prerequisite graph: done, now, ready or not ready, with the selected week's
-  links drawn and named. A table view lists the same.
+- **Five views of the path.** A timeline; a board with the course in four parts; the
+  model's prerequisite graph, with the key week marked and a "whole chain" view; a table;
+  and **What if**, where a student picks weeks they plan to pass and the model is run
+  again on that record to show what would open up. Nothing is saved.
 - **Course Finder as a planning form**: where you are (down to the engineering branch or
   degree subject) and what you want next, then what you enjoy. Every match is listed
   beside the questions, closest first; when nothing fits at one level, the matches at

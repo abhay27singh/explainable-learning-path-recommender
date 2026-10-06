@@ -31,6 +31,7 @@
     --on-accent:#FFFFFF; --secondary:#0EA5E9; --secondary-soft:#E0F2FE;
     --warn:#B45309; --warn-soft:#FEF3C7; --good:#047857; --good-soft:#D1FAE5;
     --lvl-1:#BAE6FD; --lvl-2:#38BDF8; --lvl-3:#0369A1; --viz-bar:#0284C7;
+    --st-done:#047857; --st-ready:#0284C7; --st-low:#B45309;
     --cal-0:#E6F3FC; --cal-1:#BAE6FD; --cal-2:#38BDF8; --cal-3:#0369A1;
     --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
     --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -62,6 +63,7 @@
       --on-accent:#082F49; --secondary:#0EA5E9; --secondary-soft:#0C3155;
       --warn:#FBBF24; --warn-soft:#3A2A0A; --good:#34D399; --good-soft:#0B3A2E;
       --lvl-1:#0C4A6E; --lvl-2:#0284C7; --lvl-3:#7DD3FC; --viz-bar:#38BDF8;
+      --st-done:#059669; --st-ready:#0284C7; --st-low:#D97706;
       --cal-0:#13243F; --cal-1:#0C4A6E; --cal-2:#0284C7; --cal-3:#7DD3FC;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
       --footer:#060E1B; --footer-ink:#C7E3F8; --veil:rgba(14,30,56,.96);
@@ -83,6 +85,7 @@
     --on-accent:#082F49; --secondary:#0EA5E9; --secondary-soft:#0C3155;
     --warn:#FBBF24; --warn-soft:#3A2A0A; --good:#34D399; --good-soft:#0B3A2E;
     --lvl-1:#0C4A6E; --lvl-2:#0284C7; --lvl-3:#7DD3FC; --viz-bar:#38BDF8;
+    --st-done:#059669; --st-ready:#0284C7; --st-low:#D97706;
     --cal-0:#13243F; --cal-1:#0C4A6E; --cal-2:#0284C7; --cal-3:#7DD3FC;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
     --footer:#060E1B; --footer-ink:#C7E3F8; --veil:rgba(14,30,56,.96);
@@ -746,10 +749,7 @@
     border-radius:var(--radius-lg);background:var(--glass);border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow),var(--glass-hi)}
   .fbar .primary{width:auto;padding:10px 18px}
   .fprog{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:200px}
-  .fprog span{font-size:12px;font-weight:700;color:var(--accent)}
-  .fprog .segs{display:flex;gap:4px;width:100%}
-  .fprog .segs i{flex:1;height:5px;border-radius:3px;background:var(--surface-alt)}
-  .fprog .segs i.on{background:var(--secondary)}
+  .fprog > span{font-size:12px;font-weight:700;color:var(--accent)}
   #finder-match .top-match{margin:0 0 12px}
   .match-empty,.match-next{padding:16px 18px;border-radius:14px;background:var(--glass-input);border:1px solid var(--glass-edge)}
   .match-empty .eyebrow,.match-next .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
@@ -875,6 +875,106 @@
   .sp-list li{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;padding:6px 0}
   .sp-unit{flex:1 1 180px;min-width:0}
   .chip.low{background:var(--warn-soft);color:var(--warn)}
+  /* ---------------- path views: board, what if, key week, order check ---------------- */
+  .graph-tools{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap}
+  #g-focus[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .gkey{align-self:flex-start;margin-top:4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    padding:1px 6px;border-radius:5px;background:var(--warn-soft);color:var(--warn)}
+  .gchip.clash{background:var(--warn-soft);color:var(--warn);border-color:transparent;cursor:pointer;font:inherit;font-size:11px;font-weight:700;box-shadow:none}
+  .ctrl-band .cb-left{min-width:0;max-width:100%}
+  .ctrl-band .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .ctrl-band .seg button{white-space:nowrap}
+  .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start}
+  .bcol{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--glass-soft);border:1px solid var(--glass-edge)}
+  .bcol.current{border:2px solid var(--accent);background:var(--accent-soft)}
+  .bcol-head{display:flex;justify-content:space-between;align-items:flex-start;gap:4px 8px;flex-wrap:wrap}
+  .bcol-head b{display:block;font-family:var(--display);font-size:15px}
+  .bcol-head .caption{display:block;white-space:nowrap}
+  .bcol-prog{display:flex;flex-direction:column;gap:4px;margin-bottom:4px}
+  .bcard{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:9px 10px;border-radius:10px;
+    background:var(--surface);border:1px solid var(--rule);box-shadow:none}
+  .bcard .gn-top{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:13px}
+  .bcard .gn-sub{font-size:11px;color:var(--ink-faint)}
+  .bcard.done{border-left:3px solid var(--good)}
+  .bcard.now{border:2px solid var(--accent)}
+  .bcard.locked{border-style:dashed;background:var(--surface-alt)}
+  @media(max-width:1100px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:600px){.board{grid-template-columns:minmax(0,1fr)}}
+  .wi-pick{display:flex;flex-wrap:wrap;gap:6px}
+  .wi-wk{font-size:12px;padding:5px 10px}
+  .wi-wk.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+  .wi-result{margin-top:16px}
+  .wi-result .tile .v{font-size:20px}
+  /* ---------------- phone summary on the dashboard ---------------- */
+  .m-summary{display:none}
+  @media(max-width:860px){
+    .m-summary{display:block;margin:0 0 14px;padding:14px;border-radius:var(--radius-lg);background:var(--glass);
+      border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow),var(--glass-hi)}
+    .ms-top{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-bottom:8px}
+    .ms-top .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+    .ms-top b{font-family:var(--display);font-size:17px}
+    .ms-pct{font-family:var(--display);font-size:24px;font-weight:700;color:var(--accent)}
+    .ms-parts{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:2px;scrollbar-width:none}
+    .ms-part{flex:0 0 auto;min-width:112px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+      padding:9px 11px;border-radius:10px;background:var(--surface);border:1px solid var(--rule);box-shadow:none;text-align:left}
+    .ms-part.on{border:2px solid var(--accent);background:var(--accent-soft);color:var(--ink)}
+    .ms-part b{color:var(--ink)}
+    .ms-part span:not(.gchip){font-size:12px;color:var(--ink-faint)}
+  }
+  /* ---------------- progress: course so far, week map ---------------- */
+  .cf-figs{display:flex;gap:10px 28px;flex-wrap:wrap;margin:4px 0 12px}
+  .cf-figs div{display:flex;flex-direction:column}
+  .cf-figs b{font-family:var(--sans);font-size:28px;line-height:1.1;font-weight:700;color:var(--ink)}
+  .cf-figs span{font-size:12px;color:var(--ink-faint)}
+  .st-bar{display:flex;gap:2px;height:14px;border-radius:4px;overflow:hidden;background:var(--surface-alt)}
+  .st-seg{display:block;height:100%}
+  .st-seg.done{background:var(--st-done)}
+  .st-seg.ready{background:var(--st-ready)}
+  .st-seg.lift,.st-seg:hover,.st-seg:focus-visible{filter:brightness(1.12)}
+  .st-rest{display:block;height:100%;background:var(--surface-alt)}
+  .course-fig > .st-bar{height:20px;margin-bottom:10px}
+  .viz-legend i.k-done{background:var(--st-done)}
+  .viz-legend i.k-ready{background:var(--st-ready)}
+  .viz-legend i.k-rest{background:var(--surface-alt);border:1px solid var(--rule)}
+  .viz-legend i.k-now{background:var(--st-ready);box-shadow:0 0 0 2px var(--ink) inset}
+  .viz-legend i.k-pass{background:var(--good);border-radius:50%}
+  .viz-legend i.k-low{background:none;border:2px solid var(--warn);border-radius:50%;width:9px;height:9px}
+  .cf-h4{margin:16px 0 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+  .cf-part{display:grid;grid-template-columns:minmax(150px,max-content) minmax(0,1fr) 56px 92px;align-items:center;gap:10px;min-height:30px;font-size:13px}
+  .cf-part .st-bar{height:12px}
+  .cf-val{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .cf-part .gchip{justify-self:start}
+  @media(max-width:600px){.cf-part{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.cf-part .st-bar{grid-column:1 / -1;grid-row:2}
+    .cf-part .gchip{display:none}}
+  details.model-working{margin-top:16px}
+  details.model-working > summary{font-size:14px;font-weight:600;color:var(--accent);margin-bottom:10px}
+  /* ---------------- finder steps ---------------- */
+  .fsteps{display:flex;gap:6px;margin:0;padding:0;list-style:none;flex-wrap:wrap;justify-content:flex-end}
+  .fstep{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:5px 10px 5px 6px;box-shadow:none}
+  .fs-n{display:grid;place-items:center;width:20px;height:20px;border-radius:6px;background:var(--surface-alt);color:var(--ink-soft);font-size:11px;font-weight:700}
+  .fs-n svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .fstep.on .fs-n{background:var(--accent);color:var(--on-accent)}
+  /* ---------------- record of study, by part ---------------- */
+  .audit-part .ap-head{display:flex;align-items:baseline;gap:8px 12px;flex-wrap:wrap;margin-bottom:8px}
+  .audit-part .ap-head h3{margin:0;flex:1 1 auto}
+  .audit-part .bar{margin-bottom:10px}
+  tr.muted-row td{color:var(--ink-faint)}
+  @media print{.audit-part{break-inside:avoid}}
+  .qchart{position:relative;display:flex;flex-direction:column;gap:6px;margin:6px 0 2px}
+  .qrow{display:grid;grid-template-columns:minmax(64px,max-content) minmax(0,1fr) 34px;align-items:center;gap:10px;font-size:13px}
+  .qwk{color:var(--ink)}
+  .qtrack{position:relative;height:12px;border-radius:4px;background:var(--surface-alt)}
+  .qtrack::after{content:"";position:absolute;left:40%;top:-4px;bottom:-4px;width:1px;background:var(--ink-faint)}
+  .qfill{display:block;height:100%;border-radius:4px;background:var(--st-ready)}
+  .qfill.low{background:var(--st-low)}
+  .qval{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+  .qrow.lift .qtrack,.qrow:hover .qtrack{box-shadow:0 0 0 2px var(--accent-soft)}
+  .qscale{font-size:10px;color:var(--ink-faint)}
+  .qtrack.bare{height:auto;background:none;display:flex;justify-content:space-between}
+  .qtrack.bare::after{display:none}
+  .qpass-lab{position:absolute;left:40%;transform:translateX(-50%);white-space:nowrap}
+  /* Anything the page scrolls to stops below the sticky header, not under it. */
+  .fsec,#path-view,#finder-courses,#finder-out{scroll-margin-top:calc(var(--header) + 16px)}
 </style>
 </head>
 <body>
@@ -2018,8 +2118,9 @@ async function showLadder(){
     plan.next.leads_to || (levels.length ? `You can go on to ${levels.map(l => l.label).join(" or ")}.`
       : "You are at the top of the ladder. Explore any course that interests you."),
     `<div class="fprog"><span>${answered} of ${total} answered</span>
-      <div class="segs">${["Where you are", "What you enjoy"].slice(0, total).map((t, i) =>
-        `<i class="${done[i] ? "on" : ""}" title="${t}"></i>`).join("")}</div></div>`,
+      <ol class="fsteps">${["Where you are", "What you enjoy"].slice(0, total).map((t, i) =>
+        `<li><button type="button" class="fstep${done[i] ? " on" : ""}" data-sec="${"AB"[i]}">
+          <span class="fs-n">${done[i] ? TICK : i + 1}</span>${t}</button></li>`).join("")}</ol></div>`,
     "Course Finder · rule-based, not the model");
   let elsewhere = [];
   if(ranked && !ranked.courses.length){
@@ -2031,6 +2132,8 @@ async function showLadder(){
     }))).filter(x => x.courses.length);
     if(seq !== finderSeq) return;
   }
+  $("#finder-head").querySelectorAll(".fstep").forEach(b => b.onclick = () =>
+    document.querySelector(`.fsec[data-sec="${b.dataset.sec}"]`).scrollIntoView({behavior: "smooth", block: "start"}));
   $("#finder-match").innerHTML = matchPanel(ranked, levels.length, elsewhere);
   const el2 = $("#finder-out");
   el.dataset.filled = "1";
@@ -2544,14 +2647,17 @@ function partChart(concepts, forStudent){
     ${vizTable(["Part", "Weeks", "Average chance of doing well"], rows.map(r => [r.name, `${r.from} to ${r.to}`, pct(r.avg) + "%"]))}
   </figure>`;
 }
-function weekChart(concepts, t, forStudent){
+function weekChart(concepts, t, forStudent, title = "Week by week"){
   const pts = concepts.filter(c => c.in_scope !== false).slice().sort((a, b) => a.week - b.week);
   if(!pts.length) return "";
   const W = 900, H = 250, padL = 46, padR = 12, padT = 16, padB = 38;
   const plotW = W - padL - padR, plotH = H - padT - padB, band = plotW / pts.length, bw = Math.min(16, band * 0.6);
-  const yv = v => padT + (1 - v) * plotH, base = padT + plotH;
-  const grid = [0, 0.5, 1].map(v => `<line x1="${padL}" x2="${W - padR}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)" stroke-width="1"/>
-    <text x="${padL - 8}" y="${yv(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink-faint)">${v * 100}%</text>`).join("");
+  // The scale starts at zero and stops at the first round step above the highest week,
+  // so a student whose estimates are all low still sees which weeks stand out.
+  const top = [0.02, 0.05, 0.1, 0.2, 0.25, 0.5, 1].find(v => v >= Math.max(...pts.map(c => c.mastery))) || 1;
+  const yv = v => padT + (1 - v / top) * plotH, base = padT + plotH;
+  const grid = [0, top / 2, top].map(v => `<line x1="${padL}" x2="${W - padR}" y1="${yv(v)}" y2="${yv(v)}" stroke="var(--rule)" stroke-width="1"/>
+    <text x="${padL - 8}" y="${yv(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink-faint)">${+(v * 100).toFixed(1)}%</text>`).join("");
   const every = Math.max(1, Math.ceil(pts.length / 9));
   const ticks = pts.map((c, i) => i % every ? "" : `<text x="${padL + band * i + band / 2}" y="${base + 16}" text-anchor="middle" font-size="11" fill="var(--ink-faint)">${c.week}</text>`).join("");
   const bars = pts.map((c, i) => {
@@ -2563,14 +2669,98 @@ function weekChart(concepts, t, forStudent){
       <rect class="hit" x="${padL + band * i}" y="${padT}" width="${band}" height="${plotH}" fill="transparent" tabindex="0" role="img"
         aria-label="Week ${c.week}: ${pct(c.mastery)} percent, ${lvl}" data-bar="w${i}" data-tip="${esc(JSON.stringify(tip))}"/>`;
   }).join("");
-  return `<figure class="viz"><h3>Week by week</h3>
-    <p class="sub">Chance of doing well in each week. Levels compare each week with ${forStudent ? "your own" : "this learner's own"} other weeks, so a high chance can still be "Getting there".</p>
+  return `<figure class="viz"><h3>${title}</h3>
+    <p class="sub">Chance of doing well in each week. Levels compare each week with ${forStudent ? "your own" : "this learner's own"} other weeks, so a high chance can still be "Getting there".${
+      top < 1 ? ` The scale runs to ${pct(top)}%, just above the highest week, so the differences show.` : ""}</p>
     <div class="viz-legend">${LEVELS.slice().reverse().map(l => `<span><i style="background:${LEVEL_VAR[l]}"></i>${l}</span>`).join("")}</div>
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="group" aria-label="Chance of doing well, by week">
       ${grid}${bars}${ticks}
       <text x="${padL + plotW / 2}" y="${H - 4}" text-anchor="middle" font-size="11" fill="var(--ink-faint)">Week of the course</text>
     </svg>
     ${vizTable(["Week", "Chance of doing well", "Level"], pts.map(c => [c.week, pct(c.mastery) + "%", LEVEL(c.mastery, t)]))}
+  </figure>`;
+}
+
+/* ---------------- progress: the course so far, and week by week ---------------- */
+// Done and ready are statuses, so they get the status pair; the weeks that are not ready
+// yet are the empty track, not a third colour. Validated in both themes.
+function stBar(done, ready, rest, label){
+  const seg = (k, v, name) => v ? `<span class="st-seg ${k} hit" style="flex:${v}" tabindex="0" role="img"
+    aria-label="${label}, ${name}: ${v}" data-tip="${esc(JSON.stringify({v: `${v} ${v === 1 ? "week" : "weeks"}`, l: [name, label]}))}"></span>` : "";
+  return `<div class="st-bar">${seg("done", done, "Done")}${seg("ready", ready, "Ready to start")}${
+    rest ? `<span class="st-rest" style="flex:${rest}"></span>` : ""}</div>`;
+}
+function courseFigure(m, now, module){
+  const n = m.nodes.length, c = {done: 0, now: 0, ready: 0, locked: 0};
+  m.status.forEach(v => c[v]++);
+  const ready = c.ready + c.now;
+  const parts = m.cols.map(col => {
+    const ps = partState(col, m, now);
+    const r = col.nodes.filter(x => ["ready", "now"].includes(m.status.get(x.concept))).length;
+    return {...col, ...ps, ready: r, rest: col.nodes.length - ps.done - r};
+  });
+  return `<figure class="viz course-fig"><h3>Your course so far</h3>
+    <p class="sub">${n} weeks of ${esc(modName(module))}. A week is ready to start when everything it builds on is done.</p>
+    <div class="cf-figs">
+      <div><b>${c.done}</b><span>of ${n} weeks done</span></div>
+      <div><b>${ready}</b><span>ready to start</span></div>
+      <div><b>${c.locked}</b><span>not ready yet</span></div>
+    </div>
+    ${stBar(c.done, ready, c.locked, "Whole course")}
+    <div class="viz-legend"><span><i class="k-done"></i>Done</span><span><i class="k-ready"></i>Ready to start</span>
+      <span><i class="k-rest"></i>Not ready yet</span></div>
+    <h4 class="cf-h4">By part of the course</h4>
+    ${parts.map(pt => `<div class="cf-part">
+      <span class="cf-name">${pt.name} <span class="caption">weeks ${pt.from} to ${pt.to}</span></span>
+      ${stBar(pt.done, pt.ready, pt.rest, `${pt.name}, weeks ${pt.from} to ${pt.to}`)}
+      <span class="cf-val">${pt.done} of ${pt.nodes.length}</span>
+      <span class="gchip ${pt.chip}">${pt.label}</span></div>`).join("")}
+    ${vizTable(["Part", "Weeks", "Done", "Ready to start", "Not ready yet", "Status"],
+      parts.map(pt => [pt.name, `${pt.from} to ${pt.to}`, pt.done, pt.ready, pt.rest, pt.label]))}
+  </figure>`;
+}
+/* Every week in one row, in course order and split into its parts: what is done, what
+   is open, where the next week is, and the quiz marks under the weeks that have one. */
+function weekMap(m, now, marks, concepts, t){
+  const nodes = m.nodes, n = nodes.length;
+  if(!n) return "";
+  const W = 900, partGap = 12, gap = 3, top = 22, cellH = 30;
+  const cellW = (W - (m.cols.length - 1) * partGap - (n - m.cols.length) * gap) / n;
+  const xs = new Map(); let x = 0;
+  m.cols.forEach((col, ci) => { col.nodes.forEach((nd, i) => { xs.set(nd.concept, x); x += cellW + (i < col.nodes.length - 1 ? gap : 0); });
+    if(ci < m.cols.length - 1) x += partGap; });
+  const fill = st => st === "done" ? "var(--st-done)" : st === "locked" ? "var(--surface-alt)" : "var(--st-ready)";
+  const H = top + cellH + 34;
+  const heads = m.cols.map(col => `<text x="${xs.get(col.nodes[0].concept)}" y="12" font-size="11" fill="var(--ink-soft)"
+    font-weight="600">${col.name}</text>`).join("");
+  const cells = nodes.map(nd => {
+    const st = m.status.get(nd.concept), x0 = xs.get(nd.concept), mk = marks.get(nd.concept), c = concepts.get(nd.concept);
+    const lines = [STATUS_LABEL[st]];
+    if(mk !== undefined) lines.push(`Quiz mark ${mk}${mk >= 40 ? ", passed" : ", below the pass mark"}`);
+    if(c) lines.push(`Model: ${pct(c.mastery)}% chance of doing well`);
+    const tip = {v: weekOf(nd.label), l: lines};
+    const cx = x0 + cellW / 2, my = top + cellH + 25;
+    return `<rect x="${x0}" y="${top}" width="${cellW}" height="${cellH}" rx="4" fill="${fill(st)}"
+        ${st === "locked" ? 'stroke="var(--rule)" stroke-width="1"' : ""}${st === "now" ? ' stroke="var(--ink)" stroke-width="2"' : ""}/>
+      <text x="${cx}" y="${top + cellH + 13}" text-anchor="middle" font-size="10" fill="var(--ink-faint)">${nd.week}</text>
+      ${mk === undefined ? "" : mk >= 40
+        ? `<circle cx="${cx}" cy="${my}" r="4" fill="var(--good)"/>`
+        : `<circle cx="${cx}" cy="${my}" r="3.5" fill="none" stroke="var(--warn)" stroke-width="2"/>`}
+      <rect class="hit" x="${x0 - gap / 2}" y="${top - 4}" width="${cellW + gap}" height="${cellH + 34}" fill="transparent" tabindex="0" role="img"
+        aria-label="${esc(weekOf(nd.label))}: ${lines.map(esc).join(", ")}" data-tip="${esc(JSON.stringify(tip))}"/>`;
+  }).join("");
+  return `<figure class="viz"><h3>Week by week</h3>
+    <p class="sub">Every week of the course in order. The outlined week is your next one; a dot under a week is a quiz mark.</p>
+    <div class="viz-legend"><span><i class="k-done"></i>Done</span><span><i class="k-ready"></i>Ready to start</span>
+      <span><i class="k-now"></i>Next</span><span><i class="k-rest"></i>Not ready yet</span>
+      <span><i class="k-pass"></i>Quiz passed</span><span><i class="k-low"></i>Quiz below 40</span></div>
+    <div class="scroll"><svg viewBox="-2 0 ${W + 4} ${H}" style="width:100%;min-width:620px;height:auto;display:block" role="group"
+      aria-label="Every week of the course and its status">${heads}${cells}</svg></div>
+    ${vizTable(["Week", "Part", "Status", "Quiz mark", "Model's level"], nodes.map(nd => {
+      const c = concepts.get(nd.concept), part = m.cols.find(col => col.nodes.includes(nd));
+      return [weekOf(nd.label), part ? part.name : "", STATUS_LABEL[m.status.get(nd.concept)],
+        marks.has(nd.concept) ? marks.get(nd.concept) : "", c ? LEVEL(c.mastery, t) : ""];
+    }))}
   </figure>`;
 }
 
@@ -2675,12 +2865,14 @@ function nextStepCard(r, t, forStudent){
 }
 /* A week whose latest mark is below the pass mark stays in the path. Say so once,
    at the top, rather than leaving the student to work it out from the numbers. */
-function retakeBanner(marks, steps){
+function retakeBanner(marks, steps, doneWeeks = new Set()){
   const seen = new Set(), failing = [];
   for(const m of marks){                       // marks are newest first
     if(seen.has(m.week)) continue;
     seen.add(m.week);
-    if(!m.pass) failing.push(m);
+    // Regression: a failed mark followed by "I studied this" finishes the week, and the
+    // banner still said it would stay in the path until a pass.
+    if(!m.pass && !doneWeeks.has(m.week)) failing.push(m);
   }
   if(!failing.length) return "";
   const first = failing[0], i = steps.findIndex(x => weekOf(x.label) === first.week);
@@ -2846,12 +3038,14 @@ function courseStrip(concepts, t, forStudent, clickable){
     return `<span class="hit${isKnown ? " known" : ""}" tabindex="0" role="${clickable ? "button" : "img"}" aria-label="Week ${c.week}: ${l}"
       style="background:${LEVEL_VAR[l]}" data-tip="${esc(JSON.stringify(tip))}" ${clickable ? `data-concept="${c.concept}"` : ""}></span>`;
   }).join("");
-  const counts = Object.fromEntries(LEVELS.map(l => [l, 0]));
-  pts.forEach(c => counts[LEVEL(c.mastery, t)]++);
+  // No counts in the legend: levels are ranked within the learner's own weeks, so roughly
+  // a third always land in each, whoever the learner is. A count would read as progress.
   return `<div class="block"><h3>The course at a glance</h3>
-    <p class="muted small">Each block is one week, from the first to the last.${clickable ? " Click a week the learner already knows and the path updates." : ""}</p>
+    <p class="muted small">Each block is one week, from the first to the last, shaded by the model's level. Levels compare
+      each week with ${forStudent ? "your" : "the learner's"} other weeks, so they show where ${forStudent ? "you are" : "they are"} strongest
+      and weakest, not how much is done.${clickable ? " Click a week the learner already knows and the path updates." : ""}</p>
     <div class="strip">${cells}</div>
-    <div class="viz-legend">${LEVELS.slice().reverse().map(l => `<span><i style="background:${LEVEL_VAR[l]}"></i>${l}: ${counts[l]}</span>`).join("")}
+    <div class="viz-legend">${LEVELS.slice().reverse().map(l => `<span><i style="background:${LEVEL_VAR[l]}"></i>${l}</span>`).join("")}
       ${known.size ? `<span>${known.size} marked as known</span>` : ""}</div>
     ${vizTable(["Week", "Level"], pts.map(c => [c.week, LEVEL(c.mastery, t)]))}
   </div>`;
@@ -3140,7 +3334,11 @@ function shortlistRail(courses){
    columns by part of the course, each marked done, now, ready or locked from the
    student's own record. One week is selected at a time and only its links are drawn:
    a week can have sixteen, and all of a course's links at once are a scribble. */
-let pathView = (() => { try{ return localStorage.getItem("elpr-path-view") || "timeline"; }catch{ return "timeline"; } })();
+const PATH_VIEWS = [["timeline", "Timeline"], ["board", "Board"], ["graph", "Prerequisite graph"], ["table", "Table"], ["whatif", "What if"]];
+let pathView = (() => {
+  try{ const v = localStorage.getItem("elpr-path-view"); return PATH_VIEWS.some(([k]) => k === v) ? v : "timeline"; }
+  catch{ return "timeline"; }
+})();
 const graphCache = {};
 // Nothing on this site stops a student opening any week, so a week whose earlier
 // weeks are unfinished is "not ready", never "locked".
@@ -3148,6 +3346,32 @@ const STATUS_LABEL = {done: "Done", now: "Now", ready: "Ready", locked: "Not rea
 const EDGE_KIND = {sequence: "course order", assessment: "assessed before it",
                    mined: "order earlier students followed"};
 const activityOf = label => ((label || "").match(/\(([^)]*)\)/) || [])[1] || "";
+
+/* A course in four equal runs of weeks. Every page that splits a course uses this, so
+   the graph's columns, the board, Progress and the record always agree on the parts. */
+const PART_NAMES = ["Start", "Early", "Later", "End"];
+function courseParts(items){
+  const sorted = items.slice().sort((a, b) => a.week - b.week), size = Math.ceil(sorted.length / 4);
+  return [0, 1, 2, 3].map(i => sorted.slice(i * size, (i + 1) * size)).filter(c => c.length)
+    .map((c, i) => ({name: PART_NAMES[i], from: c[0].week, to: c[c.length - 1].week, nodes: c}));
+}
+// A part is complete when every week in it is done, and in progress once one is done
+// or the student's next week sits in it.
+function partState(col, m, now){
+  const done = col.nodes.filter(n => m.status.get(n.concept) === "done").length;
+  const st = done === col.nodes.length ? ["done", "Complete"]
+    : done || col.nodes.some(n => n.concept === now) ? ["ready", "In progress"] : ["locked", "Not started"];
+  return {done, chip: st[0], label: st[1]};
+}
+// Everything a week builds on, however far back, and everything that follows from it.
+function chainOf(m, id){
+  const walk = next => {
+    const seen = new Set(), stack = [id];
+    while(stack.length) (next(stack.pop()) || []).forEach(x => { if(!seen.has(x)){ seen.add(x); stack.push(x); } });
+    return seen;
+  };
+  return {up: walk(c => (m.preds.get(c) || []).map(e => e.src)), down: walk(c => (m.succs.get(c) || []).map(e => e.dst))};
+}
 
 function graphModel(g, ctx){
   const preds = new Map(), succs = new Map();
@@ -3158,24 +3382,34 @@ function graphModel(g, ctx){
     succs.get(e.src).push(e);
   });
   const nodes = g.nodes.slice().sort((a, b) => a.week - b.week);
-  const size = Math.ceil(nodes.length / 4), names = ["Start", "Early", "Later", "End"];
-  const cols = [0, 1, 2, 3].map(i => nodes.slice(i * size, (i + 1) * size)).filter(c => c.length)
-    .map((c, i) => ({name: names[i], from: c[0].week, to: c[c.length - 1].week, nodes: c}));
+  const cols = courseParts(nodes);
   const status = new Map(nodes.map(n => {
     const id = n.concept;
     const st = ctx.done.has(id) ? "done" : id === ctx.now ? "now"
       : (preds.get(id) || []).every(e => ctx.done.has(e.src)) ? "ready" : "locked";
     return [id, st];
   }));
-  return {preds, succs, nodes, cols, status, byId: new Map(nodes.map(n => [n.concept, n]))};
+  // The key week: the one the most later weeks build on directly. A tie goes to the
+  // earlier week, which is the one to get right first.
+  let key = null, most = 0;
+  nodes.forEach(n => { const k = (succs.get(n.concept) || []).length; if(k > most){ most = k; key = n.concept; } });
+  return {preds, succs, nodes, cols, status, key, most, byId: new Map(nodes.map(n => [n.concept, n]))};
+}
+// Clashes: a finished week with something it builds on still unfinished.
+function orderClashes(m, done){
+  return m.nodes.filter(n => done.has(n.concept)).map(n => ({week: n,
+    missing: (m.preds.get(n.concept) || []).map(e => m.byId.get(e.src)).filter(x => x && !done.has(x.concept))
+      .sort((a, b) => a.week - b.week)})).filter(c => c.missing.length);
 }
 
 function gnode(n, m, ctx){
-  const st = m.status.get(n.concept), c = ctx.concepts.get(n.concept), ins = (m.preds.get(n.concept) || []).length;
+  const st = m.status.get(n.concept), c = ctx.concepts.get(n.concept);
+  const ins = (m.preds.get(n.concept) || []).length, outs = (m.succs.get(n.concept) || []).length;
   return `<button class="gnode ${st}${n.concept === ctx.sel ? " sel" : ""}" data-c="${n.concept}" type="button"
       aria-pressed="${n.concept === ctx.sel}" title="${esc(activityOf(n.label))}">
     <span class="gn-top"><b>${esc(weekOf(n.label))}</b><span class="gchip ${st}">${STATUS_LABEL[st]}</span></span>
-    <span class="gn-sub">${c ? esc(LEVEL(c.mastery, ctx.t)) : ""}${ins ? ` · builds on ${ins}` : ""}</span>
+    <span class="gn-sub">${c ? esc(LEVEL(c.mastery, ctx.t)) : ""}${ins ? ` · builds on ${ins}` : ""}${outs ? ` · opens up ${outs}` : ""}</span>
+    ${n.concept === m.key ? `<span class="gkey">Key week</span>` : ""}
   </button>`;
 }
 
@@ -3188,8 +3422,12 @@ function renderGraphView(host, ctx, g){
     <div class="graph-head">
       <div><h3 style="margin:0">Prerequisite graph</h3>
         <p class="muted small" style="margin:4px 0 0">Every week of your course. Pick one to see what it builds on and what it opens up.</p></div>
-      <div class="graph-legend">${["done", "now", "ready", "locked"].map(k =>
-        `<span class="gchip ${k}">${STATUS_LABEL[k]}: ${counts[k]}</span>`).join("")}</div>
+      <div class="graph-tools">
+        <div class="graph-legend">${["done", "now", "ready", "locked"].map(k =>
+          `<span class="gchip ${k}">${STATUS_LABEL[k]}: ${counts[k]}</span>`).join("")}</div>
+        <button type="button" class="small" id="g-focus" aria-pressed="${!!ctx.focus}">${ctx.focus
+          ? "Show direct links only" : "Show the whole chain"}</button>
+      </div>
     </div>
     <div class="graph-wrap">
       <div class="graph-canvas has-sel">
@@ -3202,12 +3440,22 @@ function renderGraphView(host, ctx, g){
     </div>
     <p class="caption" style="margin:12px 0 0">Links come from the graph behind the model: the course's own order,
       which weeks are assessed before others, and the order earlier students who did well followed.
-      A week is ready when everything it builds on is done.</p>
+      A week is ready when everything it builds on is done.${m.key !== null ? ` The key week is
+      ${esc(weekOf(m.byId.get(m.key).label))}: ${m.most} later weeks build on it directly, more than on any other.` : ""}</p>
   </div>`;
   const block = host.querySelector(".graph-block");
+  block.querySelector("#g-focus").onclick = () => {
+    ctx.focus = !ctx.focus;
+    const b = block.querySelector("#g-focus");
+    b.setAttribute("aria-pressed", String(ctx.focus));
+    b.textContent = ctx.focus ? "Show direct links only" : "Show the whole chain";
+    select(ctx.sel);
+  };
   const select = id => {
     ctx.sel = id;
-    const rel = new Set([...(m.preds.get(id) || []).map(e => e.src), ...(m.succs.get(id) || []).map(e => e.dst)]);
+    const chain = chainOf(m, id);
+    const rel = ctx.focus ? new Set([...chain.up, ...chain.down])
+      : new Set([...(m.preds.get(id) || []).map(e => e.src), ...(m.succs.get(id) || []).map(e => e.dst)]);
     block.querySelectorAll(".gnode").forEach(b => {
       const c = +b.dataset.c;
       b.classList.toggle("sel", c === id);
@@ -3242,6 +3490,9 @@ function graphInspector(box, m, ctx, select){
     <h3>${esc(shortLabel(n.label))}</h3>
     <p class="meta"><span class="gchip ${st}">${STATUS_LABEL[st]}</span>${c ? ` <span class="pill-lvl">Level now: ${LEVEL(c.mastery, ctx.t)}</span>` : ""}</p>
     ${activityOf(n.label) ? `<p class="caption" style="margin:6px 0 0">That week's activity: ${esc(activityOf(n.label))}.</p>` : ""}
+    ${(() => { const ch = chainOf(m, n.concept); return `<p class="caption" style="margin:6px 0 0">${ch.up.size}
+      ${ch.up.size === 1 ? "earlier week leads" : "earlier weeks lead"} to it, and ${ch.down.size}
+      ${ch.down.size === 1 ? "later week follows" : "later weeks follow"} from it.${n.concept === m.key ? " This is the key week." : ""}</p>`; })()}
     <h4>Builds on ${ins.length ? `<span class="caption">${met} of ${ins.length} done</span>` : ""}</h4>
     ${ins.length ? `<ul class="ilist">${ins.map(e => row(e.src, e.kinds)).join("")}</ul>`
       : `<p class="muted small" style="margin:0">Nothing earlier. It can start straight away.</p>`}
@@ -3305,6 +3556,151 @@ function renderTableView(host, ctx, g){
     </tbody></table></div></div>`;
 }
 
+/* The board: the course in its four parts, like term columns. A part says whether it
+   is complete, and the part the next week sits in is marked as the current one. */
+function renderBoardView(host, ctx, g){
+  const m = graphModel(g, ctx);
+  const counts = {done: 0, now: 0, ready: 0, locked: 0};
+  m.status.forEach(v => counts[v]++);
+  const card = n => {
+    const st = m.status.get(n.concept), outs = (m.succs.get(n.concept) || []).length, mark = ctx.marks.get(n.concept);
+    return `<button type="button" class="bcard ${st}" data-c="${n.concept}">
+      <span class="gn-top"><b>${esc(weekOf(n.label))}</b><span class="gchip ${st}">${STATUS_LABEL[st]}</span></span>
+      <span class="gn-sub">${outs ? `Opens up ${outs}` : "Nothing builds on it"}${mark === undefined ? ""
+        : ` · quiz ${mark}${mark >= 40 ? "" : ", below 40"}`}</span>
+      ${n.concept === m.key ? `<span class="gkey">Key week</span>` : ""}
+    </button>`;
+  };
+  host.innerHTML = `<div class="block board-block">
+    <div class="graph-head">
+      <div><h3 style="margin:0">Board</h3>
+        <p class="muted small" style="margin:4px 0 0">Your course in four parts. Open a week from your path, or any other week to see it on the graph.</p></div>
+      <div class="graph-legend">${["done", "now", "ready", "locked"].map(k =>
+        `<span class="gchip ${k}">${STATUS_LABEL[k]}: ${counts[k]}</span>`).join("")}</div>
+    </div>
+    <div class="board">${m.cols.map(c => {
+      const ps = partState(c, m, ctx.now), current = c.nodes.some(n => n.concept === ctx.now);
+      return `<section class="bcol${current ? " current" : ""}" aria-label="${c.name}, weeks ${c.from} to ${c.to}">
+        <header class="bcol-head"><div><b>${c.name}</b><span class="caption">weeks ${c.from} to ${c.to}</span></div>
+          <span class="gchip ${ps.chip}">${current ? "Current" : ps.label}</span></header>
+        <div class="bcol-prog"><span class="caption">${ps.done} of ${c.nodes.length} done</span>
+          <div class="bar"><span style="width:${Math.round(ps.done / c.nodes.length * 100)}%"></span></div></div>
+        ${c.nodes.map(card).join("")}
+      </section>`;
+    }).join("")}</div>
+  </div>`;
+  host.querySelectorAll(".bcard").forEach(b => b.onclick = () => {
+    const id = +b.dataset.c, i = ctx.steps.findIndex(x => x.concept === id);
+    if(i >= 0) weekSheet(ctx.steps[i], ctx.t, true, `Step ${i + 1} of ${ctx.steps.length}`);
+    else ctx.openGraph(id);
+  });
+}
+
+/* What if: the model reads the student's record again as if they had passed the weeks
+   they pick, and the page shows what would change. The server saves nothing. */
+const WHAT_IF_MAX = 6;
+function renderWhatIfView(host, ctx, g){
+  const m = graphModel(g, ctx);
+  const open = m.nodes.filter(n => !ctx.done.has(n.concept));
+  if(!open.length){
+    host.innerHTML = `<div class="block"><h3>What if</h3><p class="muted small" style="margin:0">Every week of your course is done, so there is nothing left to try.</p></div>`;
+    return;
+  }
+  if(!ctx.whatIf) ctx.whatIf = new Set(open.slice(0, 3).map(n => n.concept));
+  host.innerHTML = `<div class="block whatif">
+    <div class="graph-head">
+      <div><h3 style="margin:0">What if</h3>
+        <p class="muted small" style="margin:4px 0 0">Pick up to ${WHAT_IF_MAX} weeks you plan to pass. The model reads your
+          record again as if you had passed them and shows what would change. Nothing is saved.</p></div>
+      <div class="row"><button type="button" class="small" id="wi-next">Next three weeks</button>
+        <button type="button" class="small" id="wi-clear">Clear</button></div>
+    </div>
+    <div class="wi-pick" role="group" aria-label="Weeks to pass">${open.map(n =>
+      `<button type="button" class="wi-wk" data-c="${n.concept}">${esc(weekOf(n.label))}</button>`).join("")}</div>
+    <div class="row" style="margin-top:12px;align-items:center">
+      <button type="button" class="primary" id="wi-go" style="width:auto;padding:9px 16px">Show what changes</button>
+      <span class="caption" id="wi-msg" aria-live="polite"></span></div>
+    <div id="wi-out" aria-live="polite"></div>
+  </div>`;
+  const sync = () => {
+    host.querySelectorAll(".wi-wk").forEach(b => {
+      const on = ctx.whatIf.has(+b.dataset.c);
+      b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
+    });
+    host.querySelector("#wi-msg").textContent = `${ctx.whatIf.size} of ${WHAT_IF_MAX} picked`;
+    host.querySelector("#wi-go").disabled = !ctx.whatIf.size;
+  };
+  host.querySelectorAll(".wi-wk").forEach(b => b.onclick = () => {
+    const id = +b.dataset.c;
+    if(ctx.whatIf.has(id)) ctx.whatIf.delete(id);
+    else if(ctx.whatIf.size >= WHAT_IF_MAX){ toast(`Pick up to ${WHAT_IF_MAX} weeks`); return; }
+    else ctx.whatIf.add(id);
+    sync();
+  });
+  host.querySelector("#wi-next").onclick = () => { ctx.whatIf = new Set(open.slice(0, 3).map(n => n.concept)); sync(); };
+  host.querySelector("#wi-clear").onclick = () => { ctx.whatIf = new Set(); sync(); host.querySelector("#wi-out").innerHTML = ""; };
+  const go = host.querySelector("#wi-go");
+  go.onclick = async () => {
+    const out = host.querySelector("#wi-out");
+    go.disabled = true; go.textContent = "Working it out";
+    let r;
+    try{ r = await api(`/api/me/what-if?weeks=${[...ctx.whatIf].join(",")}`).then(humanize); }
+    catch(err){ out.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
+    finally{ go.disabled = !ctx.whatIf.size; go.textContent = "Show what changes"; }
+    out.innerHTML = whatIfResult(r, m);
+    bindViz(out, null);
+  };
+  sync();
+}
+function whatIfResult(r, m){
+  const count = (key, v) => r.weeks.filter(w => w[key] === v).length;
+  const name = id => { const n = m.byId.get(id); return n ? weekOf(n.label) : ""; };
+  const ready = key => r.weeks.filter(w => w[key] === "ready").length;
+  const parts = courseParts(r.weeks).map(p => ({...p,
+    before: p.nodes.reduce((a, w) => a + w.before, 0) / p.nodes.length,
+    after: p.nodes.reduce((a, w) => a + w.after, 0) / p.nodes.length}));
+  // One row per part: where the model puts it now, and where it would with those passes.
+  const W = 640, padL = 150, padR = 56, rowH = 34, H = parts.length * rowH + 30, x = v => padL + v * (W - padL - padR);
+  const rows = parts.map((p, i) => {
+    const y = 18 + i * rowH + rowH / 2;
+    const tip = {v: `${pct(p.before)}% now, ${pct(p.after)}% if you pass them`, l: [`${p.name}: weeks ${p.from} to ${p.to}`]};
+    return `<g>
+      <text x="0" y="${y + 4}" font-size="12" fill="var(--ink)">${p.name}</text>
+      <text x="48" y="${y + 4}" font-size="11" fill="var(--ink-faint)">weeks ${p.from} to ${p.to}</text>
+      <line x1="${x(0)}" x2="${x(1)}" y1="${y}" y2="${y}" stroke="var(--rule)" stroke-width="1"/>
+      <line x1="${x(p.before)}" x2="${x(p.after)}" y1="${y}" y2="${y}" stroke="var(--st-ready)" stroke-width="2" opacity=".55"/>
+      <circle cx="${x(p.before)}" cy="${y}" r="5" fill="var(--ink-faint)" stroke="var(--surface)" stroke-width="2"/>
+      <circle cx="${x(p.after)}" cy="${y}" r="6" fill="var(--st-ready)" stroke="var(--surface)" stroke-width="2"/>
+      <text x="${W - padR + 8}" y="${y + 4}" font-size="12" fill="var(--ink)">${pct(p.after)}%</text>
+      <rect class="hit" x="0" y="${y - rowH / 2}" width="${W}" height="${rowH}" fill="transparent" tabindex="0" role="img"
+        aria-label="${p.name}: ${pct(p.before)} percent now, ${pct(p.after)} percent if you pass them" data-tip="${esc(JSON.stringify(tip))}"/>
+    </g>`;
+  }).join("");
+  const axis = [0, 0.5, 1].map(v => `<text x="${x(v)}" y="12" text-anchor="middle" font-size="10" fill="var(--ink-faint)">${pct(v)}%</text>`).join("");
+  return `<div class="wi-result">
+    <div class="tiles">
+      <div class="tile"><div class="v">${count("status_before", "done")} to ${count("status_after", "done")}</div><div class="k">weeks done</div></div>
+      <div class="tile"><div class="v">${ready("status_before")} to ${ready("status_after")}</div><div class="k">weeks ready to start</div></div>
+      <div class="tile"><div class="v">${pct(r.average_before)}% to ${pct(r.average_after)}%</div><div class="k">the model's average chance of you doing well</div></div>
+    </div>
+    <p class="prose">${r.next_after !== null ? `Your path would go on from <b>${esc(name(r.next_after))}</b>${
+      r.next_before !== null ? ` instead of ${esc(name(r.next_before))}` : ""}.` : "That would finish the course."}
+      ${r.newly_ready.length ? ` It would open up ${r.newly_ready.map(c => `<b>${esc(name(c))}</b>`).join(", ")}.`
+        : " No other week would become ready, because the later weeks also build on weeks you have not picked."}</p>
+    <figure class="viz" style="margin:12px 0 0"><h3>By part of the course</h3>
+      <p class="sub">The model's average chance of you doing well, now and if you pass the weeks you picked.</p>
+      <div class="viz-legend"><span><i style="background:var(--ink-faint);border-radius:50%"></i>Now</span>
+        <span><i style="background:var(--st-ready);border-radius:50%"></i>If you pass them</span></div>
+      <div class="scroll"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:480px;height:auto;display:block" role="group"
+        aria-label="Chance of doing well by part, now and after the picked weeks">${axis}${rows}</svg></div>
+      ${vizTable(["Week", "Now", "If you pass them", "Status now", "Status then"], r.weeks.map(w =>
+        [weekOf(w.label), pct(w.before) + "%", pct(w.after) + "%", STATUS_LABEL[w.status_before], STATUS_LABEL[w.status_after]]))}
+    </figure>
+    <p class="caption" style="margin:10px 0 0">This is the model's estimate, not a promise. It learned that students who keep
+      passing tend to keep doing well, so a pass lifts most weeks a little, not only the ones that build on it.</p>
+  </div>`;
+}
+
 function bindPathViews(root, ctx){
   const host = root.querySelector("#path-view");
   if(!host) return;
@@ -3320,14 +3716,45 @@ function bindPathViews(root, ctx){
     host.innerHTML = `<div class="block"><p class="muted small" style="margin:0">Loading the graph</p></div>`;
     let g;
     try{
-      g = graphCache[ctx.module] = graphCache[ctx.module]
-        || await api(`/api/graph/${encodeURIComponent(ctx.module)}`).then(humanize);
+      g = await courseGraph(ctx.module);
     }catch(err){ host.innerHTML = `<div class="err">${esc(err.message || err)}</div>`; return; }
     if(pathView !== v) return;                    // switched again while it loaded
-    if(v === "graph") renderGraphView(host, ctx, g); else renderTableView(host, ctx, g);
+    if(v === "graph") renderGraphView(host, ctx, g);
+    else if(v === "board") renderBoardView(host, ctx, g);
+    else if(v === "whatif") renderWhatIfView(host, ctx, g);
+    else renderTableView(host, ctx, g);
   };
+  ctx.openGraph = id => { ctx.sel = id; show("graph"); host.scrollIntoView({behavior: "smooth", block: "start"}); };
+  ctx.show = show;
   root.querySelectorAll(".pview").forEach(b => b.onclick = () => show(b.dataset.t));
   if(pathView !== "timeline") show(pathView);
+}
+
+/* One course graph per module, fetched once and shared by every view that needs it. */
+const courseGraph = async module => graphCache[module] = graphCache[module]
+  || await api(`/api/graph/${encodeURIComponent(module)}`).then(humanize);
+// The latest quiz mark on each week, from the history the page already has.
+const latestMarks = history => new Map(history.filter(h => h.score !== null && h.score !== undefined)
+  .map(h => [h.concept_id, h.score]));
+
+/* On a phone the dashboard leads with one card: how far through the course, which part
+   the next week is in, and the four parts to swipe across. Hidden on wider screens,
+   where the tiles and the control band already say the same. */
+function phoneSummary(m, path, module, now){
+  const pc = path.n_weeks ? Math.round(path.n_done / path.n_weeks * 100) : 0;
+  const i = m.cols.findIndex(c => c.nodes.some(n => n.concept === now)), cur = m.cols[i];
+  return `<div class="m-summary">
+    <div class="ms-top"><div><div class="eyebrow">Your course</div><b>${esc(modName(module))}</b></div>
+      <span class="ms-pct">${pc}%</span></div>
+    <div class="bar"><span style="width:${pc}%"></span></div>
+    <p class="caption" style="margin:8px 0 10px">${path.n_done} of ${path.n_weeks} weeks done.${cur
+      ? ` Your next week is in part ${i + 1} of ${m.cols.length}: ${cur.name.toLowerCase()}, weeks ${cur.from} to ${cur.to}.` : ""}</p>
+    <div class="ms-parts">${m.cols.map(c => {
+      const ps = partState(c, m, now);
+      return `<button type="button" class="ms-part${c === cur ? " on" : ""}">
+        <b>${c.name}</b><span>${ps.done} of ${c.nodes.length}</span><span class="gchip ${ps.chip}">${c === cur ? "Current" : ps.label}</span></button>`;
+    }).join("")}</div>
+  </div>`;
 }
 
 async function renderStudent(){
@@ -3335,14 +3762,15 @@ async function renderStudent(){
   if(!me.module) return renderSchoolStudent(root);
   root.innerHTML = `<div class="page">${skeleton()}</div>`;
   const k = [...known].join(",");
-  let state, path, form, mine, progress;
+  let state, path, form, mine, progress, g;
   try{
-    [state, path, form, mine, progress] = await Promise.all([
+    [state, path, form, mine, progress, g] = await Promise.all([
       api(`/api/me/state?known=${k}`).then(humanize),
       api(`/api/me/path?steps=5&known=${k}`).then(humanize),
       api("/api/profile/options"),
       api("/api/me/profile"),
-      api("/api/me/progress").then(humanize).catch(() => null)]);
+      api("/api/me/progress").then(humanize).catch(() => null),
+      courseGraph(me.module).catch(() => null)]);
     await loadSaved();
   }catch(e){
     root.innerHTML = `<div class="page"><div class="err">Could not load your learning plan: ${esc(e.message || e)}</div></div>`;
@@ -3354,6 +3782,9 @@ async function renderStudent(){
   const passed = marks.filter(m => m.pass).length;
   const step = path.steps[0];
   const avg = marks.length ? Math.round(marks.reduce((a, m) => a + m.score, 0) / marks.length) : null;
+  const doneSet = new Set(path.done || []);
+  const gm = g ? graphModel(g, {done: doneSet, now: step ? step.concept : null}) : null;
+  const clashes = gm ? orderClashes(gm, doneSet) : [];
 
   root.innerHTML = `<div class="page wide">
     <div class="workspace">
@@ -3372,7 +3803,8 @@ async function renderStudent(){
         </div>
 
         <div data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
-          ${retakeBanner(marks, path.steps)}
+          ${gm ? phoneSummary(gm, path, state.module, step ? step.concept : null) : ""}
+          ${retakeBanner(marks, path.steps, new Set((path.done || []).map(c => names[c])))}
           <div class="tiles">
             <div class="tile"><span class="ico">${TILE_ICON.done}</span>
               <div class="v">${path.n_done} of ${path.n_weeks}</div><div class="k">weeks done</div>
@@ -3404,8 +3836,7 @@ async function renderStudent(){
 
       <div class="wsmid" data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
         <div class="ctrl-band">
-          <div class="cb-left">${segButtons([["timeline", "Timeline"], ["graph", "Prerequisite graph"], ["table", "Table"]],
-            pathView, "pview")}
+          <div class="cb-left">${segButtons(PATH_VIEWS, pathView, "pview")}
             <span class="cb-course">${TILE_ICON.done}${esc(modName(state.module))}</span></div>
           <div class="cb-right">
             <div class="cb-prog"><span>Weeks done</span><b>${path.n_done} / ${path.n_weeks}
@@ -3413,6 +3844,11 @@ async function renderStudent(){
               <div class="bar"><span style="width:${path.n_weeks ? Math.round(path.n_done / path.n_weeks * 100) : 0}%"></span></div></div>
             ${step ? `<span class="gchip ${step.gaps.length ? "locked" : "ready"}">${step.gaps.length
               ? "Next week: revise first" : "Next week: ready to start"}</span>` : `<span class="gchip done">Every week done</span>`}
+            ${gm ? (clashes.length
+              ? `<button type="button" class="gchip clash" id="order-chip" data-c="${clashes[0].missing[0].concept}"
+                  title="A finished week builds on a week that is not finished">${esc(weekOf(clashes[0].week.label))} done before
+                  ${esc(weekOf(clashes[0].missing[0].label))}${clashes.length > 1 ? `, and ${clashes.length - 1} more` : ""}</button>`
+              : `<span class="gchip done" title="Every finished week comes after the weeks it builds on">Prerequisites in order</span>`) : ""}
           </div>
         </div>
         <div id="path-view">${pathView === "timeline" ? pathList(path.steps, t, true) : ""}</div>
@@ -3435,8 +3871,15 @@ async function renderStudent(){
   if(hide) hide.onclick = () => { $("#retake").hidden = true; };
   bindViz(root, null);
   bindPath(root, path.steps, t, true);
-  bindPathViews(root, {module: path.module, done: new Set(path.done || []), now: step ? step.concept : null,
-    steps: path.steps, t, concepts: new Map(state.concepts.map(c => [c.concept, c])), sel: null});
+  const pctx = {module: path.module, done: doneSet, now: step ? step.concept : null, steps: path.steps, t,
+    concepts: new Map(state.concepts.map(c => [c.concept, c])), marks: latestMarks(state.history), sel: null};
+  bindPathViews(root, pctx);
+  const oc = $("#order-chip");
+  if(oc) oc.onclick = () => pctx.openGraph(+oc.dataset.c);
+  root.querySelectorAll(".ms-part").forEach(b => b.onclick = () => {
+    pctx.show("board");
+    $("#path-view").scrollIntoView({behavior: "smooth", block: "start"});
+  });
   bindStudies();
   bindSave(root);
   bindPlans(root);
@@ -3463,37 +3906,33 @@ async function renderStudent(){
 
 /* 9. Quiz scores over time. Only marks the student actually typed, with the pass
    mark drawn in, so a fail is visibly a fail rather than a colour. */
-function scoreChart(history, names){
-  const marks = history.filter(h => h.score !== null && h.score !== undefined)
-    .map(h => ({week: names[h.concept_id] || "a week", score: h.score, pass: h.score >= 40}));
-  if(!marks.length) return "";
-  const W = 720, H = 220, padL = 38, padR = 12, padT = 16, padB = 42;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const band = plotW / marks.length, bw = Math.min(46, band * 0.55);
-  const y = v => padT + (1 - v / 100) * plotH, base = padT + plotH;
-  const grid = [0, 40, 100].map(v => `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}"
-      stroke="${v === 40 ? "var(--warn)" : "var(--rule)"}" stroke-width="1"
-      ${v === 40 ? 'stroke-dasharray="4 4"' : ""}/>
-    <text x="${padL - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink-faint)">${v}</text>`).join("");
-  const bars = marks.map((m, i) => {
-    const x = padL + band * i + (band - bw) / 2, top = y(m.score);
+function scoreChart(history, names, done = new Set()){
+  const all = history.filter(h => h.score !== null && h.score !== undefined)
+    .map(h => ({concept: h.concept_id, week: names[h.concept_id] || "a week", score: h.score, pass: h.score >= 40}));
+  if(!all.length) return "";
+  // One row per mark, oldest first like a list of entries, drawn in HTML so the text
+  // keeps its size in a narrow card. Horizontal bars keep a handful of marks readable.
+  const marks = all.slice(-10);
+  const rows = marks.map(m => {
     const tip = {v: `${m.score} out of 100`, l: [m.week, m.pass ? "counted as a pass" : "below the pass mark"]};
-    return `<rect x="${x}" y="${top}" width="${bw}" height="${Math.max(base - top, 1)}" rx="4"
-        fill="${m.pass ? "var(--viz-bar)" : "var(--surface-alt)"}" stroke="${m.pass ? "none" : "var(--rule)"}"/>
-      <rect class="hit" x="${padL + band * i}" y="${padT}" width="${band}" height="${plotH}" fill="transparent"
-        tabindex="0" role="img" aria-label="${esc(m.week)}: ${m.score} out of 100"
-        data-tip="${esc(JSON.stringify(tip))}"/>
-      <text x="${x + bw / 2}" y="${base + 16}" text-anchor="middle" font-size="11" fill="var(--ink-faint)">${esc(m.week)}</text>`;
+    return `<div class="qrow hit" tabindex="0" role="img" aria-label="${esc(m.week)}: ${m.score} out of 100, ${
+        m.pass ? "passed" : "below the pass mark"}" data-tip="${esc(JSON.stringify(tip))}">
+      <span class="qwk">${esc(m.week)}</span>
+      <span class="qtrack"><span class="qfill${m.pass ? "" : " low"}" style="width:${Math.max(m.score, 1)}%"></span></span>
+      <span class="qval">${m.score}</span></div>`;
   }).join("");
-  const failed = marks.filter(m => !m.pass).length;
+  // Only a week that is still unfinished stays in the path; one studied since has moved on.
+  const latest = new Map(all.map(m => [m.concept, m]));
+  const open = [...latest.values()].filter(m => !m.pass && !done.has(m.concept)).length;
   return `<figure class="viz"><h3>Quiz scores</h3>
-    <p class="sub">Every mark you entered. The dashed line is the pass mark of 40.</p>
-    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="group" aria-label="Quiz scores">
-      ${grid}${bars}
-    </svg>
-    ${failed ? `<p class="caption" style="margin:8px 0 0">${failed} ${failed === 1 ? "week is" : "weeks are"}
-      below the pass mark, so ${failed === 1 ? "it stays" : "they stay"} in your path until you retake ${failed === 1 ? "it" : "them"}.</p>` : ""}
-    ${vizTable(["Week", "Score", "Counted as"], marks.map(m => [m.week, m.score, m.pass ? "pass" : "not passed"]))}
+    <p class="sub">${all.length > marks.length ? `Your latest ${marks.length} of ${all.length} marks` : "Every mark you entered"}, oldest first.
+      Blue passed; amber is below the pass mark of 40.</p>
+    <div class="qchart" role="group" aria-label="Quiz scores">
+      <div class="qrow qscale" aria-hidden="true"><span></span><span class="qtrack bare"><span>0</span><span class="qpass-lab">pass mark 40</span><span>100</span></span><span></span></div>
+      ${rows}</div>
+    ${open ? `<p class="caption" style="margin:8px 0 0">${open} ${open === 1 ? "week" : "weeks"} below the pass mark
+      ${open === 1 ? "is" : "are"} still in your path until a mark of 40 or more is recorded.</p>` : ""}
+    ${vizTable(["Week", "Score", "Counted as"], all.map(m => [m.week, m.score, m.pass ? "pass" : "not passed"]))}
   </figure>`;
 }
 
@@ -3582,19 +4021,28 @@ async function renderProgress(){
   if(!me || me.role !== "student"){ nav("dashboard"); return; }
   if(!me.module){ renderSchoolProgress(root); return; }
   root.innerHTML = `<div class="page">${skeleton()}</div>`;
-  let state, progress, path;
+  let state, progress, path, g;
   try{
-    [state, progress, path] = await Promise.all([
+    [state, progress, path, g] = await Promise.all([
       api("/api/me/state?known=").then(humanize),
       api("/api/me/progress").then(humanize).catch(() => null),
-      api("/api/me/path?steps=1&known=").then(humanize)]);
+      api("/api/me/path?steps=1&known=").then(humanize),
+      courseGraph(me.module)]);
   }catch(e){ root.innerHTML = `<div class="page"><div class="err">${esc(e.message || e)}</div></div>`; return; }
   const t = state.thresholds;
+  const now = path.steps[0] ? path.steps[0].concept : null;
+  const m = graphModel(g, {done: new Set(path.done || []), now});
+  const concepts = new Map(state.concepts.map(c => [c.concept, c]));
   const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
   const hist = state.history.length
     ? state.history.slice().reverse().slice(0, 12).map(h =>
-        `<li>${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}${h.score === null || h.score === undefined ? "" : ` <span class="caption">scored ${h.score} out of 100</span>`}</li>`).join("")
+        `<li>${h.score !== null && h.score !== undefined
+          ? `Quiz on ${esc(names[h.concept_id] || "a week outside your course")}: ${h.score} out of 100 <span class="caption">${h.score >= 40 ? "passed" : "below the pass mark"}</span>`
+          : `${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}`}</li>`).join("")
     : "<li>Nothing recorded yet.</li>";
+  const scores = scoreChart(state.history, names, new Set(path.done || []));
+  const recent = `<div class="block" style="margin:0"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
+    ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>`;
   root.innerHTML = `<div class="page wide">
     <div class="workspace">
       ${studentRail("progress", {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
@@ -3610,15 +4058,14 @@ async function renderProgress(){
       </aside>
 
       <div class="wsmid">
-        <div class="viz-row">${scoreChart(state.history, names)}${levelChart(state.concepts, t, true)}</div>
+        <div class="viz-row">${courseFigure(m, now, state.module)}${scores || recent}</div>
       </div>
 
       <div class="wsfull">
-        ${weekChart(state.concepts, t, true)}
-        <div class="viz-row">${partChart(state.concepts, true)}
-          <div class="block" style="margin:0"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
-            ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>
-        </div>
+        ${weekMap(m, now, latestMarks(state.history), concepts, t)}
+        ${scores ? `<div class="viz-row">${recent}</div>` : ""}
+        <details class="working model-working"><summary>How the model sees each week</summary>
+          ${weekChart(state.concepts, t, true, "The model's estimate, week by week")}</details>
       </div>
     </div>
   </div>`;
@@ -3640,17 +4087,21 @@ async function renderRecord(){
   if(!me || me.role !== "student"){ nav("dashboard"); return; }
   if(!me.module){ nav("dashboard"); return; }
   root.innerHTML = `<div class="page">${skeleton()}</div>`;
-  let state, path, progress;
+  let state, path, progress, g;
   try{
-    [state, path, progress] = await Promise.all([
-      api("/api/me/state?known=").then(humanize),
+    [state, path, progress, g] = await Promise.all([
+      api("/api/me/state?known=&full=true").then(humanize),
       api("/api/me/path?steps=1&known=").then(humanize),
-      api("/api/me/progress").then(humanize).catch(() => null)]);
+      api("/api/me/progress").then(humanize).catch(() => null),
+      courseGraph(me.module)]);
   }catch(e){ root.innerHTML = `<div class="page"><div class="err">${esc(e.message || e)}</div></div>`; return; }
+  const now = path.steps[0] ? path.steps[0].concept : null;
+  const m = graphModel(g, {done: new Set(path.done || []), now});
+  // The record a week ends on: the latest thing entered for it decides done or not.
+  const lastFor = new Map();
+  state.history.forEach(h => lastFor.set(h.concept_id, h));
 
-  const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
   const when = at => new Date(at * 1000).toLocaleDateString(undefined, {day:"numeric", month:"short", year:"numeric"});
-  const done = state.history.filter(h => h.kind === "study" || h.correct);
   const marks = state.history.filter(h => h.score !== null && h.score !== undefined);
   const average = marks.length
     ? Math.round(marks.reduce((sum, h) => sum + h.score, 0) / marks.length) : null;
@@ -3675,15 +4126,24 @@ async function renderRecord(){
             : "No activity recorded yet."}</p>
         </div>
 
-        <div class="block"><h3>Weeks finished</h3>
-          ${done.length ? `<div class="scroll"><table><thead><tr><th>Week</th><th>What was recorded</th>
-            <th class="n">Score</th><th class="n">Date</th></tr></thead><tbody>
-            ${done.map(h => `<tr><td>${esc(names[h.concept_id] || "a week outside this course")}</td>
-              <td>${h.kind === "assessment" ? "Passed the test" : "Studied"}</td>
-              <td class="n">${h.score === null || h.score === undefined ? "" : h.score}</td>
-              <td class="n">${esc(when(h.created_at))}</td></tr>`).join("")}
-          </tbody></table></div>` : `<p class="muted small" style="margin:0">Nothing finished yet.</p>`}
-        </div>
+        ${m.cols.map(col => {
+          const ps = partState(col, m, now);
+          return `<div class="block audit-part">
+            <div class="ap-head"><h3>${col.name} <span class="caption">weeks ${col.from} to ${col.to}</span></h3>
+              <span class="gchip ${ps.chip}">${ps.label}</span><span class="caption">${ps.done} of ${col.nodes.length} weeks done</span></div>
+            <div class="bar"><span style="width:${Math.round(ps.done / col.nodes.length * 100)}%"></span></div>
+            ${col.nodes.some(nd => lastFor.has(nd.concept)) ? `<div class="scroll"><table><thead><tr><th>Week</th><th>Status</th><th>Last recorded</th>
+              <th class="n">Score</th><th class="n">Date</th></tr></thead><tbody>
+              ${col.nodes.map(nd => {
+                const h = lastFor.get(nd.concept), d = m.status.get(nd.concept) === "done";
+                const what = !h ? "" : h.kind === "study" ? "Studied" : h.correct ? "Passed the test" : "Found it hard";
+                return `<tr${d ? "" : ' class="muted-row"'}><td>${esc(weekOf(nd.label))}</td><td>${d ? "Done" : "Not yet"}</td>
+                  <td>${what}</td><td class="n">${h && h.score !== null && h.score !== undefined ? h.score : ""}</td>
+                  <td class="n">${h ? esc(when(h.created_at)) : ""}</td></tr>`;
+              }).join("")}
+            </tbody></table></div>` : `<p class="muted small" style="margin:0">Nothing recorded for these weeks yet.</p>`}
+          </div>`;
+        }).join("")}
 
         ${progress && progress.badges.some(b => b.earned) ? `<div class="block"><h3>Milestones</h3>
           <div class="badges">${progress.badges.filter(b => b.earned).map(b =>

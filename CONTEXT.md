@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 213 tests. `make api` serves http://localhost:8420.
+`make test` runs 219 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -92,12 +92,25 @@ a filled control uses `--on-accent`, which is dark in the dark theme. Not taken 
 export: its AI photos, salary, placement and review figures, star ratings, institutional
 claims, product name and logo, pill buttons and gradient buttons.
 
-**Prerequisite graph.** The dashboard's path block has three views, remembered per
-browser: Timeline, Prerequisite graph and Table. The graph lays the student's course out
-in four columns by part of the course from `/api/graph/{module}`, marks each week from
-the `done` list the path response now carries (never repeating the server's rule), and
-draws only the selected week's links: a week can have sixteen and a course over a
-hundred. A week whose earlier weeks are unfinished is "Not ready", never "Locked".
+**Prerequisite graph.** The dashboard's path block has five views, remembered per
+browser: Timeline, Board, Prerequisite graph, Table and What if. Every split of a course
+into Start, Early, Later and End comes from one helper, `courseParts`, so the graph,
+board, Progress and the record always agree. The graph lays the course out in those four
+columns from `/api/graph/{module}`, marks each week from the `done` list the path
+response carries (never repeating the server's rule), and draws only the selected week's
+links: a week can have sixteen and a course over a hundred. "Show the whole chain" lights
+everything the week builds on and everything that follows from it. The key week is the
+one the most later weeks build on directly. A week whose earlier weeks are unfinished is
+"Not ready", never "Locked". The control band says "Prerequisites in order", or names
+the first finished week that builds on an unfinished one (`orderClashes`).
+
+**Board** shows the four parts as columns, each marked Complete, In progress, Not
+started or Current, with every week as a card. **What if** (`/api/me/what-if`,
+`Service.what_if`) adds the weeks a student picks (up to six) to a copy of their history
+as passed tests and runs the model again. It writes nothing and logs nothing. The page
+shows weeks done, weeks ready and the model's average before and after, which weeks would
+open, where the path would go on from, and a before and after dot per part. It says the
+model lifts most weeks for a pass, which is the engagement signal the paper describes.
 
 **Header.** Brand, a context chip with the student's level and course (it opens My
 details), the four places in the order the Navigator screens use (Course Finder, My
@@ -195,9 +208,17 @@ general test and commerce and humanities papers have no questions yet.
 
 **Progress and record.** One activity card reads like a contribution graph: the count
 for the year, active days, current and longest streak, then a year of days
-(`CALENDAR_WEEKS = 53`). Beside it, this week's summary and milestones; below, the quiz
-scores against the pass line of 40, the level and quarter charts and recent activity. A
-printable record of study lists every finished week and its date. All computed from recorded events only (`elpr/progress.py`). A
+(`CALENDAR_WEEKS = 53`). Beside it, this week's summary and milestones; below, "Your
+course so far" (weeks done, ready to start and not ready yet, whole course and by part),
+the quiz marks as horizontal bars against the pass mark, and a week map of the whole
+course with the next week outlined and a dot for each quiz mark. The model's estimate
+per week sits behind "How the model sees each week", on a scale that stops at the first
+round step above the highest week. The old "Overall" level split is gone: levels are the
+student's own 30th and 70th percentiles, so it always read about a third each. Status
+colours are tokens (`--st-done`, `--st-ready`, `--st-low`), validated for colour
+blindness and contrast in both themes. The printable record of study is laid out by part,
+each Complete, In progress or Not started, with every week's last record, mark and date
+(it asks `/api/me/state?full=true` for the whole history). All computed from recorded events only (`elpr/progress.py`). A
 student's first week makes no comparison claims, because there is nothing real to compare
 with. The record says plainly that it is not a certificate and is not issued by any
 institution.
@@ -370,7 +391,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         213 tests
+tests/         219 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability
