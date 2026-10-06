@@ -23,6 +23,7 @@ def main(tmp_path):
     store.register("ravi", "passw0rd", "Ravi", "student", stage="class_12", stream="pcb")
     store.register("asha", "passw0rd", "Asha", "student", module="CCC", stage="ug")
     store.register("meera", "passw0rd", "Meera", "adviser")
+    store.approve_adviser("meera")
     return main
 
 

@@ -51,3 +51,10 @@ def test_no_token_swallowed_the_next_one():
 
 def test_the_glass_falls_back_to_solid_for_reduced_transparency():
     assert "prefers-reduced-transparency" in PAGE
+
+
+def test_printing_always_uses_the_light_colours():
+    """Regression: printing in dark mode put the dark theme's pale text on white paper,
+    so a printed record of study came out almost blank. Both dark blocks are for screens."""
+    assert "@media screen and (prefers-color-scheme: dark){" in PAGE
+    assert '@media screen{\n  :root[data-theme="dark"]{' in PAGE

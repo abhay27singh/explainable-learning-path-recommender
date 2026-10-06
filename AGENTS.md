@@ -19,7 +19,7 @@ paper.
 ## Commands
 
 ```bash
-make test                                   # 248 tests, pytest
+make test                                   # 266 tests, pytest
 make api                                    # http://localhost:8420
 make stop                                   # stops whatever is listening on 8420
 .venv/bin/python -m pytest tests/test_stages.py -q
@@ -51,7 +51,8 @@ Rebuilding the data needs the OULAD download; see the quick start in `README.md`
   from Week 1, model used for the explanation). Advisers get `Service.learning_path`
   (model-ranked). Do not merge them.
 - **Access rules live in the API**, not only in the page: `_require`, `_require_adviser`,
-  `_require_admin`, and the level check in `/api/course-finder`.
+  `_require_admin`, `_may_view`, and the level check in `/api/course-finder`. A new adviser
+  account waits for an admin's approval before it can see any student.
 - **The Course Finder is rule-based**, not the model, and every place it appears says so.
   The same goes for `elpr/exams.py`: syllabus outlines are published facts, not predictions,
   and no exam date, cut-off or rank is ever stated.

@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 248 tests
+make test                                       # 266 tests
 make api                                        # http://localhost:8420
 make stop                                       # stops it from any terminal
 ```
@@ -171,6 +171,9 @@ ELPR_SITE_URL=https://your-domain.in make serve   # no auto-reload, HTTPS settin
 .venv/bin/python scripts/08_admin.py create <username>
 .venv/bin/python scripts/11_backup.py             # run daily from cron; copy backups off the machine
 ```
+
+Anyone can sign up as an adviser, but a new adviser account sees no student until an admin
+approves it on the Accounts page.
 
 | Setting | What it does |
 |---|---|

@@ -74,6 +74,35 @@ def test_the_client_address_is_not_taken_from_headers_unless_told_to():
     assert main.client_key(req) == ("1.1.1.1" if main.TRUST_PROXY else "203.0.113.9")
 
 
+def test_behind_the_proxy_the_address_is_the_one_the_proxy_saw(monkeypatch):
+    """Regression: the first X-Forwarded-For entry was used. A visitor writes that one
+    themselves, so a made-up address on every request escaped every limit. The proxy
+    appends the address it saw, so the last entry is the one to trust."""
+    monkeypatch.setattr(main, "TRUST_PROXY", True)
+    req = _request(headers=[("x-forwarded-for", "6.6.6.6, 203.0.113.50")])
+    assert main.client_key(req) == "203.0.113.50"
+
+
+def test_an_oversized_request_is_refused_before_it_is_read():
+    async def never(_):
+        raise AssertionError("the handler must not run")
+    req = _request("/api/auth/login", "POST", ip="198.51.100.40",
+                   headers=[("content-length", str(main.MAX_BODY + 1))])
+    assert asyncio.run(main.guard(req, never)).status_code == 413
+
+
+def test_api_answers_are_never_cached():
+    """They hold a student's own record, which a shared computer would otherwise keep."""
+    assert _through_guard("/api/auth/me", ip="198.51.100.41").headers["cache-control"] == "no-store"
+
+
+def test_the_page_has_one_address():
+    """Regression: /static/index.html sent the page a second time, its link-preview tags
+    still reading {{BASE_URL}}."""
+    out = main.static_page()
+    assert out.status_code == 301 and out.headers["location"] == "/"
+
+
 def test_the_generated_api_pages_are_off_by_default():
     assert main.app.docs_url is None and main.app.redoc_url is None and main.app.openapi_url is None
 

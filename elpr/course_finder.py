@@ -1120,6 +1120,9 @@ PLAN_NOTE = ("A study plan, not the official course timetable. Subjects keep the
              "order, so earlier years come first.")
 
 
+FIRST_START, LAST_START = date(2000, 1, 1), date(2100, 12, 31)
+
+
 def _monday_of(day: str) -> date:
     """The Monday of that week. A plan that starts mid-week reads as a short first
     week, which is not what "finish in 8 weeks" means to anyone."""
@@ -1127,6 +1130,10 @@ def _monday_of(day: str) -> date:
         chosen = date.fromisoformat(day)
     except ValueError as exc:
         raise ValueError("give the start date as YYYY-MM-DD") from exc
+    # Regression: 9999-12-31 is a valid date, and adding the plan's weeks to it ran past
+    # the last date Python has, which answered 500.
+    if not FIRST_START <= chosen <= LAST_START:
+        raise ValueError(f"choose a start date between {FIRST_START.year} and {LAST_START.year}")
     return chosen - timedelta(days=chosen.weekday())
 
 

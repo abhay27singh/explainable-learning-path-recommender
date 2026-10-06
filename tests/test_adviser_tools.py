@@ -108,6 +108,7 @@ def test_notes_are_for_advisers_and_admins_only(main):
 
     store = main.service.store
     adviser = store.register("apiadv", "passw0rd", "Dr API", "adviser")
+    store.approve_adviser("apiadv")
     adviser_token = store.create_session(adviser.id)
     main.register(main.Registration(username="pupil", password="passw0rd", role="student",
                                     stage="ug", module="CCC"), Response())

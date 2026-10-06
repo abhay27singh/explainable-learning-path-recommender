@@ -92,7 +92,7 @@ def main() -> int:
         catalogue = yaml.safe_load(labels_path.read_text())
         graph._labels = {int(k): v["label"] for k, v in catalogue.items()}
 
-    adjacency = torch.load(ARTIFACTS / "graph" / "adjacency.pt")["prerequisite"]
+    adjacency = torch.load(ARTIFACTS / "graph" / "adjacency.pt", weights_only=True)["prerequisite"]
     sequences = pd.read_parquet(PROCESSED / "sequences.parquet")
     features = pd.read_parquet(PROCESSED / "student_features.parquet")
 

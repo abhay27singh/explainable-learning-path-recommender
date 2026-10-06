@@ -22,7 +22,8 @@ from typing import TYPE_CHECKING
 
 from fastapi import Cookie, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, PlainTextResponse,
+                               RedirectResponse)
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from elpr.modules import module_display_map, subject_area
@@ -142,26 +143,41 @@ RATE_LIMITS = [
 ]
 
 
+# The largest form on the site is a 1,000-character note. Nothing needs more than this,
+# and a body is read into memory whole before it can be refused.
+MAX_BODY = 64 * 1024
+
+
 def client_key(request) -> str:
     if TRUST_PROXY:
         forwarded = request.headers.get("x-forwarded-for", "")
         if forwarded:
-            return forwarded.split(",")[0].strip()
+            # The proxy appends the address it saw, so the last entry is the real one.
+            # Regression: the first entry was used, and a visitor can send any first
+            # entry they like, so a fresh made-up address each time escaped every limit.
+            return forwarded.split(",")[-1].strip()
     return request.client.host if request.client else "unknown"
 
 
 @app.middleware("http")
 async def guard(request, call_next):
-    """Rate limits before the work, security headers after it."""
+    """Rate limits and a size limit before the work, security headers after it."""
     path, method, who = request.url.path, request.method, client_key(request)
+    size = request.headers.get("content-length", "")
     for m, prefix, limiter, message in RATE_LIMITS:
         if (m == "*" or m == method) and path.startswith(prefix) and not limiter.allow(who):
             response = JSONResponse({"detail": message}, status_code=429)
             break
     else:
-        response = await call_next(request)
+        if size.isdigit() and int(size) > MAX_BODY:
+            response = JSONResponse({"detail": "that request is too large"}, status_code=413)
+        else:
+            response = await call_next(request)
     for name, value in SECURITY_HEADERS.items():
         response.headers.setdefault(name, value)
+    # Answers from the API carry a student's own record, so no browser or proxy keeps one.
+    if path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-store")
     if HTTPS:
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return response
@@ -207,7 +223,23 @@ def _require_adviser(token: str | None) -> User:
     user = _require(token)
     if user.role not in ("adviser", "admin"):
         raise HTTPException(403, "adviser role required")
+    if not user.approved:
+        raise HTTPException(403, ADVISER_WAITING)
     return user
+
+
+# Regression: anyone could sign up as an adviser and at once read every student's name,
+# level, history and path, and the notes about them. An admin now approves each one.
+ADVISER_WAITING = "an admin has not approved this adviser account yet"
+
+
+def _may_view(user: User, student: int) -> None:
+    """A student sees only their own record; an approved adviser or an admin sees any."""
+    if user.role == "student":
+        if user.student_id != student:
+            raise HTTPException(403, "you may only view your own record")
+    elif not user.approved:
+        raise HTTPException(403, ADVISER_WAITING)
 
 
 def _require_admin(token: str | None) -> User:
@@ -217,10 +249,24 @@ def _require_admin(token: str | None) -> User:
     return user
 
 
+# How far through a dataset learner's course to look, as a share of it. Regression: "nan"
+# got through and answered 500.
+UPTO = Query(1.0, ge=0, le=1, allow_inf_nan=False)
+
+
 def _overrides(value: str | None) -> tuple:
+    """Week ids from a query string, keeping only ids the model has.
+
+    Regression: an id past the last week answered 500, and "-1" read as the last week,
+    because a negative index counts from the end."""
     if not value:
         return ()
-    return tuple(int(v) for v in value.split(",") if v.strip().lstrip("-").isdigit())
+    n = _service().graph.n_concepts
+    ids = (v.strip() for v in value.split(",")[:MAX_OVERRIDES])
+    return tuple(dict.fromkeys(int(v) for v in ids if v.isdigit() and int(v) < n))
+
+
+MAX_OVERRIDES = 300
 
 
 # ---------------------------------------------------------------- auth
@@ -256,6 +302,13 @@ def _studies(s: Service, stage: str | None, module: str | None,
     return stage, module, None
 
 
+def _own_course(user: User) -> None:
+    """The model's state needs a course. Regression: a class 10 or class 12 student was
+    answered with the first course's state, an invented Psychology record."""
+    if not user.module:
+        raise HTTPException(409, "you are not on a course yet, so there is no weekly record")
+
+
 def _course_student(s: Service, student: int) -> User:
     """A registered student's account, when they are on a course the model knows.
 
@@ -270,6 +323,11 @@ def _course_student(s: Service, student: int) -> User:
         raise HTTPException(409, f"{target.display_name or 'This student'} is at {level} and "
                                  "not on a course yet, so there is no weekly path to show")
     return target
+
+
+def _missing(exc: KeyError) -> str:
+    """A KeyError's message without the quotes str() wraps round it."""
+    return str(exc.args[0]) if exc.args else "not found"
 
 
 def _stage(user: User | None) -> str | None:
@@ -293,7 +351,8 @@ def register(body: Registration, response: Response) -> dict:
         raise HTTPException(400, str(exc)) from exc
 
     token = s.store.create_session(user.id)
-    s.store.log(user.id, "signed up", f"{user.role}, {stage or 'no level'}")
+    s.store.log(user.id, "signed up", f"{user.role}, {stage or 'no level'}"
+                + ("" if user.approved else ", waiting for an admin"))
     response.set_cookie(COOKIE, token, httponly=True, samesite="lax", max_age=12 * 3600, secure=HTTPS)
     return _me(user)
 
@@ -331,7 +390,7 @@ def _me(user: User) -> dict:
     return {
         "username": user.username, "display_name": user.display_name,
         "role": user.role, "module": user.module, "student_id": user.student_id,
-        "stage": _stage(user), "stream": user.stream,
+        "stage": _stage(user), "stream": user.stream, "approved": user.approved,
     }
 
 
@@ -363,6 +422,7 @@ def my_state(known: str | None = None, full: bool = False,
     s = _service()
     if user.role != "student":
         raise HTTPException(400, "advisers have no learning record of their own")
+    _own_course(user)
 
     module, state = s.registered_state(user, _overrides(known))
     events = s.store.events(user.id)
@@ -387,13 +447,14 @@ def my_state(known: str | None = None, full: bool = False,
 
 @app.get("/api/me/recommend")
 def my_recommendations(
-    k: int = Query(3, le=10), planner: str = "greedy",
+    k: int = Query(3, ge=1, le=10), planner: str = "greedy",
     known: str | None = None, elpr_session: str | None = Cookie(None),
 ) -> dict:
     user = _require(elpr_session)
     s = _service()
     if user.role != "student":
         raise HTTPException(400, "advisers have no learning record of their own")
+    _own_course(user)
 
     start = time.perf_counter()
     module, state = s.registered_state(user, _overrides(known))
@@ -448,8 +509,7 @@ def learner_path(student: int, steps: int = Query(5, ge=1, le=8), known: str | N
                  elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
     s = _service()
-    if user.role not in ("adviser", "admin") and user.student_id != student:
-        raise HTTPException(403, "you may only view your own record")
+    _may_view(user, student)
     if s.is_registered(student):
         target = _course_student(s, student)
         return s.learning_path(lambda ov: s.registered_state(target, ov), steps,
@@ -457,7 +517,7 @@ def learner_path(student: int, steps: int = Query(5, ge=1, le=8), known: str | N
     try:
         return s.dataset_path(student, steps, _overrides(known))
     except KeyError as exc:
-        raise HTTPException(404, str(exc)) from exc
+        raise HTTPException(404, _missing(exc)) from exc
 
 
 @app.get("/api/me/progress")
@@ -466,6 +526,7 @@ def my_progress(elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
     if user.role != "student":
         raise HTTPException(400, "only students have a progress record")
+    _own_course(user)
     return _service().progress_for(user)
 
 
@@ -785,10 +846,9 @@ def my_path_ics(weeks: int = Query(8, ge=1, le=52), start: str | None = None,
     if not user.module:
         raise HTTPException(400, "choose your course first")
     try:
-        begin = _date.fromisoformat(start) if start else _date.today()
-    except ValueError:
-        raise HTTPException(400, "give the start date as YYYY-MM-DD")
-    begin -= timedelta(days=begin.weekday())         # weeks run Monday to Sunday
+        begin = course_finder._monday_of(start or _date.today().isoformat())
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
     path = s.course_path(user, min(weeks, 8))
     events = [{
@@ -908,6 +968,19 @@ def admin_account_log(username: str, limit: int = Query(100, ge=1, le=200),
     return {"username": username.strip().lower(), "entries": store.logs(username, limit)}
 
 
+@app.post("/api/admin/accounts/{username}/approve")
+def approve_adviser(username: str, elpr_session: str | None = Cookie(None)) -> dict:
+    """Let a waiting adviser account see students. Admins only."""
+    admin = _require_admin(elpr_session)
+    store = _service().store
+    if not store.approve_adviser(username):
+        raise HTTPException(404, "no adviser account with that username")
+    target = store.user_by_username(username)
+    store.log(target.id, "approved as an adviser", f"by {admin.username}")
+    store.log(admin.id, "approved an adviser", target.username)
+    return {"approved": target.username}
+
+
 @app.get("/api/admin/accounts")
 def admin_accounts(elpr_session: str | None = Cookie(None)) -> dict:
     """Every registered account, with activity. Never returns salts or hashes."""
@@ -950,13 +1023,11 @@ def students(q: str = "", limit: int = Query(40, le=200),
 
 
 @app.get("/api/students/{student}/mastery")
-def mastery(student: int, module: str | None = None, upto: float = 1.0,
+def mastery(student: int, module: str | None = None, upto: float = UPTO,
             known: str | None = None, elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
     s = _service()
-    # A student may only look at themselves.
-    if user.role not in ("adviser", "admin") and user.student_id != student:
-        raise HTTPException(403, "you may only view your own record")
+    _may_view(user, student)
 
     if s.is_registered(student):
         target = _course_student(s, student)
@@ -980,17 +1051,16 @@ def mastery(student: int, module: str | None = None, upto: float = 1.0,
         return {**s.mastery_for(student, module, upto, _overrides(known)),
                 "registered": False}
     except KeyError as exc:
-        raise HTTPException(404, str(exc)) from exc
+        raise HTTPException(404, _missing(exc)) from exc
 
 
 @app.get("/api/recommend")
-def recommend(student: int, k: int = Query(3, le=10), planner: str = "greedy",
-              module: str | None = None, upto: float = 1.0, known: str | None = None,
+def recommend(student: int, k: int = Query(3, ge=1, le=10), planner: str = "greedy",
+              module: str | None = None, upto: float = UPTO, known: str | None = None,
               elpr_session: str | None = Cookie(None)) -> dict:
     user = _require(elpr_session)
     s = _service()
-    if user.role not in ("adviser", "admin") and user.student_id != student:
-        raise HTTPException(403, "you may only view your own record")
+    _may_view(user, student)
 
     start = time.perf_counter()
     if s.is_registered(student):
@@ -1011,7 +1081,7 @@ def recommend(student: int, k: int = Query(3, le=10), planner: str = "greedy",
             payload = s.recommend(student, k, planner, module, upto, _overrides(known))
             payload["registered"] = False
         except KeyError as exc:
-            raise HTTPException(404, str(exc)) from exc
+            raise HTTPException(404, _missing(exc)) from exc
 
     payload["elapsed_ms"] = round((time.perf_counter() - start) * 1000, 1)
     s.store.log_recommendation(user.id, student, planner, payload)
@@ -1113,6 +1183,12 @@ async def not_found(request: Request, exc: StarletteHTTPException):
 
 
 if WEB.exists():
+    @app.get("/static/index.html", include_in_schema=False)
+    def static_page() -> RedirectResponse:
+        # Regression: the folder is served as it is, so the page had a second address
+        # where its link-preview tags still read {{BASE_URL}}. Routes before the mount win.
+        return RedirectResponse("/", status_code=301)
+
     app.mount("/static", StaticFiles(directory=WEB), name="static")
 
     @app.get("/favicon.ico", include_in_schema=False)

@@ -81,7 +81,7 @@ def main() -> int:
     args = parser.parse_args()
 
     graph = ConceptGraph.load(ARTIFACTS / "graph")
-    adjacency = torch.load(ARTIFACTS / "graph" / "adjacency.pt")["prerequisite"]
+    adjacency = torch.load(ARTIFACTS / "graph" / "adjacency.pt", weights_only=True)["prerequisite"]
     sequences = pd.read_parquet(PROCESSED / "sequences.parquet")
     features = pd.read_parquet(PROCESSED / "student_features.parquet")
     matrix, _ = build_student_matrix(features)

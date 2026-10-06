@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 248 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
+`make test` runs 266 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
 `HOW_TO_RUN.txt` has the start and stop steps in plain words.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
@@ -151,6 +151,23 @@ API still answers 404 in JSON); inside the page, an unknown `#/` address shows
 `scripts/10_icons.py`; backups from `scripts/11_backup.py` (SQLite's backup call plus an
 integrity check). `tests/test_security.py` covers all of it. Visitors on a phone get the
 same bottom bar as students (Home, Finder, Explore, Sign in).
+
+**Full audit, 7 October 2026.** Every route was probed live as a visitor, a student, a
+school student, an adviser and an admin, and every page swept at 375, 600, 768, 1024 and
+1440 pixels. Fixed: anyone could sign up as an adviser and read every student's record, so
+a new adviser now waits for an admin (`approved` column, `approve_adviser`, `_may_view`,
+the Approve button on Accounts, a waiting page; existing advisers kept access). Behind the
+proxy the rate limits read the visitor-written first `X-Forwarded-For` entry; now the last.
+Requests over 64 KB are refused (`MAX_BODY`), and `/api/` answers carry
+`Cache-Control: no-store`. Out-of-range week ids (`_overrides`), `upto=nan` (`UPTO`),
+`k` below 1, and start dates past 2100 (`_monday_of`) answered 500 or a wrong record; a
+school student's own state, recommendations and progress came back as an invented
+Psychology record (`_own_course`, 409). `/static/index.html` now redirects to `/`. Dark
+colours are screen-only, so printing gives dark text. Profile questions and the note box
+have labels; the theme switch lost its capsule shape. All 204 self-check answers were
+checked by hand; the dependency check found advisories only for torch 2.2.2, which is
+pinned because it is the last build for Intel Macs and loads only this repository's own
+files with `weights_only=True`. On a Linux server a newer torch is the better choice.
 
 **Updates reach open tabs.** Moving between pages never reloads `index.html`, so a tab
 left open kept running its first copy after an update. `/api/version` reports when the
@@ -446,7 +463,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         248 tests
+tests/         266 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

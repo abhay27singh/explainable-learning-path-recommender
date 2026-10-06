@@ -86,3 +86,17 @@ def test_the_tab_bar_is_styled_at_every_width_it_shows():
     shown = media_block_holding(css, ".tabbar:not([hidden]){display:grid")
     for rule in (".tab{", ".tab svg{", ".tab.on{"):
         assert rule in shown, f"{rule} must apply wherever the tab bar shows"
+
+
+def test_an_adviser_waiting_for_approval_is_told_why():
+    """A waiting adviser's list of students is refused by the API. Without its own page
+    that refusal would show as a bare error, which reads as a broken site."""
+    fns = functions()
+    assert "renderAdviserWaiting()" in fns["renderAdviser"]
+    assert "/approve`" in fns["renderAdmin"], "the admin page needs the button that approves"
+    assert 'id="adviser-note"' in PAGE, "the sign-up page says so before it happens"
+
+
+def test_every_background_question_has_a_label_a_screen_reader_can_find():
+    body = functions()["profileForm"]
+    assert 'id="pf-${f.field}"' in body and '<label for="pf-${f.field}">' in body

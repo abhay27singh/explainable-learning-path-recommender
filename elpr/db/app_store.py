@@ -154,11 +154,15 @@ class User:
     student_id: int | None
     stage: str | None = None      # class_10, class_12, diploma, ug or pg
     stream: str | None = None     # class 12 stream, for class_12 students
+    # An adviser sees every student's record, so a new adviser account waits for an
+    # admin before it can. Students and admins are never waiting.
+    approved: bool = True
 
 
 def _user(row) -> User:
     return User(row["id"], row["username"], row["display_name"], row["role"],
-                row["module"], row["student_id"], row["stage"], row["stream"])
+                row["module"], row["student_id"], row["stage"], row["stream"],
+                bool(row["approved"]))
 
 
 def _hash(password: str, salt: bytes) -> bytes:
@@ -192,6 +196,10 @@ class AppStore:
                 con.execute("ALTER TABLE users ADD COLUMN stage TEXT")
             if "stream" not in columns:
                 con.execute("ALTER TABLE users ADD COLUMN stream TEXT")
+        # Accounts made before advisers needed approval keep the access they had.
+        if "approved" not in columns:
+            with con:
+                con.execute("ALTER TABLE users ADD COLUMN approved INTEGER NOT NULL DEFAULT 1")
         events = {r["name"] for r in con.execute("PRAGMA table_info(study_events)")}
         if "score" not in events:
             with con:
@@ -258,11 +266,14 @@ class AppStore:
             if existing:
                 raise ValueError("that username is taken")
 
+            # Anyone can sign up as an adviser, and an adviser can read every student's
+            # record, so the account waits until an admin approves it.
+            approved = role != "adviser"
             cursor = con.execute(
                 "INSERT INTO users (username, display_name, role, salt, password_hash,"
-                " module, stage, stream, created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                " module, stage, stream, created_at, approved) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (username, display_name or username, role, salt,
-                 _hash(password, salt), module, stage, stream, time.time()),
+                 _hash(password, salt), module, stage, stream, time.time(), int(approved)),
             )
             user_id = cursor.lastrowid
             student_id = None
@@ -272,7 +283,17 @@ class AppStore:
                     "UPDATE users SET student_id = ? WHERE id = ?", (student_id, user_id)
                 )
         return User(user_id, username, display_name or username, role, module, student_id,
-                    stage, stream)
+                    stage, stream, approved)
+
+    def approve_adviser(self, username: str) -> bool:
+        """Let an adviser account see students. False when there is no such adviser."""
+        con = self._connect()
+        with con:
+            cursor = con.execute(
+                "UPDATE users SET approved = 1 WHERE username = ? AND role = 'adviser'",
+                (username.strip().lower(),),
+            )
+        return cursor.rowcount == 1
 
     def set_studies(self, user_id: int, stage: str, module: str | None,
                     stream: str | None = None) -> None:
@@ -636,7 +657,7 @@ class AppStore:
         con = self._connect()
         rows = con.execute(
             "SELECT u.id, u.username, u.display_name, u.role, u.module, u.stage, u.student_id,"
-            "       u.created_at,"
+            "       u.created_at, u.approved,"
             "       (SELECT COUNT(*) FROM study_events e WHERE e.user_id = u.id) AS n_events,"
             "       (SELECT MAX(e.created_at) FROM study_events e WHERE e.user_id = u.id)"
             "         AS last_active"

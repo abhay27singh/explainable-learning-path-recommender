@@ -16,7 +16,7 @@ LINE_LIMIT = 75
 def _escape(text: str) -> str:
     """Commas, semicolons and backslashes are separators in iCalendar and must be
     escaped, and a newline is written as the two characters backslash-n."""
-    out = (text.replace("\\", "\\\\").replace(";", "\;")
+    out = (text.replace("\\", "\\\\").replace(";", "\\;")
                .replace(",", "\\,").replace("\r\n", "\n").replace("\r", "\n"))
     return out.replace("\n", "\\n")
 

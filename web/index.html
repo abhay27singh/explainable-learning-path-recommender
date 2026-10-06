@@ -69,7 +69,9 @@
   }
   /* Dark theme. The level ramp keeps its meaning by brightness rather than depth:
      on a dark ground the darkest blue would read as the weakest, which is backwards. */
-  @media (prefers-color-scheme: dark){
+  /* Screens only. Regression: printing in dark mode put the dark theme's pale text on
+     white paper, so a printed record of study was almost blank. */
+  @media screen and (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme:dark;
       --ground:#0A1526; --surface:#0E1E38; --surface-alt:#162A4A; --seg-on:#1D365D;
@@ -92,6 +94,7 @@
           radial-gradient(1200px 820px at 46% 114%,rgba(2,132,199,.14),transparent 62%);
     }
   }
+  @media screen{
   :root[data-theme="dark"]{
     color-scheme:dark;
     --ground:#0A1526; --surface:#0E1E38; --surface-alt:#162A4A; --seg-on:#1D365D;
@@ -113,9 +116,10 @@
         radial-gradient(900px 640px at 104% 6%,rgba(56,189,248,.10),transparent 60%),
         radial-gradient(1200px 820px at 46% 114%,rgba(2,132,199,.14),transparent 62%);
   }
+  }
   .themeseg{display:inline-flex;align-items:center;gap:2px;background:var(--surface-alt);
-    border-radius:999px;padding:3px;border:1px solid var(--rule)}
-  .themeseg button{width:30px;height:26px;padding:0;border:0;background:none;border-radius:999px;
+    border-radius:10px;padding:3px;border:1px solid var(--rule)}
+  .themeseg button{width:30px;height:26px;padding:0;border:0;background:none;border-radius:7px;
     color:var(--ink-faint);display:grid;place-items:center;transition:background .15s,color .15s}
   .themeseg button:hover{color:var(--ink)}
   .themeseg button.on{background:var(--seg-on);color:var(--accent);box-shadow:var(--shadow)}
@@ -1209,6 +1213,9 @@
         <option value="student">Student</option>
         <option value="adviser">Academic adviser</option>
       </select>
+      <p class="caption" id="adviser-note" style="margin:6px 0 0" hidden>An admin checks each
+        adviser account before it can see any student's record. Until then the Course Finder
+        and Explore work as usual.</p>
       <div id="stage-wrap"><label for="reg-stage">Where are you in your studies?</label>
         <select name="stage" id="reg-stage" required></select>
         <p class="caption" style="margin:6px 0 0">Class 10, Class 12, Diploma, Undergraduate
@@ -1267,7 +1274,7 @@
     <h3>What an account stores</h3>
     <p>The username and display name you choose, a password hash produced with scrypt, and your role. For a student: your level of study, your class 12 stream or your course, and anything you choose to add under My details, such as an age band or your highest education.</p>
     <p>Then what you do here: the weeks you mark as studied or found hard, the quiz marks you enter, your self-check results, and the courses you save. A short activity log records when you sign up, sign in, fail to sign in, and record or change something, so an admin can answer "I cannot sign in". It never holds a password or your answers to a self-check.</p>
-    <p>If an adviser looks at your path, the request is logged. Advisers can also write notes about a student; those notes are private to advisers and admins.</p>
+    <p>An adviser account can see students only after an admin has approved it. If an adviser looks at your path, the request is logged. Advisers can also write notes about a student; those notes are private to advisers and admins.</p>
     <p>There is no email address, no analytics, no advertising identifier and no third-party tracking of any kind.</p>
     <h3>What it does not store or send</h3>
     <p>Your password is never written down in readable form. Fonts and every page are served from this site. Nothing you do here is sent to another service. Study links open other sites, such as NCERT, Khan Academy, YouTube, NPTEL, SWAYAM, Skill India and NSDC, which have their own privacy policies.</p>
@@ -1551,6 +1558,7 @@ function syncSignup(){
   show("#stage-wrap", student);
   show("#module-wrap", student && courseStage(stage));
   show("#stream-wrap", student && stage === "class_12");
+  $("#adviser-note").hidden = student;
 }
 $("#reg-role").onchange = syncSignup;
 $("#reg-stage").onchange = syncSignup;
@@ -1573,7 +1581,9 @@ $("#form-register").onsubmit = async e => {
     if(!courseStage(f.stage)) delete f.module;
     if(f.stage !== "class_12") delete f.stream;
   }
-  try { me = await post("/api/auth/register", f); enter(); nav("dashboard"); toast("Welcome, your account is ready"); }
+  try { me = await post("/api/auth/register", f); enter(); nav("dashboard");
+    toast(me.approved === false ? "Account created. An admin will approve it before you can see students"
+      : "Welcome, your account is ready"); }
   catch(err){ showErr(e.target, err.message); }
   finally { e.target.dataset.busy = ""; }
 };
@@ -3418,14 +3428,14 @@ function profileForm(fields, profile, module, note){
     const cur = profile[f.field];
     const opts = f.type === "choice" ? f.options.map(o => ({value:o.value, label:o.label}))
       : Array.from({length: Math.floor((f.max - f.min) / f.step) + 1}, (_, i) => { const v = f.min + i * f.step; return {value:v, label:String(v)}; });
-    return `<select name="${f.field}"><option value="">Not answered</option>${
+    return `<select name="${f.field}" id="pf-${f.field}"><option value="">Not answered</option>${
       opts.map(o => `<option value="${o.value}"${String(cur) === String(o.value) ? " selected" : ""}>${o.label}</option>`).join("")}</select>`;
   };
   return `<form id="profile-form" class="block">
     <h3>Your details</h3>
     <p class="muted small">The model was trained on these. Leave any blank and it uses the average student instead.</p>
     ${note ? `<p class="caption" style="margin:-6px 0 12px">${esc(note)}</p>` : ""}
-    <div class="viz-row" style="gap:0 16px">${fields.map(f => `<div><label>${f.label}</label>${control(f)}</div>`).join("")}</div>
+    <div class="viz-row" style="gap:0 16px">${fields.map(f => `<div><label for="pf-${f.field}">${f.label}</label>${control(f)}</div>`).join("")}</div>
     <div style="margin-top:18px;max-width:320px"><button class="primary" type="submit">Save and update my path</button></div>
     <div id="profile-msg" class="caption" style="margin:8px 0 0"></div>
   </form>`;
@@ -4525,6 +4535,7 @@ async function renderRecord(){
 
 /* ---------------- adviser dashboard ---------------- */
 async function renderAdviser(){
+  if(me.approved === false) return renderAdviserWaiting();
   $("#view-dashboard").innerHTML = `
     <main class="split">
       <aside>
@@ -4537,6 +4548,24 @@ async function renderAdviser(){
   $("#q").oninput = e => loadList(e.target.value);
   loadList("");
   showOverview();
+}
+
+function renderAdviserWaiting(){
+  $("#view-dashboard").innerHTML = `<div class="page">
+    ${pageHead("Waiting for approval", "Your adviser account works, but it cannot see students yet.", "", "Learners")}
+    <div class="block">
+      <p>An admin checks each adviser account before it can open a student's record, because
+        those records belong to students, and some of them are under 18. Once your account is
+        approved, your learners appear here.</p>
+      <p class="muted">Meanwhile the <a href="#/finder" data-go="finder">Course Finder</a> and
+        <a href="#/explore" data-go="explore">Explore</a> work as usual.</p>
+      <div class="row"><button type="button" class="small" id="adviser-recheck">Check again</button></div>
+    </div></div>`;
+  $("#adviser-recheck").onclick = async () => {
+    const now = await api("/api/auth/me");
+    if(now.approved){ me = now; renderAdviser(); toast("Approved. Your learners are below"); }
+    else toast("Not approved yet");
+  };
 }
 
 async function showOverview(){
@@ -4593,7 +4622,7 @@ function notesBlock(notes){
   return `<div class="block"><h3>Your notes</h3>
     <p class="muted small">Private to advisers. The learner never sees them.</p>
     <form id="note-form" class="row" style="align-items:flex-start">
-      <input id="note-text" placeholder="What did you agree with this learner?" autocomplete="off" style="flex:1" />
+      <input id="note-text" aria-label="New note" placeholder="What did you agree with this learner?" autocomplete="off" style="flex:1" />
       <button class="small" type="submit">Add note</button>
     </form>
     <div id="note-msg" class="caption" style="margin:6px 0 0"></div>
@@ -4706,11 +4735,14 @@ async function renderAdmin(){
     const d = await api("/api/admin/accounts");
     el.classList.remove("empty");
     const s = d.stats;
+    const waiting = d.accounts.filter(a => a.role === "adviser" && !a.approved).length;
     // Local time, like every other date on the site. This alone used to print UTC.
     const when = t => t ? new Date(t*1000).toLocaleString(undefined,
       {day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"}) : "never";
     el.innerHTML = `
       ${pageHead("Accounts", "Every account on this site, with its activity.", "", "Administration")}
+      ${waiting ? `<div class="callout"><b>${waiting} adviser ${waiting === 1 ? "account is" : "accounts are"} waiting for approval.</b>
+        An approved adviser can read every student's record, so approve only people you know.</div>` : ""}
       <div class="tiles">
         <div class="tile"><div class="v">${s.n_users}</div><div class="k">accounts</div></div>
         <div class="tile"><div class="v">${s.n_students}</div><div class="k">students</div></div>
@@ -4721,9 +4753,11 @@ async function renderAdmin(){
         <th class="n">Events</th><th>Last active</th><th></th></tr></thead><tbody>
         ${d.accounts.map(a=>`<tr>
           <td><code>${esc(a.username)}</code></td><td>${esc(a.display_name)}</td>
-          <td>${esc(a.role)}</td><td>${esc(stageLabel(a.stage) || (a.role === "student" && a.module ? "Undergraduate" : ""))}</td><td>${esc(modName(a.module))}</td>
+          <td>${esc(a.role)}${a.role === "adviser" && !a.approved ? ` <span class="chip flag">Waiting</span>` : ""}</td><td>${esc(stageLabel(a.stage) || (a.role === "student" && a.module ? "Undergraduate" : ""))}</td><td>${esc(modName(a.module))}</td>
           <td class="n">${a.n_events}</td><td>${when(a.last_active)}</td>
-          <td><div class="row"><button class="small log" data-u="${esc(a.username)}">Log</button>
+          <td><div class="row">${a.role === "adviser" && !a.approved
+            ? `<button class="small primary approve" data-u="${esc(a.username)}">Approve</button>` : ""}
+            <button class="small log" data-u="${esc(a.username)}">Log</button>
             ${a.username===me.username ? "" : `<button class="small del" data-u="${esc(a.username)}">Delete</button>`}</div></td>
         </tr>`).join("")}
       </tbody></table></div>
@@ -4747,6 +4781,13 @@ async function renderAdmin(){
       $("#admin-log-close").onclick = () => { box.hidden = true; };
       box.scrollIntoView({behavior: "smooth", block: "nearest"});
     });
+    el.querySelectorAll(".approve").forEach(b => b.onclick = async () => {
+      if(!confirm(`Approve "${b.dataset.u}" as an adviser? They will be able to read every student's record.`)) return;
+      try{ await api(`/api/admin/accounts/${encodeURIComponent(b.dataset.u)}/approve`, {method: "POST"}); }
+      catch(err){ toast(err.message); return; }
+      toast(`Approved ${b.dataset.u}`);
+      renderAdmin();
+    });
     el.querySelectorAll(".del").forEach(b => b.onclick = async () => {
       if(!confirm(`Delete "${b.dataset.u}" and all of their study history?`)) return;
       await api("/api/admin/accounts/"+encodeURIComponent(b.dataset.u), {method:"DELETE"});
@@ -4757,6 +4798,9 @@ async function renderAdmin(){
 }
 
 /* ---------------- research: results and method ---------------- */
+// The proposed model's own row has no p-value or effect size: every other row is tested
+// against it. The results file marks those cells with a dash; the page says what it means.
+const ref = v => v === "\u2014" ? "Reference" : v;
 async function renderResults(){
   if(!metrics){ try{ metrics = await api("/api/metrics"); }catch{ $("#results").innerHTML='<div class="empty">unavailable</div>'; return; } }
   $("#results").classList.remove("empty");
@@ -4764,7 +4808,7 @@ async function renderResults(){
   const cold=t1&&t1.cold_concept;
   const rows1=(t1?.rows||[]).map(r=>`<tr class="${r.model.includes('Proposed (')?'hl':''}">
     <td>${r.model}</td><td class="n">${r.auc}</td><td class="n">${r.rmse}</td>
-    <td class="n">${r.ece}</td><td class="n">${r.p}</td><td class="n">${r.d}</td></tr>`).join("");
+    <td class="n">${r.ece}</td><td class="n">${ref(r.p)}</td><td class="n">${ref(r.d)}</td></tr>`).join("");
   const rows2=(t2?.rows||[]).slice().reverse().map(r=>`<tr class="${r.planner.includes('proposed')?'hl':''}">
     <td>${r.planner}</td><td class="n">${r.ndcg}</td><td class="n">${r.hit_rate}</td>
     <td class="n">${r.precision}</td><td class="n">${r.prerequisite_violations}</td>

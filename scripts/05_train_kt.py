@@ -197,7 +197,7 @@ def main() -> int:
     print(f"device: {device}   variant: {args.variant}")
 
     sequences, features = load_splits(PROCESSED)
-    adjacency_file = torch.load(ARTIFACTS / "graph" / "adjacency.pt")
+    adjacency_file = torch.load(ARTIFACTS / "graph" / "adjacency.pt", weights_only=True)
     adjacency = adjacency_file["prerequisite"].to(device)
     n_concepts = int(adjacency_file["n_concepts"])
 
