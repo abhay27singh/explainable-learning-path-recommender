@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 220 tests. `make api` serves http://localhost:8420.
+`make test` runs 221 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -119,6 +119,11 @@ as passed tests and runs the model again. It writes nothing and logs nothing. Th
 shows weeks done, weeks ready and the model's average before and after, which weeks would
 open, where the path would go on from, and a before and after dot per part. It says the
 model lifts most weeks for a pass, which is the engagement signal the paper describes.
+
+**Updates reach open tabs.** Moving between pages never reloads `index.html`, so a tab
+left open kept running its first copy after an update. `/api/version` reports when the
+file last changed; on a page change, at most every 30 seconds, the page asks and reloads
+itself at the address being opened if it changed.
 
 **My details** has its own address, `#/details`, drawn by the dashboard view. It used to
 be a tab on `#/dashboard`, which kept reopening until a refresh. The student's name in the
@@ -406,7 +411,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         220 tests
+tests/         221 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

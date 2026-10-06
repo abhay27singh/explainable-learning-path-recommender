@@ -19,7 +19,7 @@ paper.
 ## Commands
 
 ```bash
-make test                                   # 220 tests, pytest
+make test                                   # 221 tests, pytest
 make api                                    # http://localhost:8420
 .venv/bin/python -m pytest tests/test_stages.py -q
 .venv/bin/python scripts/08_admin.py create <username>

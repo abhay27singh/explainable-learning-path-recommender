@@ -993,3 +993,12 @@ if WEB.exists():
         # seeing yesterday's version after an update. Never cache it.
         return FileResponse(WEB / "index.html",
                             headers={"Cache-Control": "no-store, must-revalidate"})
+
+    @app.get("/api/version")
+    def page_version(response: Response) -> dict:
+        """When the page file last changed. Moving between pages never reloads the
+        file, so a tab left open kept running an old copy after an update, fixed bugs
+        included. The page asks this as it moves and loads the new copy if it changed."""
+        response.headers["Cache-Control"] = "no-store"
+        stat = (WEB / "index.html").stat()
+        return {"version": f"{stat.st_mtime_ns}-{stat.st_size}"}

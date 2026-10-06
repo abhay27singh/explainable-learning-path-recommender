@@ -46,3 +46,16 @@ def test_my_details_has_its_own_address():
     assert 'go("details", "My details", "details", "details")' in fns["studentRail"]
     setters = [name for name, body in fns.items() if 'studentTab = "details"' in body]
     assert setters == [], f"only the router may open My details: {setters}"
+
+
+def test_an_open_tab_can_tell_the_page_has_changed():
+    """Regression: moving between pages never reloads the file, so a tab left open kept
+    running its first copy after an update and still showed a bug that had been fixed.
+    The page asks /api/version as it moves and reloads when the answer changes."""
+    from fastapi import Response
+
+    from api import main
+
+    first = main.page_version(Response())["version"]
+    assert first and first == main.page_version(Response())["version"]
+    assert "pageChanged()" in SCRIPT and "location.reload()" in SCRIPT

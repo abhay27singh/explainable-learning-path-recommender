@@ -1324,7 +1324,28 @@ function nav(name){
   if(location.hash === "#/" + name) show(name); else location.hash = "/" + name;
 }
 function route(){ show(location.hash.replace(/^#\/?/, "") || (me ? "dashboard" : "home")); }
-window.addEventListener("hashchange", route);
+/* The page is one file and moving between pages never reloads it, so a tab left open
+   kept running the copy it first loaded: after an update it went on showing old pages,
+   bugs that were already fixed included, until someone pressed reload. On a page change,
+   at most every half a minute, ask whether the file changed, and if so load the new
+   copy at the address being opened. */
+let pageVersion = null, versionAsked = 0;
+async function pageChanged(){
+  if(Date.now() - versionAsked < 30000) return false;
+  versionAsked = Date.now();
+  try{
+    const r = await fetch("/api/version", {cache: "no-store"});
+    if(!r.ok) return false;
+    const v = (await r.json()).version;
+    if(pageVersion === null){ pageVersion = v; return false; }
+    return v !== pageVersion;
+  }catch{ return false; }
+}
+pageChanged();
+window.addEventListener("hashchange", async () => {
+  if(await pageChanged()){ location.reload(); return; }
+  route();
+});
 
 function show(name){
   // Explore is a mode of the Finder page rather than a page of its own, but it gets
