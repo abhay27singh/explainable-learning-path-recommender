@@ -138,3 +138,24 @@ def test_footer_links_stay_one_per_line_on_a_touch_screen():
     touch = media_block_holding(css, "(pointer: coarse)")
     rule = re.search(r"footer\.site \.cols a\{([^}]*)\}", touch).group(1)
     assert "inline" not in rule
+
+
+def test_my_learning_says_where_the_student_is_once():
+    """The page said "2 of 35 weeks done" four times: in the heading, a tile, the left
+    rail and the band above the path. It is now one sentence, in the heading."""
+    fns = functions()
+    page = fns["renderStudent"]
+    assert "courseLine(path, step, state.module)" in page
+    assert 'class="tiles"' not in page and "cb-prog" not in page
+    assert "coursePanel" not in PAGE, "the rail is for finding your way, not for numbers"
+    assert "is next." in fns["courseLine"]
+
+
+def test_the_right_column_stays_in_view_without_covering_the_strip():
+    """Fixed like the left column on a wide screen. Its contents stick inside a column as
+    tall as the rows beside the path, so they stop above the full-width strip below it;
+    sticking the column itself made it slide over that strip."""
+    css = re.search(r"<style>(.*?)</style>", PAGE, re.S).group(1)
+    wide = media_block_holding(css, ".railside.stick{align-self:stretch}")
+    assert ".railside.stick > .railside-in{position:sticky" in wide
+    assert '<aside class="railside stick"><div class="railside-in">' in functions()["renderStudent"]

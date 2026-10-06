@@ -460,12 +460,21 @@
   .railitem.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
   .railitem svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:2;
     stroke-linecap:round;stroke-linejoin:round}
-  .railcourse{padding:0 8px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-soft)}
   .bar{height:7px;background:var(--surface-alt);border-radius:4px;overflow:hidden}
   .bar > span{display:block;height:100%;background:var(--accent);border-radius:4px}
   /* Not sticky: a full width row passes under this column, and a stuck card would
      sit on top of it. */
-  .railside{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .railside, .railside-in{display:flex;flex-direction:column;gap:14px;min-width:0}
+  /* On a wide screen both side columns stay put and only the middle scrolls, so the quiz
+     box stays beside the path it is about. The column fills the height of the rows beside
+     the path and its contents stick inside it, so they stop above the full-width strip
+     instead of sliding over it. Taller than the window, it scrolls on its own rather than
+     hiding its end below the fold. */
+  @media (min-width:1091px){
+    .railside.stick{align-self:stretch}
+    .railside.stick > .railside-in{position:sticky;top:78px;max-height:calc(100vh - 94px);overflow-y:auto;
+      scrollbar-width:thin;padding:0 3px 6px;margin:0 -3px}
+  }
   .railside .block{margin:0;padding:16px 18px}
   .railside .block h3{font-size:15px}
   .railside .tiles{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0}
@@ -610,7 +619,6 @@
   .tile .ico svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .tile .bar{margin-top:10px;height:6px}
   .tile .bar > span{background:var(--secondary)}
-  .railcourse .bar > span{background:var(--secondary)}
   .next{border-left-color:var(--secondary)}
   .next .eyebrow{color:var(--accent)}
   @media(max-width:860px){.page-head h1,.dash-head h1{font-size:24px}}
@@ -733,13 +741,6 @@
   .ctrl-band{display:flex;justify-content:space-between;align-items:center;gap:12px 20px;flex-wrap:wrap;margin:0 0 14px;
     padding:12px 14px;border-radius:var(--radius-lg);background:var(--glass);border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow),var(--glass-hi)}
   .cb-left,.cb-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  .cb-course{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:8px;background:var(--surface-alt);font-size:13px;font-weight:600}
-  .cb-course svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .cb-prog{display:grid;grid-template-columns:auto auto;gap:2px 12px;align-items:baseline;min-width:200px}
-  .cb-prog span{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
-  .cb-prog b{font-size:13px;color:var(--accent);text-align:right}
-  .cb-prog .bar{grid-column:1 / -1;height:6px}
-  .cb-prog .bar > span{background:var(--secondary)}
   /* ---------------- Finder, laid out like a planning form ---------------- */
   main.split.finder-mode{grid-template-columns:minmax(0,1fr) 380px}
   main.split.finder-mode > aside{order:2}
@@ -910,7 +911,8 @@
   #g-focus[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
   .gkey{align-self:flex-start;margin-top:4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
     padding:1px 6px;border-radius:5px;background:var(--warn-soft);color:var(--warn)}
-  .gchip.clash{background:var(--warn-soft);color:var(--warn);border-color:transparent;cursor:pointer;font:inherit;font-size:11px;font-weight:700;box-shadow:none}
+  .gchip.clash{background:var(--warn-soft);color:var(--warn);border-color:transparent;cursor:pointer;font:inherit;font-size:12px;font-weight:600;box-shadow:none;
+    white-space:normal;text-align:left;padding:6px 10px;line-height:1.4}      /* a sentence, so it wraps */
   .ctrl-band .cb-left{min-width:0;max-width:100%}
   .ctrl-band .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
   .ctrl-band .seg button{white-space:nowrap}
@@ -3182,8 +3184,8 @@ function nextStepCard(r, t, forStudent){
     <div class="next-top">
       <div>
         <div class="eyebrow">${forStudent ? "Your next step" : "Their next step"}</div>
-        <h2>${esc(shortLabel(r.label))}</h2>
-        <p class="meta"><span class="pill-lvl">Level now: ${LEVEL(r.mastery, t)}</span></p>
+        <h2>${esc(forStudent ? weekOf(r.label) : shortLabel(r.label))}</h2>
+        ${forStudent ? "" : `<p class="meta"><span class="pill-lvl">Level now: ${LEVEL(r.mastery, t)}</span></p>`}
       </div>
       <span class="status ${ready ? "ok" : "hold"}">${ready ? "Ready to start" : "Revise first"}</span>
     </div>
@@ -3199,8 +3201,9 @@ function nextStepCard(r, t, forStudent){
         placeholder="out of 100" style="width:120px">
       <button class="small" type="submit" data-c="${r.concept}">Save score</button>
     </form>
-    <p class="caption score-inline" style="margin:6px 0 0">40 out of 100 or more counts as a pass.</p>` : ""}
-    <details class="working"><summary>Show the model's working</summary><p class="prose">${esc(r.text)}</p></details>
+    <p class="caption score-inline" style="margin:6px 0 0">40 out of 100 or more is a pass.</p>` : ""}
+    <details class="working"><summary>Show the model's working</summary>${forStudent
+      ? `<p class="prose">The model rates your level on this week as ${LEVEL(r.mastery, t).toLowerCase()}.</p>` : ""}<p class="prose">${esc(r.text)}</p></details>
   </div>`;
 }
 /* A week whose latest mark is below the pass mark stays in the path. Say so once,
@@ -3638,19 +3641,16 @@ function studentRail(active, course){
     me.module ? go("record", "Record of study", "record", "record") : "",
   ].join("");
   const foot = go("details", "My details", "details", "details");
-  return railShell(nav, course ? coursePanel(course) : "", foot,
+  return railShell(nav, "", foot,
     railMe(me.display_name, [stageLabel(me.stage), course && course.name].filter(Boolean).join(" · ")));
 }
-function coursePanel(c){
-  const pc = c.weeks ? Math.round(c.done / c.weeks * 100) : 0;
-  return `<div>
-    <div class="grouphead">Your course</div>
-    <div class="railcourse">
-      <div>${esc(c.name)}</div>
-      <div class="bar"><span style="width:${pc}%"></span></div>
-      <div class="caption">${c.done} of ${c.weeks} weeks done</div>
-    </div>
-  </div>`;
+/* Where the student is, said once, at the top of My learning. It used to be said four
+   times over: the heading, a tile, the left rail and the band above the path. */
+function courseLine(path, step, module){
+  const course = modName(module);
+  if(!step) return `You have finished all ${path.n_weeks} weeks of ${course}.`;
+  if(!path.n_done) return `You are starting ${course} at ${weekOf(step.label)}.`;
+  return `You have finished ${path.n_done} of the ${path.n_weeks} weeks of ${course}. ${weekOf(step.label)} is next.`;
 }
 
 /* Marks the student typed in, newest first. Nothing is inferred: a week with no mark
@@ -3673,7 +3673,7 @@ function recentScores(marks){
 function quizBlock(step){
   const id = "score-" + step.concept;
   return `<div class="block quizbox"><h3>Record a quiz</h3>
-    <p class="muted small">For ${esc(weekOf(step.label))}. 40 out of 100 or more counts as a pass.</p>
+    <p class="muted small">Took the quiz for ${esc(weekOf(step.label))}? Enter your mark. 40 out of 100 or more is a pass.</p>
     <form class="score-form">
       <label for="${id}">Your score</label>
       <input id="${id}" type="number" min="0" max="100" step="1" placeholder="out of 100">
@@ -3683,11 +3683,13 @@ function quizBlock(step){
 function milestoneBlock(p){
   if(!p) return "";
   const earned = p.badges.filter(b => b.earned), next = p.badges.find(b => !b.earned);
+  const days = p.streak ? p.streak.current : 0;
   return `<div class="block"><h3>Milestones</h3>
-    <p class="muted small">${earned.length} of ${p.badges.length} reached.</p>
+    <p class="muted small">${earned.length ? `You have reached ${earned.length} of ${p.badges.length}.`
+      : `You have not reached any of the ${p.badges.length} yet.`}${days > 1 ? ` You have studied ${days} days in a row.` : ""}</p>
     ${earned.length ? `<div class="badges" style="margin-top:10px">${earned.map(b =>
       `<span class="badge-chip earned">${esc(b.name)}</span>`).join("")}</div>` : ""}
-    ${next ? `<p class="caption" style="margin:10px 0 0">Next: ${esc(next.name)}. ${esc(next.rule)}</p>` : ""}
+    ${next ? `<p class="caption" style="margin:10px 0 0">To reach "${esc(next.name)}", ${esc(next.rule.charAt(0).toLowerCase() + next.rule.slice(1))}.</p>` : ""}
   </div>`;
 }
 function shortlistRail(courses){
@@ -4180,8 +4182,8 @@ function phoneSummary(m, path, module, now){
     <div class="ms-top"><div><div class="eyebrow">Your course</div><b>${esc(modName(module))}</b></div>
       <span class="ms-pct">${pc}%</span></div>
     <div class="bar"><span style="width:${pc}%"></span></div>
-    <p class="caption" style="margin:8px 0 10px">${path.n_done} of ${path.n_weeks} weeks done.${cur
-      ? ` Your next week is in part ${i + 1} of ${m.cols.length}: ${cur.name.toLowerCase()}, weeks ${cur.from} to ${cur.to}.` : ""}</p>
+    ${cur ? `<p class="caption" style="margin:8px 0 10px">Your next week is in part ${i + 1} of ${m.cols.length},
+      which covers weeks ${cur.from} to ${cur.to}.</p>` : ""}
     <div class="ms-parts">${m.cols.map(c => {
       const ps = partState(c, m, now);
       return `<button type="button" class="ms-part${c === cur ? " on" : ""}">
@@ -4212,9 +4214,7 @@ async function renderStudent(){
   const t = state.thresholds;
   const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
   const marks = markList(state.history, names);
-  const passed = marks.filter(m => m.pass).length;
   const step = path.steps[0];
-  const avg = marks.length ? Math.round(marks.reduce((a, m) => a + m.score, 0) / marks.length) : null;
   const doneSet = new Set(path.done || []);
   const gm = g ? graphModel(g, {done: doneSet, now: step ? step.concept : null}) : null;
   const clashes = gm ? orderClashes(gm, doneSet) : [];
@@ -4227,12 +4227,11 @@ async function renderStudent(){
         ${studentTab === "details"
           ? pageHead("My details", [me.display_name, stageLabel(me.stage), modName(state.module)].filter(Boolean).join(" · "), "", "Your account")
           : `<div class="dash-head">
-          <div><div class="eyebrow">My learning · ${[stageLabel(me.stage), modName(state.module)].filter(Boolean).map(esc).join(" · ")}</div>
+          <div><div class="eyebrow">My learning</div>
             <h1>Hi ${esc(me.display_name)}</h1>
-            <p class="muted">${path.n_done} of ${path.n_weeks} weeks done${step ? `. ${esc(weekOf(step.label))} is next.` : "."}</p></div>
+            <p class="muted">${esc(courseLine(path, step, state.module))}</p></div>
           <div class="head-actions" id="head-actions">
             <a class="btn small" href="/api/me/path.ics?weeks=${path.steps.length}&start=${todayISO()}">Add to my calendar</a>
-            <button class="small" data-go="record">Record of study</button>
             ${step ? `<button class="primary" id="open-week" style="width:auto;padding:9px 16px">Open ${esc(weekOf(step.label))}</button>` : ""}
           </div>
         </div>`}
@@ -4240,17 +4239,6 @@ async function renderStudent(){
         <div data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
           ${gm ? phoneSummary(gm, path, state.module, step ? step.concept : null) : ""}
           ${retakeBanner(marks, path.steps, new Set((path.done || []).map(c => names[c])))}
-          <div class="tiles">
-            <div class="tile"><span class="ico">${TILE_ICON.done}</span>
-              <div class="v">${path.n_done} of ${path.n_weeks}</div><div class="k">weeks done</div>
-              <div class="bar"><span style="width:${path.n_weeks ? Math.round(path.n_done / path.n_weeks * 100) : 0}%"></span></div></div>
-            <div class="tile"><span class="ico">${TILE_ICON.streak}</span>
-              <div class="v">${progress ? progress.streak.current : 0}</div><div class="k">day streak${
-                progress && progress.streak.longest ? `, longest ${progress.streak.longest}` : ""}</div></div>
-            ${avg === null
-              ? `<div class="tile"><span class="ico">${TILE_ICON.next}</span><div class="v text">${step ? esc(weekOf(step.label)) : "All done"}</div><div class="k">next step</div></div>`
-              : `<div class="tile"><span class="ico">${TILE_ICON.score}</span><div class="v">${avg}</div><div class="k">average of your ${marks.length} ${marks.length === 1 ? "mark" : "marks"}${marks.length - passed ? `, ${marks.length - passed} below the pass mark` : ""}</div></div>`}
-          </div>
           ${state.n_events === 0 ? `<div class="callout">Welcome. Your path follows your course week by week, starting at Week 1. Press "I studied this", or enter the mark from your quiz, and it moves on to the next week.</div>` : ""}
           ${nextStepCard(step, t, true)}
         </div>
@@ -4263,30 +4251,22 @@ async function renderStudent(){
         </div>
       </div>
 
-      <aside class="railside">
+      <aside class="railside stick"><div class="railside-in">
         ${studentTab === "details" ? accountBlock(state.module) : `
         ${step ? quizBlock(step) : ""}
         ${marks.length ? recentScores(marks) : ""}
         ${milestoneBlock(progress)}`}
         ${shortlistRail(savedCourses)}
-      </aside>
+      </div></aside>
 
       <div class="wsmid" data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
         <div class="ctrl-band">
-          <div class="cb-left">${segButtons(PATH_VIEWS, pathView, "pview")}
-            <span class="cb-course">${TILE_ICON.done}${esc(modName(state.module))}</span></div>
-          <div class="cb-right">
-            <div class="cb-prog"><span>Weeks done</span><b>${path.n_done} / ${path.n_weeks}
-              (${path.n_weeks ? Math.round(path.n_done / path.n_weeks * 100) : 0}%)</b>
-              <div class="bar"><span style="width:${path.n_weeks ? Math.round(path.n_done / path.n_weeks * 100) : 0}%"></span></div></div>
-            ${step ? `<span class="gchip ${step.gaps.length ? "locked" : "ready"}">${step.gaps.length
-              ? "Next week: revise first" : "Next week: ready to start"}</span>` : `<span class="gchip done">Every week done</span>`}
-            ${gm ? (clashes.length
-              ? `<button type="button" class="gchip clash" id="order-chip" data-c="${clashes[0].missing[0].concept}"
-                  title="A finished week builds on a week that is not finished">${esc(weekOf(clashes[0].week.label))} done before
-                  ${esc(weekOf(clashes[0].missing[0].label))}${clashes.length > 1 ? `, and ${clashes.length - 1} more` : ""}</button>`
-              : `<span class="gchip done" title="Every finished week comes after the weeks it builds on">Prerequisites in order</span>`) : ""}
-          </div>
+          <div class="cb-left">${segButtons(PATH_VIEWS, pathView, "pview")}</div>
+          ${gm && clashes.length ? `<div class="cb-right">
+            <button type="button" class="gchip clash" id="order-chip" data-c="${clashes[0].missing[0].concept}"
+              title="A finished week builds on a week that is not finished">You marked ${esc(weekOf(clashes[0].week.label))}
+              done before ${esc(weekOf(clashes[0].missing[0].label))}, which it builds on${clashes.length > 1
+              ? `, and ${clashes.length - 1} more like it` : ""}.</button></div>` : ""}
         </div>
         <div id="path-view">${pathView === "timeline" ? pathList(path.steps, t, true) : ""}</div>
       </div>

@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 284 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
+`make test` runs 286 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
 `HOW_TO_RUN.txt` has the start and stop steps in plain words.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
@@ -186,6 +186,16 @@ storing ID documents (Aadhaar copies especially) would make the database far wor
 The same audit found a school student's page squeezed into a 236 pixel column on phones
 (`.workspace.two` outranked the phone rule) and footer links running together on touch
 screens; both fixed, with tests.
+
+**My learning, decluttered.** The page said "2 of 35 weeks done" four times (heading, a
+tile row, the left rail, the band above the path). It is now one sentence in the heading
+(`courseLine`); the tile row, the rail's course panel and the band's progress bar and
+status chips are gone, and the band only speaks when weeks were done out of order. The
+next step is titled by its week; the student's level on it moved behind "Show the
+model's working" (advisers still see it on the card). Milestones and the quiz box are
+written as sentences. On wide screens the right column stays in view like the left one:
+its contents stick inside a column as tall as the rows beside the path
+(`.railside.stick > .railside-in`), so they stop above the full-width strip.
 
 **Updates reach open tabs.** Moving between pages never reloads `index.html`, so a tab
 left open kept running its first copy after an update. `/api/version` reports when the
@@ -481,7 +491,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         284 tests
+tests/         286 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability
