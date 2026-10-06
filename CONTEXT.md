@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 219 tests. `make api` serves http://localhost:8420.
+`make test` runs 220 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -111,6 +111,10 @@ as passed tests and runs the model again. It writes nothing and logs nothing. Th
 shows weeks done, weeks ready and the model's average before and after, which weeks would
 open, where the path would go on from, and a before and after dot per part. It says the
 model lifts most weeks for a pass, which is the engagement signal the paper describes.
+
+**My details** has its own address, `#/details`, drawn by the dashboard view. It used to
+be a tab on `#/dashboard`, which kept reopening until a refresh. The student's name in the
+header opens it; for advisers and admins the name is plain text.
 
 **Header.** Brand, a context chip with the student's level and course (it opens My
 details), the four places in the order the Navigator screens use (Course Finder, My
@@ -210,6 +214,9 @@ general test and commerce and humanities papers have no questions yet.
 for the year, active days, current and longest streak, then a year of days
 (`CALENDAR_WEEKS = 53`). Beside it, this week's summary and milestones; below, "Your
 course so far" (weeks done, ready to start and not ready yet, whole course and by part),
+"Finishing the course" (weeks done over time from the student's own dates, with two
+straight projections from today: their average pace since their first activity, needing a
+week of history, and the course's pace of a week each week; arithmetic, not the model),
 the quiz marks as horizontal bars against the pass mark, and a week map of the whole
 course with the next week outlined and a dot for each quiz mark. The model's estimate
 per week sits behind "How the model sees each week", on a scale that stops at the first
@@ -391,7 +398,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         219 tests
+tests/         220 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

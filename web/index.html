@@ -975,6 +975,30 @@
   .qpass-lab{position:absolute;left:40%;transform:translateX(-50%);white-space:nowrap}
   /* Anything the page scrolls to stops below the sticky header, not under it. */
   .fsec,#path-view,#finder-courses,#finder-out{scroll-margin-top:calc(var(--header) + 16px)}
+  /* The name in the header opens My details. */
+  button.me{border:0;background:none;box-shadow:none;padding:4px 8px 4px 4px;border-radius:10px;font:inherit;color:inherit;text-align:left}
+  button.me:not(:disabled){cursor:pointer}
+  button.me:not(:disabled):hover{background:var(--surface-alt)}
+  button.me:disabled{opacity:1;cursor:default}
+  #studies-form{scroll-margin-top:calc(var(--header) + 16px)}
+  .finish-said{margin:0 0 8px;font-size:14px}
+  .finish-fig .proj{stroke:var(--st-ready);stroke-width:2;stroke-dasharray:6 5}
+  .finish-fig .proj.grey{stroke:var(--ink-faint)}
+  .viz-legend i.k-line{height:2px;width:14px;border-radius:1px;background:var(--st-ready);vertical-align:3px}
+  .viz-legend i.k-dash{height:0;width:14px;border-radius:0;border-top:2px dashed var(--st-ready);vertical-align:3px}
+  .viz-legend i.k-dash.grey{border-top-color:var(--ink-faint)}
+  .railside .viz{margin:0}
+  /* Progress has a long right column. Its extra height goes to the second row, under the
+     charts, instead of opening a gap between the calendar and the charts. */
+  .workspace.wk-prog{grid-template-rows:auto 1fr}
+  .wk-prog > .wsmid{align-self:stretch;display:flex;flex-direction:column}
+  .wk-prog > .wsmid > .viz-row{flex:1;align-items:stretch}
+  .wk-prog > .wsmid > .viz-row > .viz{margin:0}
+  /* Once the right column folds under the page, the charts come before it. */
+  @media(max-width:1180px){
+    .wk-prog > .wsmain{order:1} .wk-prog > .wsmid{order:2} .wk-prog > .wsfull{order:3} .wk-prog > .railside{order:4}
+    .workspace.wk-prog{grid-template-rows:none}
+  }
 </style>
 </head>
 <body>
@@ -1008,8 +1032,9 @@
       </span>
       <a class="btn ghost guest-only" data-go="login" href="#/login">Sign in</a>
       <a class="btn primary guest-only" data-go="signup" href="#/signup">Get started</a>
-      <span class="me auth-only"><span class="disc" id="me-disc" aria-hidden="true"></span>
-        <span class="me-txt"><b id="who"></b><small id="rolebadge"></small></span></span>
+      <button type="button" class="me auth-only" id="me-chip" data-details="1" title="My details">
+        <span class="disc" id="me-disc" aria-hidden="true"></span>
+        <span class="me-txt"><b id="who"></b><small id="rolebadge"></small></span></button>
       <button class="small auth-only" id="signout">Sign out</button>
     </div>
   </div>
@@ -1284,18 +1309,23 @@ function show(name){
   // its own address so every rail, header and dashboard can link straight to it.
   const explore = name === "explore";
   if(explore) name = "finder";
+  // My details is drawn by the dashboard view but has its own address. It used to be a
+  // tab on #/dashboard, so once opened, My learning kept reopening it until a refresh.
+  const details = name === "details";
+  if(details) name = "dashboard";
+  if(name === "dashboard") studentTab = details ? "details" : "path";
   if(!document.getElementById("view-" + name)) name = me ? "dashboard" : "home";
   if(!PUBLIC.has(name) && !me) name = "login";
   if((name === "admin" || name === "research") && (!me || me.role !== "admin")) name = "dashboard";
   if(me && (name === "login" || name === "signup" || name === "home")) name = "dashboard";
   closeSheet();                                    // a sheet never outlives the page it opened on
-  const hash = "#/" + (explore && name === "finder" ? "explore" : name);
+  const hash = "#/" + (explore && name === "finder" ? "explore" : details && name === "dashboard" ? "details" : name);
   if(location.hash !== hash) history.replaceState(null, "", hash);
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "view-" + name));
   document.querySelectorAll("nav.links button").forEach(b =>
     b.classList.toggle("on", b.dataset.go === (explore && name === "finder" ? "explore" : name)));
   document.querySelectorAll(".railitem[data-go]").forEach(b =>
-    b.classList.toggle("on", b.dataset.go === (explore ? "explore" : name)));
+    b.classList.toggle("on", b.dataset.go === (explore ? "explore" : details ? "details" : name)));
   if(name === "dashboard") renderHome();
   if(name === "progress") renderProgress();
   if(name === "record") renderRecord();
@@ -1309,7 +1339,7 @@ function show(name){
 document.addEventListener("click", e => {
   const cb = e.target.closest(".check-btn");
   if(cb){ e.preventDefault(); openCheck(cb.dataset.exam, cb.dataset.section, cb.dataset.unit); return; }
-  if(e.target.closest("[data-details]")){ studentTab = "details"; nav("dashboard"); return; }
+  if(e.target.closest("[data-details]")){ nav(me && me.role === "student" ? "details" : "dashboard"); return; }
   const a = e.target.closest("[data-go]");
   if(!a) return;
   e.preventDefault();
@@ -1489,7 +1519,8 @@ function renderTabbar(){
 function markTab(){
   const here = location.hash.replace(/^#\/?/, "") || "dashboard";
   document.querySelectorAll("#tabbar .tab").forEach(b => {
-    const on = b.dataset.go === here || (here === "record" && b.dataset.go === "progress");
+    const on = b.dataset.go === here || (here === "record" && b.dataset.go === "progress")
+      || (here === "details" && b.dataset.go === "dashboard");
     b.classList.toggle("on", on);
     if(on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   });
@@ -1500,6 +1531,8 @@ function enter(){
   document.body.classList.add("signed-in");
   $("#who").textContent = me.display_name;
   $("#rolebadge").textContent = me.role === "student" ? "Student" : me.role === "admin" ? "Admin" : "Adviser";
+  // Students open My details from their name; advisers and admins have no such page.
+  $("#me-chip").disabled = me.role !== "student";
   $("#me-disc").textContent = (me.display_name || "?").trim().charAt(0).toUpperCase();
   // The context chip says where the student is, the way a term selector would, and
   // opens My details, which is where it changes. Advisers and admins have no rung.
@@ -2764,6 +2797,89 @@ function weekMap(m, now, marks, concepts, t){
   </figure>`;
 }
 
+/* When the course would be finished: weeks done over time from the student's own record,
+   then two straight projections from today. One at their own average pace since their
+   first activity, one at the course's own pace of a week each week. Arithmetic on what
+   they recorded, not the model, and labelled that way. */
+function finishFigure(history, m){
+  const ids = new Set(m.nodes.map(n => n.concept)), n = m.nodes.length;
+  const evs = history.filter(h => ids.has(h.concept_id));
+  const head = `<figure class="viz finish-fig"><h3>Finishing the course</h3>`;
+  if(!evs.length) return `${head}<p class="sub">Once you record your first weeks, this shows when you would finish
+    at your own pace and at the course's pace of a week each week.</p></figure>`;
+  const DAY = 86400000, day = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  // Weeks done after each day, by the same rule as the path: the latest entry for a
+  // week decides whether it counts.
+  const last = new Map(), pts = [];
+  evs.forEach(h => {
+    last.set(h.concept_id, h.kind === "study" || !!h.correct);
+    const k = [...last.values()].filter(Boolean).length, d = day(h.created_at * 1000);
+    if(pts.length && pts[pts.length - 1].d === d) pts[pts.length - 1].k = k; else pts.push({d, k});
+  });
+  const today = day(Date.now()), first = pts[0].d, done = pts[pts.length - 1].k, left = n - done;
+  const elapsed = Math.round((today - first) / DAY);
+  const mine = done > 0 && left > 0 && elapsed >= 7 ? today + left / (done / elapsed) * DAY : null;
+  const course = left > 0 ? today + left * 7 * DAY : null;
+  const month = t => new Date(t).toLocaleDateString(undefined, {month: "long", year: "numeric"});
+  const dateOf = t => new Date(t).toLocaleDateString(undefined, {day: "numeric", month: "short", year: "numeric"});
+  // The axis runs to the later finish, but no further than three years out.
+  const cap = today + 3 * 365 * DAY;
+  const end = Math.max(today + 7 * DAY, Math.min(Math.max(course || 0, mine || 0), cap));
+  // Drawn at about the width of its card, so the text is not scaled down to nothing.
+  const W = 420, H = 230, padL = 26, padR = 10, padT = 16, padB = 26;
+  const x = t => padL + (t - first) / (end - first) * (W - padL - padR), y = k => padT + (1 - k / n) * (H - padT - padB);
+  const grid = [0, Math.round(n / 2), n].map(k => `<line x1="${padL}" x2="${W - padR}" y1="${y(k)}" y2="${y(k)}" stroke="var(--rule)" stroke-width="1"/>
+    <text x="${padL - 6}" y="${y(k) + 4}" text-anchor="end" font-size="10" fill="var(--ink-faint)">${k}</text>`).join("");
+  const span = end - first, ticks = [];
+  for(let i = 0; i <= 3; i++) ticks.push(first + span * i / 3);
+  const xlab = ticks.map((t, i) => `<text x="${x(t)}" y="${H - 8}" text-anchor="${i === 0 ? "start" : i === 3 ? "end" : "middle"}"
+    font-size="10" fill="var(--ink-faint)">${new Date(t).toLocaleDateString(undefined, {month: "short", year: "2-digit"})}</text>`).join("");
+  // What actually happened: a step for each day, held flat to today.
+  let path = `M${x(first)},${y(0)}`;
+  pts.forEach(pt => { path += ` L${x(pt.d)},${y(pt.k)}`; });
+  path += ` L${x(today)},${y(done)}`;
+  const proj = (t, cls) => {
+    if(!t) return "";
+    const tt = Math.min(t, end), kk = done + (n - done) * (tt - today) / (t - today);
+    return `<line x1="${x(today)}" y1="${y(done)}" x2="${x(tt)}" y2="${y(kk)}" class="${cls}"/>`;
+  };
+  const hits = pts.map(pt => {
+    const tip = {v: `${pt.k} of ${n} weeks done`, l: [dateOf(pt.d)]};
+    return `<circle cx="${x(pt.d)}" cy="${y(pt.k)}" r="4" fill="var(--st-ready)" stroke="var(--surface)" stroke-width="2"/>
+      <circle class="hit" cx="${x(pt.d)}" cy="${y(pt.k)}" r="12" fill="transparent" tabindex="0" role="img"
+        aria-label="${dateOf(pt.d)}: ${pt.k} of ${n} weeks done" data-tip="${esc(JSON.stringify(tip))}"/>`;
+  }).join("");
+  const endTip = (t, name) => t ? `<circle class="hit" cx="${x(Math.min(t, end))}" cy="${y(t > end ? done + (n - done) * (end - today) / (t - today) : n)}"
+    r="12" fill="transparent" tabindex="0" role="img" aria-label="${name}: ${t > end ? "after " + month(end) : month(t)}"
+    data-tip="${esc(JSON.stringify({v: t > end ? `after ${month(end)}` : month(t), l: [name]}))}"/>` : "";
+  const said = [];
+  if(!left) said.push("Every week of the course is done.");
+  else {
+    if(mine) said.push(`At your pace so far, ${done} ${done === 1 ? "week" : "weeks"} in ${elapsed} days, you would finish
+      all ${n} around <b>${mine > cap ? `after ${month(cap)}` : month(mine)}</b>.`);
+    else if(done > 0) said.push(`Your own pace needs a week of history to project from; your first activity was ${elapsed} ${elapsed === 1 ? "day" : "days"} ago.`);
+    said.push(`At the course's own pace of a week each week, you would finish around <b>${month(course)}</b>.`);
+  }
+  return `${head}
+    <p class="sub">Weeks done so far, and two projections from today. Worked out from your own dates, not by the model.</p>
+    <p class="prose finish-said">${said.join(" ")}</p>
+    <div class="viz-legend"><span><i class="k-line"></i>Weeks done</span>${mine ? `<span><i class="k-dash"></i>At your pace</span>` : ""}${
+      course ? `<span><i class="k-dash grey"></i>A week each week</span>` : ""}</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="group" aria-label="Weeks done over time, with projections">
+      ${grid}${xlab}
+      <line x1="${x(today)}" x2="${x(today)}" y1="${padT}" y2="${H - padB}" stroke="var(--ink-faint)" stroke-width="1"/>
+      <text x="${x(today) + 4}" y="${padT + 10}" font-size="10" fill="var(--ink-faint)">today</text>
+      ${proj(course, "proj grey")}${proj(mine, "proj")}
+      <path d="${path}" fill="none" stroke="var(--st-ready)" stroke-width="2" stroke-linejoin="round"/>
+      ${hits}${endTip(mine, "At your pace")}${endTip(course, "A week each week")}
+    </svg>
+    ${vizTable(["", "Date"], [
+      ["First activity", dateOf(first)], ["Weeks done today", `${done} of ${n}`],
+      ["Finish at your pace", mine ? (mine > cap ? `after ${month(cap)}` : month(mine)) : "Not enough history yet"],
+      ["Finish at a week each week", course ? month(course) : "Done"]])}
+  </figure>`;
+}
+
 /* ---------------- progress: streak, calendar, weekly summary ---------------- */
 function activityCard(p){
   if(!p || !p.calendar || !p.calendar.length) return "";
@@ -3118,8 +3234,7 @@ function bindStudies(){
     enter();
     known.clear();
     toast("Your studies were saved");
-    studentTab = "path";
-    renderStudent();
+    nav("dashboard");
   };
 }
 const subjectList = items => `<ul class="plain">${items.map(s =>
@@ -3206,6 +3321,8 @@ async function renderSchoolStudent(root){
   bindPlans(root);
   bindAhead(root);
   bindExams(root, me.stream);
+  // A school student's details are the studies form on this page, so #/details lands on it.
+  if(studentTab === "details") $("#studies-form").scrollIntoView({block: "start"});
 }
 
 /* ---------------- the workspace rails ----------------
@@ -3227,9 +3344,6 @@ const TILE_ICON = {
   score: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"></path></svg>`,
   next: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>`,
 };
-const railTab = (icon, label, tab, active) =>
-  `<button class="railitem stab${tab === active ? " on" : ""}" data-t="${tab}" role="tab"
-    aria-selected="${tab === active}">${RAIL_ICON[icon]}<span>${label}</span></button>`;
 const railGo = (icon, label, to) =>
   `<button class="railitem" data-go="${to}">${RAIL_ICON[icon]}<span>${label}</span></button>`;
 const railHere = (icon, label) =>
@@ -3241,7 +3355,7 @@ const railMe = (name, sub) => `<div class="railme">
 <hr>`;
 const railShell = (nav, panel, foot = "", me_ = "") => `<aside class="rail">
   ${me_}
-  <div><div class="grouphead">Workspace</div><div class="railnav" role="tablist">${nav}</div></div>
+  <div><div class="grouphead">Workspace</div><nav class="railnav" aria-label="Workspace">${nav}</nav></div>
   ${panel}
   ${foot ? `<div class="railnav" style="margin-top:auto">${foot}</div>` : ""}
 </aside>`;
@@ -3249,18 +3363,15 @@ const railShell = (nav, panel, foot = "", me_ = "") => `<aside class="rail">
 /* The same five places on every page, with the one you are on marked. On the
    dashboard two of them are tabs in the page itself; elsewhere they lead back to it. */
 function studentRail(active, course){
-  const onDash = active === "path" || active === "details";
   const go = (icon, label, to, key) => active === key ? railHere(icon, label) : railGo(icon, label, to);
   const nav = [
-    onDash ? railTab("learning", "My learning", "path", active)
-           : railGo("learning", "My learning", "dashboard"),
+    go("learning", "My learning", "dashboard", "path"),
     me.module ? go("progress", "Progress", "progress", "progress") : "",
     go("finder", "Course Finder", "finder", "finder"),
     go("explore", "Explore all courses", "explore", "explore"),
     me.module ? go("record", "Record of study", "record", "record") : "",
   ].join("");
-  const foot = onDash ? railTab("details", "My details", "details", active)
-    : `<button class="railitem" data-details="1">${RAIL_ICON.details}<span>My details</span></button>`;
+  const foot = go("details", "My details", "details", "details");
   return railShell(nav, course ? coursePanel(course) : "", foot,
     railMe(me.display_name, [stageLabel(me.stage), course && course.name].filter(Boolean).join(" · ")));
 }
@@ -3859,10 +3970,6 @@ async function renderStudent(){
     </div>
   </div>`;
 
-  bindTabs(root, "stab", v => {
-    studentTab = v; hideTip();
-    const o = $("#head-actions"); if(o) o.hidden = v !== "path";
-  });
   const open = $("#open-week");
   if(open) open.onclick = () => weekSheet(path.steps[0], t, true, `Step 1 of ${path.steps.length}`);
   const retake = $("#open-retake"), hide = $("#hide-retake");
@@ -3892,8 +3999,7 @@ async function renderStudent(){
     const res = await fetch("/api/me/profile", {method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({profile})});
     if(!res.ok){ msg.textContent = "Could not save. Try again."; return; }
     toast("Your details were saved");
-    studentTab = "path";
-    renderStudent();
+    nav("dashboard");
   };
   bindActions(root);
   const u = $("#undo"); if(u) u.onclick = async () => {
@@ -4024,7 +4130,7 @@ async function renderProgress(){
   let state, progress, path, g;
   try{
     [state, progress, path, g] = await Promise.all([
-      api("/api/me/state?known=").then(humanize),
+      api("/api/me/state?known=&full=true").then(humanize),
       api("/api/me/progress").then(humanize).catch(() => null),
       api("/api/me/path?steps=1&known=").then(humanize),
       courseGraph(me.module)]);
@@ -4035,16 +4141,17 @@ async function renderProgress(){
   const concepts = new Map(state.concepts.map(c => [c.concept, c]));
   const names = Object.fromEntries(state.concepts.map(c => [c.concept, weekOf(c.label)]));
   const hist = state.history.length
-    ? state.history.slice().reverse().slice(0, 12).map(h =>
+    ? state.history.slice().reverse().slice(0, 6).map(h =>
         `<li>${h.score !== null && h.score !== undefined
           ? `Quiz on ${esc(names[h.concept_id] || "a week outside your course")}: ${h.score} out of 100 <span class="caption">${h.score >= 40 ? "passed" : "below the pass mark"}</span>`
           : `${h.kind === "assessment" ? (h.correct ? "Passed the test for" : "Found it hard:") : "Studied"} ${esc(names[h.concept_id] || "a week outside your course")}`}</li>`).join("")
     : "<li>Nothing recorded yet.</li>";
   const scores = scoreChart(state.history, names, new Set(path.done || []));
   const recent = `<div class="block" style="margin:0"><h3>Recent activity</h3><ul class="plain">${hist}</ul>
-    ${state.n_events ? `<div style="margin-top:12px"><button class="small" id="undo">Undo last activity</button></div>` : ""}</div>`;
+    ${state.n_events ? `<div class="row" style="margin-top:12px"><button class="small" id="undo">Undo last activity</button>
+      ${state.n_events > 6 ? `<button class="small" data-go="record">All ${state.n_events} in your record</button>` : ""}</div>` : ""}</div>`;
   root.innerHTML = `<div class="page wide">
-    <div class="workspace">
+    <div class="workspace wk-prog">
       ${studentRail("progress", {name: modName(state.module), done: path.n_done, weeks: path.n_weeks})}
       <div class="wsmain">
         ${pageHead("Progress", `${modName(state.module)} · ${path.n_done} of ${path.n_weeks} weeks done`, "",
@@ -4055,15 +4162,16 @@ async function renderProgress(){
       <aside class="railside">
         ${weekFigure(progress)}
         ${milestoneBlock(progress)}
+        ${scores}
+        ${recent}
       </aside>
 
       <div class="wsmid">
-        <div class="viz-row">${courseFigure(m, now, state.module)}${scores || recent}</div>
+        <div class="viz-row">${courseFigure(m, now, state.module)}${finishFigure(state.history, m)}</div>
       </div>
 
       <div class="wsfull">
         ${weekMap(m, now, latestMarks(state.history), concepts, t)}
-        ${scores ? `<div class="viz-row">${recent}</div>` : ""}
         <details class="working model-working"><summary>How the model sees each week</summary>
           ${weekChart(state.concepts, t, true, "The model's estimate, week by week")}</details>
       </div>

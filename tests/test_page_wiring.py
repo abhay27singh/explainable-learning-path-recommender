@@ -35,3 +35,14 @@ def test_every_page_that_draws_exam_cards_also_binds_them():
     assert drawers, "no function draws exam cards any more; update this test"
     for name, body in drawers.items():
         assert "bindExams(" in body, f"{name} draws exam cards but never binds them"
+
+
+def test_my_details_has_its_own_address():
+    """Regression: My details was a tab on #/dashboard. Once opened, every link to My
+    learning went to the same address, so the page kept showing the details until a
+    refresh. It now has #/details, and only the router decides which one is showing."""
+    fns = functions()
+    assert 'name === "details"' in fns["show"]
+    assert 'go("details", "My details", "details", "details")' in fns["studentRail"]
+    setters = [name for name, body in fns.items() if 'studentTab = "details"' in body]
+    assert setters == [], f"only the router may open My details: {setters}"

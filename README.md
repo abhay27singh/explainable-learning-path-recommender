@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 219 tests
+make test                                       # 220 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -185,6 +185,8 @@ One file, `web/index.html`, no build step.
   academic plus 16 NSQF skill courses, which NEP 2020 treats as an equal track. Eligibility
   by class 12 subjects or bachelor's degree, interest ranking, a shortlist, and a week by
   week plan for any course with a calendar file to download.
+- **Finishing the course.** On Progress, weeks done over time and when the course would be
+  finished at the student's own pace and at a week each week, worked out from their dates.
 - **Progress and record.** A year of activity with the active days and both streaks
   above it, the way a contribution graph reads, plus milestones, quiz marks against the
   pass line, and a printable record of study. Every figure comes from what the
