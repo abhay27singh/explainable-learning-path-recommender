@@ -181,3 +181,26 @@ def test_progress_keeps_its_right_column_in_view_too():
     assert '<aside class="railside stick"><div class="railside-in">' in page
     side = page.split('<aside class="railside stick">')[1].split("</aside>")[0]
     assert "${recent}" not in side
+
+
+def test_visitors_can_see_a_real_path_before_signing_up():
+    fns = functions()
+    assert '"try"' in re.search(r"const PUBLIC = new Set\(\[(.*?)\]\)", SCRIPT).group(1)
+    assert 'id="view-try"' in PAGE and 'data-go="try"' in PAGE
+    assert '"/api/demo"' in fns["renderTry"] and '"/api/demo"' in fns["fillShowcase"]
+    # The demo is the model's own ranking, not course order, and the page must say so.
+    assert "The model's next" in fns["pathList"]
+
+
+def test_long_pages_get_a_section_bar_and_progress_gets_a_replay():
+    fns = functions()
+    assert '["privacy", "terms", "policies"].includes(name)' in fns["show"]
+    assert "aria-current" in fns["markSection"]
+    assert "startReplay(" in fns["renderProgress"] and '"/api/me/replay"' in fns["startReplay"]
+
+
+def test_the_week_map_shows_the_level_not_the_raw_figure():
+    """Regression: "Model: 1% chance of doing well" on a week the student had just
+    studied. For a student's own record the raw figures sit near zero."""
+    body = functions()["weekMap"]
+    assert "chance of doing well" not in body and "LEVEL(c.mastery, t)" in body

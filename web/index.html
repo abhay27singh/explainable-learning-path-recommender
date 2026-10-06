@@ -213,6 +213,15 @@
   .step3 h3{margin:0 0 6px;font-size:18px}
   .step3 p{margin:0;color:var(--ink-soft);font-size:14px}
   .features{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  /* The home page shows the real thing beside the words: a real learner's next step and a
+     real course from the catalogue, each labelled for what it is. */
+  .showcase{display:grid;gap:28px;margin:0 0 28px}
+  .show-row{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:28px;align-items:center}
+  .show-text h3{margin:0 0 6px;font-size:18px}
+  .show-text p{margin:0 0 14px;color:var(--ink-soft);font-size:14px}
+  .show-screen{min-width:0}
+  .show-screen .next, .show-screen .course{margin:0}
+  .show-screen > .caption{margin:8px 0 0}
   .feature{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
   .feature .ic{width:40px;height:40px;border-radius:9px;background:var(--accent-soft);display:grid;place-items:center;margin-bottom:14px}
   .feature .ic svg{width:22px;height:22px;stroke:var(--accent)}
@@ -224,7 +233,7 @@
   .research ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
   .research li{background:var(--ground);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;font-size:14px}
   .research li b{color:var(--ink)}
-  @media(max-width:860px){.facts,.steps3,.features,.research{grid-template-columns:1fr}.hero{padding:56px 18px 44px}}
+  @media(max-width:860px){.facts,.steps3,.features,.research,.show-row{grid-template-columns:1fr}.hero{padding:56px 18px 44px}}
 
   footer.site{background:var(--footer);color:var(--footer-ink);margin-top:0}
   footer.site .in{max-width:1180px;margin:0 auto;padding:36px 22px;display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between}
@@ -531,6 +540,15 @@
   .legal h3{margin:22px 0 6px;font-size:16px}
   .legal p{margin:0 0 10px;color:var(--ink-soft);max-width:68ch}
   .legal p.src{font-size:13px;color:var(--ink-faint)}
+  .secbar{position:sticky;top:var(--header-live,var(--header));z-index:20;margin:18px 0 6px;
+    background:var(--ground);border-bottom:1px solid var(--rule)}
+  .secbar-in{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding:6px 0}
+  .secbar-in::-webkit-scrollbar{display:none}
+  .secbar button{flex:none;border:0;background:none;box-shadow:none;padding:6px 10px;border-radius:6px;
+    font-size:13px;font-weight:500;color:var(--ink-soft);white-space:nowrap}
+  .secbar button:hover{color:var(--ink);background:var(--surface-alt)}
+  .secbar button[aria-current="true"]{color:var(--accent);background:var(--accent-soft);font-weight:600}
+  .legal h3{scroll-margin-top:calc(var(--header-live,var(--header)) + 64px)}
   /* ================= Liquid glass =================
      One layer over everything above, so every page and every role gets it at once.
      Panels are translucent and blur what is behind them; a pane inside a pane gets a
@@ -1054,6 +1072,14 @@
   button.railme:hover{background:var(--surface-alt)}
   button.railme .who,button.railme .nm,button.railme .sub{display:block}
   .acct{display:grid;gap:8px;margin:8px 0 0}
+  .replay-block{margin-bottom:14px}
+  .replay-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:6px 0 0}
+  .rp-btns{display:inline-flex;gap:4px}
+  .rp-btns button{width:38px;height:36px;padding:0;display:grid;place-items:center}
+  .rp-btns svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .rp-btns button[data-rp="play"] svg, .rp-btns button[data-rp="first"] svg, .rp-btns button[data-rp="last"] svg{fill:currentColor}
+  #rp-slider{flex:1 1 180px;min-width:0;accent-color:var(--accent)}
+  .rp-said{margin:10px 0 0;font-size:14px;color:var(--ink)}
   /* A code people read aloud and type: monospaced, spaced, large. */
   .code-big{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:.08em;color:var(--ink);
     margin:4px 0 8px;overflow-wrap:anywhere}
@@ -1129,6 +1155,7 @@
     <p class="lead">It tracks what you have learned, checks what each topic needs first, and tells you your next step in plain words.</p>
     <div class="cta">
       <a class="btn primary" data-go="signup" href="#/signup">Get started</a>
+      <a class="btn" data-go="try" href="#/try">See a real path</a>
       <a class="btn" data-go="finder" href="#/finder">Find a course</a>
     </div>
     <div class="facts">
@@ -1154,24 +1181,33 @@
     <div class="in">
       <h2>What you get</h2>
       <p class="sub">Built for students first, with a separate view for academic advisers.</p>
+      <div class="showcase">
+        <div class="show-row">
+          <div class="show-text">
+            <h3>A week-by-week path</h3><p>Your course in order, starting at Week 1. Each week says why it comes
+              next: what it builds on, and what finishing it opens up.</p>
+            <a class="btn small" data-go="try" href="#/try">See a real path</a>
+          </div>
+          <div class="show-screen" id="show-path"></div>
+        </div>
+        <div class="show-row">
+          <div class="show-text">
+            <h3>Course Finder</h3><p>Finishing class 10, class 12 or a degree? Match your subjects and interests
+              to courses, with free study links for every subject.</p>
+            <a class="btn small" data-go="finder" href="#/finder">Find a course</a>
+          </div>
+          <div class="show-screen" id="show-course"></div>
+        </div>
+      </div>
       <div class="features">
-        <div class="feature">
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M6 17V9a4 4 0 0 1 4-4h6"/></svg></div>
-          <h3>A week-by-week path</h3><p>Your course in order, starting at Week 1. Tap any week to see what it builds on and what it opens up.</p>
-          <a class="btn small" data-go="signup" href="#/signup">Start my path</a>
-        </div>
-        <div class="feature">
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
-          <h3>Course Finder</h3><p>Finishing class 10, class 12 or a degree? Match your subjects and interests to courses, with free study links for every subject.</p>
-          <a class="btn small" data-go="finder" href="#/finder">Find a course</a>
-        </div>
         <div class="feature">
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/></svg></div>
           <h3>Weekly progress</h3><p>A short summary of your week, your study streak and an activity calendar, all from what you actually recorded.</p>
         </div>
         <div class="feature">
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 11a3 3 0 1 0 0-6M21 20a5 5 0 0 0-4-4.9"/></svg></div>
-          <h3>For advisers</h3><p>See any learner's path, mark weeks they already know, and compare planning strategies side by side.</p>
+          <h3>For advisers</h3><p>See the path of each student who joins your class, mark weeks they already know,
+            and compare planning strategies side by side. An admin invites and approves every adviser.</p>
         </div>
       </div>
     </div>
@@ -1252,6 +1288,10 @@
     <aside id="finder-form-wrap"><div class="empty">loading</div></aside>
     <section class="panel"><div id="finder-results"></div></section>
   </main>
+</div>
+
+<div class="view" id="view-try">
+  <div class="page"><div id="try"></div></div>
 </div>
 
 <div class="view" id="view-research">
@@ -1466,12 +1506,12 @@ window.matchMedia("(prefers-color-scheme: dark)")
   .addEventListener("change", () => { if(!readTheme()) applyTheme(null); });
 
 /* ---------------- routing ---------------- */
-const PUBLIC = new Set(["home","login","signup","finder","privacy","terms","policies","notfound"]);
+const PUBLIC = new Set(["home","login","signup","finder","privacy","terms","policies","try","notfound"]);
 // The tab title names the page, so a student with several tabs open can tell them apart.
 const PAGE_TITLES = {home: "", login: "Sign in", signup: "Create your account", finder: "Course Finder",
   explore: "Explore courses", dashboard: "My learning", details: "My details", progress: "Progress",
   record: "Record of study", research: "Research results", admin: "Accounts", privacy: "Privacy policy",
-  terms: "Terms and conditions", policies: "Education policies", notfound: "Page not found"};
+  terms: "Terms and conditions", policies: "Education policies", try: "See a real path", notfound: "Page not found"};
 const SITE_NAME = "GyanGraph";
 function nav(name){
   if(location.hash === "#/" + name) show(name); else location.hash = "/" + name;
@@ -1533,6 +1573,9 @@ function show(name){
   if(name === "research") renderResults().then(renderAbout);
   if(name === "admin") renderAdmin();
   if(name === "finder") renderFinder(explore);
+  if(name === "try") renderTry();
+  if(name === "home") fillShowcase();
+  if(["privacy", "terms", "policies"].includes(name)) sectionBar(document.getElementById("view-" + name));
   hideTip();
   markTab();
   window.scrollTo(0, 0);
@@ -2982,7 +3025,9 @@ function weekMap(m, now, marks, concepts, t){
     const st = m.status.get(nd.concept), x0 = xs.get(nd.concept), mk = marks.get(nd.concept), c = concepts.get(nd.concept);
     const lines = [STATUS_LABEL[st]];
     if(mk !== undefined) lines.push(`Quiz mark ${mk}${mk >= 40 ? ", passed" : ", below the pass mark"}`);
-    if(c) lines.push(`Model: ${pct(c.mastery)}% chance of doing well`);
+    // The level, not the raw figure: for a student's own record the model's figures sit
+    // near zero for most weeks, and "Model: 1% chance" on a week just studied misled.
+    if(c) lines.push(`Model's level: ${LEVEL(c.mastery, t).toLowerCase()}, compared with your other weeks`);
     const tip = {v: weekOf(nd.label), l: lines};
     const cx = x0 + cellW / 2, my = top + cellH + 25;
     return `<rect x="${x0}" y="${top}" width="${cellW}" height="${cellH}" rx="4" fill="${fill(st)}"
@@ -3253,7 +3298,10 @@ function pathList(steps, t, forStudent){
   }).join("");
   return `<div class="block">
     <h3 style="margin:0">${forStudent ? "Your path" : "Their path"}</h3>
-    <p class="muted small">The next ${steps.length} weeks in course order. Each one assumes the one before it is done.
+    <p class="muted small">${forStudent ? `The next ${steps.length} weeks in course order.`
+      // Regression: the adviser's path is the model's own ranking, not course order, and it
+      // said "in course order" over Week 11, 12, 13 and then Week 1.
+      : `The model's next ${steps.length} choices, best first.`} Each one assumes the one before it is done.
       Open a week to see why it comes next and what ${you} should revise first.</p>
     <ol class="path">${items}</ol></div>`;
 }
@@ -4149,7 +4197,7 @@ const latestMarks = history => new Map(history.filter(h => h.score !== null && h
 
 /* On a phone the dashboard leads with one card: how far through the course, which part
    the next week is in, and the four parts to swipe across. Hidden on wider screens,
-   where the tiles and the control band already say the same. */
+   where the heading and the path beside it already say the same. */
 function phoneSummary(m, path, module, now){
   const pc = path.n_weeks ? Math.round(path.n_done / path.n_weeks * 100) : 0;
   const i = m.cols.findIndex(c => c.nodes.some(n => n.concept === now)), cur = m.cols[i];
@@ -4456,7 +4504,13 @@ async function renderProgress(){
       </div>
 
       <div class="wsfull">
-        ${weekMap(m, now, latestMarks(state.history), concepts, t)}
+        ${state.n_events ? `<div class="block replay-block" id="replay">
+          <h3>Replay how you got here</h3>
+          <p class="muted small">Step through everything you recorded, one entry at a time, and watch the weeks below fill in.</p>
+          <button type="button" class="small" id="rp-start">Start the replay</button>
+          <div id="rp" hidden></div>
+        </div>` : ""}
+        <div id="wk-map">${weekMap(m, now, latestMarks(state.history), concepts, t)}</div>
         <details class="working model-working"><summary>How the model sees each week</summary>
           ${weekChart(state.concepts, t, true, "The model's estimate, week by week")}</details>
       </div>
@@ -4464,6 +4518,9 @@ async function renderProgress(){
   </div>`;
   bindViz(root, null);
   root.querySelectorAll(".cal-scroll").forEach(c => { c.scrollLeft = c.scrollWidth; });   // today first
+  const rs = $("#rp-start");
+  if(rs) rs.onclick = () => startReplay({g, names, history: state.history, t,
+    restore: () => { $("#wk-map").innerHTML = weekMap(m, now, latestMarks(state.history), concepts, t); bindViz($("#wk-map"), null); }});
   const u = $("#undo");
   if(u) u.onclick = async () => {
     u.disabled = true;
@@ -4471,6 +4528,188 @@ async function renderProgress(){
     catch(err){ u.disabled = false; toast(err.message || "Could not undo. Try again."); return; }
     toast("Last activity undone"); renderProgress();
   };
+}
+
+/* A long page gets a bar listing its sections, which stays under the header and marks
+   the one being read. Built once per page from its own headings, so a section added
+   to the page appears in the bar without anyone remembering to add it. */
+function sectionBar(view){
+  const page = view.querySelector(".page.legal");
+  if(!page || page.querySelector(".secbar")) return markSection();
+  const heads = [...page.querySelectorAll("h3")];
+  if(heads.length < 4) return;
+  heads.forEach((h, i) => { h.id = h.id || `${view.id}-s${i + 1}`; });
+  const bar = document.createElement("nav");
+  bar.className = "secbar";
+  bar.setAttribute("aria-label", "On this page");
+  bar.innerHTML = `<div class="secbar-in">${heads.map(h =>
+    `<button type="button" data-sec="${h.id}">${esc(h.textContent)}</button>`).join("")}</div>`;
+  page.insertBefore(bar, heads[0]);
+  bar.querySelectorAll("button").forEach(b => b.onclick = () => {
+    const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById(b.dataset.sec).scrollIntoView({block: "start", behavior: smooth ? "smooth" : "auto"});
+  });
+  markSection();
+}
+function markSection(){
+  const bar = document.querySelector(".view.on .secbar");
+  if(!bar) return;
+  const below = bar.getBoundingClientRect().bottom + 24;
+  const buttons = [...bar.querySelectorAll("button")];
+  let here = buttons[0];
+  for(const b of buttons) if(document.getElementById(b.dataset.sec).getBoundingClientRect().top <= below) here = b;
+  // At the very end the last short section may never reach the bar, so it is the one read.
+  if(innerHeight + scrollY >= document.documentElement.scrollHeight - 4) here = buttons[buttons.length - 1];
+  buttons.forEach(b => { if(b === here) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
+  const row = bar.firstElementChild;                 // keep the marked one in view on a phone
+  if(here.offsetLeft < row.scrollLeft || here.offsetLeft + here.offsetWidth > row.scrollLeft + row.clientWidth)
+    row.scrollLeft = here.offsetLeft - 16;
+}
+let secTick = false;
+addEventListener("scroll", () => {
+  if(secTick) return;
+  secTick = true;
+  requestAnimationFrame(() => { secTick = false; markSection(); });
+}, {passive: true});
+// The header is taller on a phone, where it wraps; the bar sits under whatever height it has.
+new ResizeObserver(([e]) => document.documentElement.style.setProperty("--header-live",
+  `${Math.round(e.target.getBoundingClientRect().height)}px`)).observe(document.querySelector("header.site"));
+
+/* The home page's real screens, filled once: the demo learner's next step, and one real
+   course card. If either cannot load, its row keeps the words and loses the picture. */
+let showcaseFilled = false;
+async function fillShowcase(){
+  if(showcaseFilled) return;
+  showcaseFilled = true;
+  const path = $("#show-path"), course = $("#show-course");
+  try{
+    demoCache = demoCache || humanize(await api("/api/demo"));
+    path.innerHTML = nextStepCard(demoCache.path.steps[0], demoCache.path.thresholds, false)
+      + `<p class="caption">A real learner from the research data, halfway through their course.</p>`;
+    bindPath(path, demoCache.path.steps, demoCache.path.thresholds, false);
+  }catch{ path.remove(); }
+  try{
+    if(!exploreCache){
+      const r = await fetch("/api/course-finder/explore");
+      if(!r.ok) throw new Error(r.status);
+      exploreCache = await r.json();
+    }
+    const c = allCourses().find(x => x.key === "btech_cse");
+    if(!c) throw new Error("no course");
+    course.innerHTML = courseCard(c) + `<p class="caption">A real course from the Course Finder.</p>`;
+    bindPlans(course);
+  }catch{ course.remove(); }
+}
+
+/* For visitors: the model at work on one real learner from the research data, before
+   they make an account. The record is anonymised research data, fixed, so it is fetched
+   once. It is the model's own ranking, the adviser's kind of path, and the page says how
+   a student's own path differs rather than pass one off as the other. */
+let demoCache = null;
+async function renderTry(){
+  const root = $("#try");
+  if(!demoCache){
+    root.innerHTML = skeleton();
+    try{ demoCache = humanize(await api("/api/demo")); }
+    catch(e){ root.innerHTML = `<div class="err">${esc(e.message || e)}</div>`; return; }
+  }
+  const d = demoCache, t = d.path.thresholds, steps = d.path.steps;
+  root.innerHTML = `
+    ${pageHead("See a real path", `This is the model at work on a real learner from the Open University's research data,
+      halfway through their ${modName(d.mastery.module)} course. The dataset's authors removed everything that could identify them.`,
+      me ? "" : `<a class="btn primary small" href="#/signup" data-go="signup">Start my own path</a>`, "Try it")}
+    ${nextStepCard(steps[0], t, false)}
+    ${pathList(steps, t, false)}
+    ${courseStrip(d.mastery.concepts, t, false, false)}
+    <p class="caption" style="margin:14px 0 0">Your own path differs in one way: it follows your course in order
+      from Week 1, and the model explains each week from what you record. This example shows the model's own
+      ranking for a learner whose record it already has.</p>`;
+  bindViz(root, null);
+  bindPath(root, steps, t, false);
+}
+
+/* Replay: the student's own record played back one entry at a time, redrawing the week
+   map as it stood after each one. What was recorded and how the path moved, nothing
+   else: the model's raw figures for a student's own record sit near zero and would
+   only mislead here. */
+const RP_ICON = {
+  first: '<path d="M6 5v14M18 6l-8 6 8 6Z"/>', back: '<path d="M15 6l-6 6 6 6"/>',
+  play: '<path d="M8 5l11 7-11 7Z"/>', pause: '<path d="M8 5v14M16 5v14"/>',
+  fwd: '<path d="M9 6l6 6-6 6"/>', last: '<path d="M18 5v14M6 6l8 6-8 6Z"/>',
+};
+const rpIcon = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${RP_ICON[k]}</svg>`;
+async function startReplay({g, names, history, t, restore}){
+  const box = $("#rp"), start = $("#rp-start");
+  start.disabled = true;
+  let r;
+  try{ r = await api("/api/me/replay"); }
+  catch(err){ start.disabled = false; toast(err.message); return; }
+  const steps = r.steps, n = steps.length - 1;
+  const when = at => new Date(at * 1000).toLocaleDateString(undefined, {day: "numeric", month: "short"});
+  const name = c => names[c] || "a week outside your course";
+  const said = k => {
+    const st = steps[k], nxt = st.next === null ? "Every week was done." : `${name(st.next)} was next.`;
+    if(!k) return r.skipped
+      ? `This starts ${n} entries ago, with ${st.done.length} ${st.done.length === 1 ? "week" : "weeks"} already done. ${nxt}`
+      : `Before you recorded anything, the course started at ${name(st.next)}.`;
+    const e = st.entry, wk = name(e.concept_id);
+    const did = e.score !== null && e.score !== undefined
+      ? `you scored ${e.score} out of 100 on the ${wk} quiz, ${e.score >= 40 ? "a pass" : "below the pass mark"}`
+      : e.kind === "assessment" ? (e.correct ? `you passed the test for ${wk}` : `you found ${wk} hard`)
+      : `you studied ${wk}`;
+    if(!st.done.includes(e.concept_id))
+      return st.next === e.concept_id ? `On ${when(e.created_at)} ${did}, so ${wk} stayed next.`
+        : `On ${when(e.created_at)} ${did}, so ${wk} stayed in your path. ${nxt}`;
+    return `On ${when(e.created_at)} ${did}. ${nxt}`;
+  };
+  box.innerHTML = `<div class="replay-bar">
+      <div class="rp-btns">
+        <button type="button" data-rp="first" aria-label="First step">${rpIcon("first")}</button>
+        <button type="button" data-rp="back" aria-label="Step back">${rpIcon("back")}</button>
+        <button type="button" data-rp="play" aria-label="Play" id="rp-play">${rpIcon("play")}</button>
+        <button type="button" data-rp="fwd" aria-label="Step forward">${rpIcon("fwd")}</button>
+        <button type="button" data-rp="last" aria-label="Last step">${rpIcon("last")}</button>
+      </div>
+      <input type="range" id="rp-slider" min="0" max="${n}" value="0" step="1" aria-label="Step in your record">
+      <span class="caption" id="rp-count"></span>
+      <button type="button" class="small" id="rp-stop">Back to now</button>
+    </div>
+    <p class="rp-said" id="rp-said" aria-live="polite"></p>`;
+  box.hidden = false;
+  start.hidden = true;
+  let k = 0, timer = null;
+  const play = $("#rp-play"), slider = $("#rp-slider");
+  const pause = () => { clearInterval(timer); timer = null; play.innerHTML = rpIcon("play"); play.setAttribute("aria-label", "Play"); };
+  const go = to => {
+    k = Math.max(0, Math.min(n, to));
+    const st = steps[k];
+    const upto = history.slice(0, r.skipped + k);
+    $("#wk-map").innerHTML = weekMap(graphModel(g, {done: new Set(st.done), now: st.next}), st.next,
+      latestMarks(upto), new Map(), t);
+    bindViz($("#wk-map"), null);
+    slider.value = k;
+    $("#rp-count").textContent = `Step ${k} of ${n}`;
+    $("#rp-said").textContent = said(k);
+    if(k === n) pause();
+  };
+  box.querySelectorAll("[data-rp]").forEach(b => b.onclick = () => {
+    const a = b.dataset.rp;
+    if(a !== "play") pause();
+    if(a === "first") go(0);
+    if(a === "back") go(k - 1);
+    if(a === "fwd") go(k + 1);
+    if(a === "last") go(n);
+    if(a === "play"){
+      if(timer){ pause(); return; }
+      if(k === n) go(0);
+      play.innerHTML = rpIcon("pause"); play.setAttribute("aria-label", "Pause");
+      timer = setInterval(() => go(k + 1), 1300);
+    }
+  });
+  slider.oninput = () => { pause(); go(+slider.value); };
+  $("#rp-stop").onclick = () => { pause(); box.hidden = true; box.innerHTML = ""; start.hidden = false; start.disabled = false; restore(); };
+  go(0);
+  $("#replay").scrollIntoView({block: "start"});
 }
 
 /* A record of what actually happened: weeks finished, marks entered, dates. Not a

@@ -84,6 +84,7 @@ def load() -> None:
         service = loaded
         print(f"loaded {loaded.checkpoint}, {loaded.graph.n_concepts} concepts, "
               f"in {time.perf_counter() - start:.1f}s")
+        loaded.demo()                     # the visitors' example, ready before anyone asks
 
     threading.Thread(target=warm, name="warm-model", daemon=True).start()
 
@@ -133,11 +134,12 @@ class RateLimit:
 
 
 # What each limit protects: sign-up from account spam, the What-if from tying up the
-# model, self-check marking from answer guessing by script, class codes from guessing
+# model, the replay from being run in a loop, self-check marking from answer guessing by script, class codes from guessing
 # one's way into an adviser's class, and everything else from plain flooding. Sign-in has its own per-username throttle in the store.
 RATE_LIMITS = [
     ("POST", "/api/auth/register", RateLimit(5, 3600), "too many new accounts from here, try again in an hour"),
     ("GET", "/api/me/what-if", RateLimit(20, 60), "too many what-if checks in a minute, wait a moment"),
+    ("GET", "/api/me/replay", RateLimit(10, 60), "too many replays in a minute, wait a moment"),
     ("POST", "/api/selfcheck", RateLimit(30, 60), "too many self-checks in a minute, wait a moment"),
     ("POST", "/api/me/advisers", RateLimit(10, 3600), "too many class codes tried, try again in an hour"),
     ("*", "/api/", RateLimit(300, 60), "too many requests, wait a moment"),
@@ -518,6 +520,24 @@ def my_what_if(weeks: str, elpr_session: str | None = Cookie(None)) -> dict:
         return s.what_if(user, _overrides(weeks))
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/me/replay")
+def my_replay(elpr_session: str | None = Cookie(None)) -> dict:
+    """The student's record played back entry by entry: what was recorded, and how the
+    path moved. Read only; nothing is written or logged."""
+    user = _require(elpr_session)
+    if user.role != "student":
+        raise HTTPException(400, "advisers have no learning record of their own")
+    _own_course(user)
+    return _service().replay(user)
+
+
+@app.get("/api/demo")
+def demo() -> dict:
+    """A real, anonymised learner from the research data, for visitors to see what the
+    model does before they make an account. Public, and the same for everyone."""
+    return _service().demo()
 
 
 @app.get("/api/students/{student}/path")

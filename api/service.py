@@ -343,6 +343,64 @@ class Service:
             "next_before": nxt(done), "next_after": nxt(done_after),
         }
 
+    REPLAY_MAX = 60
+
+    def replay(self, user: User) -> dict:
+        """The student's own record played back one entry at a time.
+
+        Step 0 is before anything was recorded. Each later step adds one entry and gives
+        the weeks done just after it, by the same rule as the path, and the week next in
+        course order. The model's raw figures are left out on purpose: for a student's
+        own record they sit near zero for most weeks, and a replay of "1% to 3%" would
+        tell a student nothing true about how they are doing. Read only. Only the latest
+        REPLAY_MAX entries are replayed; anything earlier is in place at step 0."""
+        weeks = [n["concept"] for n in self.module_graph(user.module)["nodes"]]
+        events = self.store.events(user.id)
+        start = max(0, len(events) - self.REPLAY_MAX)
+        finished: dict[int, bool] = {}
+
+        def record(e: dict) -> None:
+            concept = int(e["concept_id"])
+            finished.pop(concept, None)
+            finished[concept] = e["kind"] == "study" or bool(e["correct"])
+
+        def snapshot(entry: dict | None) -> dict:
+            done = [c for c in weeks if finished.get(c)]
+            return {
+                "entry": None if entry is None else {
+                    "concept_id": int(entry["concept_id"]), "kind": entry["kind"],
+                    "correct": entry["correct"], "score": entry["score"],
+                    "created_at": entry["created_at"]},
+                "done": done,
+                "next": next((c for c in weeks if c not in set(done)), None),
+            }
+
+        for e in events[:start]:
+            record(e)
+        steps = [snapshot(None)]
+        for e in events[start:]:
+            record(e)
+            steps.append(snapshot(e))
+        return {"module": user.module, "n_events": len(events), "skipped": start, "steps": steps}
+
+    # A real learner from the Open University dataset, anonymised by its authors, shown to
+    # visitors who have no record of their own. Halfway through the course is where a
+    # next step means the most; at the end there is nothing left to choose.
+    DEMO_LEARNER = 599577
+    DEMO_UPTO = 0.5
+
+    def demo(self) -> dict:
+        """The model's path and week-by-week estimate for the demo learner, cached:
+        the record is fixed research data, so the answer never changes."""
+        if getattr(self, "_demo", None) is None:
+            def make(overrides):
+                row, state = self.state_for(self.DEMO_LEARNER, None, self.DEMO_UPTO, overrides)
+                return row.code_module, state
+            self._demo = {"upto": self.DEMO_UPTO,
+                          "path": self.learning_path(make, 5),
+                          "mastery": self.mastery_for(self.DEMO_LEARNER, None, self.DEMO_UPTO)}
+        return self._demo
+
     def done_concepts(self, user: User) -> tuple:
         """Weeks the student has finished, oldest first: studied or passed, unless the
         latest record for that week says they found it hard."""

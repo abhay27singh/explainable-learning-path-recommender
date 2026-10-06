@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 289 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
+`make test` runs 297 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
 `HOW_TO_RUN.txt` has the start and stop steps in plain words.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
@@ -204,6 +204,26 @@ calendar, and the right column fixed like My learning's. The weekly summary from
 `progress_for` no longer says "It fell ..." with nothing for "it" to mean, or "You passed
 0 tests". The school Progress page lost its tile row for a sentence, and no rail shows
 numbers any more (`railcourse` is gone).
+
+**Four ideas taken from a reference site (cs-visualizer.com).**
+- *Replay how you got here* on Progress: first, back, play, forward, last and a slider
+  step through the student's own record (`/api/me/replay`, `Service.replay`, latest 60
+  entries), redrawing the week map after each entry with one sentence about it. It shows
+  what was recorded and how the path moved, never the model's raw figures: for a
+  student's own record those sit near zero for most weeks (about 1 to 5 percent), which is
+  also why the week map's tooltip now gives the level, not "Model: 1% chance".
+- *See a real path* (`#/try`, public): the model's path and week strip for one real,
+  anonymised OULAD learner halfway through their course (`Service.demo`, learner 599577,
+  computed once, warmed at startup). It says it is the model's own ranking and how a
+  student's own path differs. `pathList` for advisers now says "The model's next N choices,
+  best first" instead of the wrong "in course order".
+- *Real screens beside the words* on the home page: that learner's next step and a real
+  course card, each labelled for what it is.
+- *A section bar* on Privacy, Terms and Education policies: it stays under the header
+  (whose height it measures, as the phone header wraps), lists the page's headings and
+  marks the one being read.
+Not taken: hover-only content (phones have no hover), scroll-triggered panels (against the
+house rules), developer-style `// LABELS`, "coming soon" badges.
 
 **Updates reach open tabs.** Moving between pages never reloads `index.html`, so a tab
 left open kept running its first copy after an update. `/api/version` reports when the
@@ -499,7 +519,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         289 tests
+tests/         297 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability
