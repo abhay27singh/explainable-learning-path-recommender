@@ -10,7 +10,7 @@ tasks. This file is only the short version.
 ## What this project is
 
 An explainable learning-path recommender over the OULAD dataset (the research, written up
-in `paper/`) plus a web application for Indian students: the ladder from class 10 to
+in `paper/`) plus GyanGraph, a web application for Indian students: the ladder from class 10 to
 postgraduate, a week-by-week course path, entrance exam revision plans (JEE, NEET, CUET),
 and a rule-based Course Finder covering 64 academic and skill courses. The paper's results
 stay on an admin-only Research page as validation. Product features are never added to the
@@ -19,8 +19,9 @@ paper.
 ## Commands
 
 ```bash
-make test                                   # 240 tests, pytest
+make test                                   # 248 tests, pytest
 make api                                    # http://localhost:8420
+make stop                                   # stops whatever is listening on 8420
 .venv/bin/python -m pytest tests/test_stages.py -q
 .venv/bin/python scripts/08_admin.py create <username>
 ```

@@ -1,0 +1,99 @@
+GyanGraph: how to start and stop the website from the terminal
+================================================================
+
+Every command below runs from the project folder. Open Terminal and go there first:
+
+    cd "/Users/abhay/Desktop/AI Based Personalized Leraning System"
+
+
+START
+-----
+
+    make api
+
+Then open http://localhost:8420 in a browser.
+
+Leave that Terminal window open. The site runs for as long as the command does. While it
+runs, saving a change to the code restarts the server by itself.
+
+
+STOP
+----
+
+Press Ctrl+C in the Terminal window where the site is running.
+
+If that window was closed, or a start fails with "address already in use", stop it from
+any Terminal window in the project folder:
+
+    make stop
+
+It prints "Stopped the server on port 8420." or "Nothing is running on port 8420."
+
+
+RESTART
+-------
+
+Stop it (Ctrl+C or make stop), then start it again with make api.
+
+
+CHECK WHETHER IT IS RUNNING
+---------------------------
+
+    lsof -i tcp:8420 -sTCP:LISTEN
+
+No output means nothing is running.
+
+
+A SECOND COPY ON ANOTHER PORT
+-----------------------------
+
+Only one copy can use port 8420. To run a second one, give it another port, and stop it
+the same way:
+
+    make api PORT=8421
+    make stop PORT=8421
+
+
+RUN THE TESTS
+-------------
+
+    make test
+
+All tests should pass before any change is committed.
+
+
+ADMIN ACCOUNT
+-------------
+
+Admins can only be made from the terminal. The password is typed at a hidden prompt, so
+it is never shown on screen or saved in a file:
+
+    .venv/bin/python scripts/08_admin.py create <username>
+
+
+BACK UP THE ACCOUNTS
+--------------------
+
+    .venv/bin/python scripts/11_backup.py
+
+The copy goes to data/backups/. Never commit data/app.db or the backups: they hold real
+accounts.
+
+
+FIRST TIME ON A NEW COMPUTER
+----------------------------
+
+This computer is already set up. On a fresh copy of the project, follow "Quick start" in
+README.md once: it installs Python packages (make install) and rebuilds the data from the
+OULAD download. After that, make api is all you need.
+
+
+GOING LIVE
+----------
+
+On the server, behind HTTPS, with your own address:
+
+    ELPR_SITE_URL=https://your-domain.in make serve
+
+Stop it with Ctrl+C or make stop, the same as above. "Going live" in README.md has the
+rest.

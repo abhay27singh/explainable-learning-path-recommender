@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Learning Path Recommender</title>
+<title>GyanGraph</title>
 <meta name="description" content="A free weekly study path for students in India, from class 10 to postgraduate. It says what to study next and why, with a Course Finder for 64 courses and revision plans for JEE Main, NEET UG and CUET UG." />
 <meta name="theme-color" content="#F3F9FE" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#0A1526" media="(prefers-color-scheme: dark)" />
 <link rel="canonical" href="{{BASE_URL}}/" />
 <meta property="og:type" content="website" />
-<meta property="og:site_name" content="Learning Path Recommender" />
-<meta property="og:title" content="Learning Path Recommender" />
+<meta property="og:site_name" content="GyanGraph" />
+<meta property="og:title" content="GyanGraph" />
 <meta property="og:description" content="Your next week of study, and why it comes next. For students in India, from class 10 to postgraduate. Free." />
 <meta property="og:url" content="{{BASE_URL}}/" />
 <meta property="og:image" content="{{BASE_URL}}/static/icons/share.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Learning Path Recommender: your next week of study, and why it comes next." />
+<meta property="og:image:alt" content="GyanGraph: your next week of study, and why it comes next." />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230369A1'/%3E%3Cpath d='M7 24 L16 16 L25 8' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='7' cy='24' r='3.2' fill='white'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='white'/%3E%3Ccircle cx='25' cy='8' r='3.2' fill='white'/%3E%3C/svg%3E" />
@@ -521,6 +521,7 @@
   .legal h2{margin:0 0 4px;font-size:26px}
   .legal h3{margin:22px 0 6px;font-size:16px}
   .legal p{margin:0 0 10px;color:var(--ink-soft);max-width:68ch}
+  .legal p.src{font-size:13px;color:var(--ink-faint)}
   /* ================= Liquid glass =================
      One layer over everything above, so every page and every role gets it at once.
      Panels are translucent and blur what is behind them; a pane inside a pane gets a
@@ -677,15 +678,17 @@
        header keeps to one row: the name, the theme switch and the main action. */
     header.site nav.links{display:none}
     body:not(.signed-in) header.site .right .btn.ghost{display:none}
-  }
-  @media(max-width:520px){
-    /* The home page's own "Get started" and the bar's "Sign in" cover it on a small phone. */
-    body:not(.signed-in) header.site .right .btn.primary{display:none}
+    /* Regression: these sat in the 520px block below while the bar shows up to 860px, so
+       on a tablet the icons drew unsized and filled black, each the width of the screen. */
     .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:0;border-radius:10px;
       background:none;box-shadow:none;color:var(--ink-faint);font-size:11px;font-weight:600}
     .tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
     .tab.on{color:var(--accent);background:var(--accent-soft)}
     #toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  }
+  @media(max-width:520px){
+    /* The home page's own "Get started" and the bar's "Sign in" cover it on a small phone. */
+    body:not(.signed-in) header.site .right .btn.primary{display:none}
   }
   /* ---------------- header, arranged like the Navigator screens ----------------
      Brand, where you are, the four places, search, then theme and who you are. */
@@ -1082,7 +1085,7 @@
   <div class="in">
     <a class="brand" data-go="home" href="#/home">
       <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0369A1"/><path d="M7 24 L16 16 L25 8" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="7" cy="24" r="3.2" fill="#fff"/><circle cx="16" cy="16" r="3.2" fill="#fff"/><circle cx="25" cy="8" r="3.2" fill="#fff"/></svg>
-      <span class="brand-txt">Learning Path Recommender</span>
+      <span class="brand-txt">GyanGraph</span>
     </a>
     <button type="button" class="ctx auth-only" id="ctx" data-details="1" title="Change this under My details" hidden>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5Z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg>
@@ -1276,6 +1279,68 @@
     <p>Ask the maintainer, or an admin, to delete your account. Deleting it removes everything listed above that belongs to it, at once: study history, quiz marks, self-check results, saved courses, background details and the activity log.</p>
     <h3>Automated decisions</h3>
     <p>Recommendations are advisory. They carry no weight in any assessment, grade, admission or progression decision, and they are not used for anything beyond showing you what to study next.</p>
+    <h3>Indian data protection law</h3>
+    <p>Personal data here is handled under the Digital Personal Data Protection Act, 2023. The site asks only for what is listed above, uses it only as this page describes, and deletes it when you ask.</p>
+    <p>The Digital Personal Data Protection Rules, 2025 add a duty that starts on 13 May 2027: a parent's verifiable consent before handling the personal data of anyone under 18. This site does not have that step yet, and it is required by that date.</p>
+    <p class="src">Source: <a href="https://static.pib.gov.in/WriteReadData/specificdocs/documents/2025/nov/doc20251117695301.pdf" target="_blank" rel="noopener">DPDP Rules, 2025, as published by the Press Information Bureau</a>.
+      The education rules the site follows are on a page of their own: <a href="#/policies" data-go="policies">Education policies</a>.</p>
+  </div>
+</div>
+
+<div class="view" id="view-policies">
+  <div class="page legal">
+    <h2>Education policies we follow</h2>
+    <p class="caption">Last checked 6 October 2026. These rules change from year to year, and the official notice always comes first.</p>
+    <p>The Course Finder, Explore and the entrance exam plans follow the national rules below. They are rule-based: each rule is applied as published, and the model plays no part. Where a rule leaves the choice to each university, board or council, the page says so instead of guessing.</p>
+
+    <h3>National Education Policy 2020</h3>
+    <p>Academic and vocational study are no longer kept apart, so the 16 skill courses sit beside school and degrees, to be taken alongside them rather than instead of them. Degrees on the four-year undergraduate programme show what you leave with after each year.</p>
+    <p class="src">Source: <a href="https://www.education.gov.in/" target="_blank" rel="noopener">Ministry of Education</a></p>
+
+    <h3>Four-year undergraduate degrees</h3>
+    <p>These follow UGC's Curriculum and Credit Framework for Undergraduate Programmes. Ten courses (B.A., B.Sc., B.Com., BBA and BCA) show every exit point: a UG certificate after one year (40 credits), a UG diploma after two years (80 credits), a bachelor's degree after three years (120 credits), and after four years (160 credits) a bachelor's degree with honours, or honours with research for students with 75 percent or more in the first six semesters.</p>
+    <p>Leaving after the first or second year also needs a short vocational course in the summer. A student who leaves can come back within three years and must finish within seven. Credits are kept in the Academic Bank of Credits.</p>
+    <p>B.Tech, MBBS, B.Arch, B.Pharm and law degrees answer to their own councils (AICTE, NMC, COA, PCI and BCI) and do not show these exits.</p>
+    <p class="src">Sources: <a href="https://www.ugc.gov.in/pdfnews/7193743_FYUGP.pdf" target="_blank" rel="noopener">UGC undergraduate framework</a>,
+      <a href="https://www.abc.gov.in/" target="_blank" rel="noopener">Academic Bank of Credits</a></p>
+
+    <h3>Master's degrees</h3>
+    <p>These follow UGC's Curriculum and Credit Framework for Postgraduate Programmes: two years after a three-year bachelor's degree, or one year after a four-year honours degree. M.A., M.Sc., M.Com. and MJMC courses show both lengths. M.Tech, MCA and MBA follow AICTE and are shown at two years. The LLB follows the Bar Council of India and takes three years.</p>
+    <p class="src">Source: <a href="https://www.ugc.gov.in/pdfnews/4682468_Curriculum-and-Credit-Framework-for-Postgraduate-Programmes.pdf" target="_blank" rel="noopener">UGC postgraduate framework</a></p>
+
+    <h3>Teacher education</h3>
+    <p>These follow NCTE. The B.Ed is shown as two years, or one year from 2026-27 for students with a four-year bachelor's degree or a master's. NCTE moves the four-year B.El.Ed to the Integrated Teacher Education Programme (ITEP) from 2026-27, so the Course Finder lists ITEP instead: a B.A., B.Sc. or B.Com. together with a B.Ed in four years, entered through NCET, which NTA conducts.</p>
+    <p>Both changes come from NCTE's Regulations 2025, which were first published as a draft. Check with the college before you apply.</p>
+    <p class="src">Sources: <a href="https://ncte.gov.in/" target="_blank" rel="noopener">NCTE</a>,
+      <a href="https://exams.nta.nic.in/ncet/" target="_blank" rel="noopener">NCET at NTA</a></p>
+
+    <h3>NEET UG</h3>
+    <p>The revision plan follows the syllabus the National Medical Commission set for NEET UG 2026: 20 Physics units, 20 Chemistry units and 10 Biology units. In the exam, Biology is half the paper and is set as two sections, Botany and Zoology. NTA conducts the exam.</p>
+    <p class="src">Sources: <a href="https://www.nmc.org.in/" target="_blank" rel="noopener">National Medical Commission</a>,
+      <a href="https://neet.nta.nic.in/" target="_blank" rel="noopener">NEET UG at NTA</a></p>
+
+    <h3>JEE Main</h3>
+    <p>The revision plan covers Paper 1, the engineering paper, and follows NTA's syllabus, unchanged for 2026: 20 Physics units, 20 Chemistry units and 14 Mathematics units.</p>
+    <p class="src">Source: <a href="https://jeemain.nta.nic.in/" target="_blank" rel="noopener">JEE Main at NTA</a></p>
+
+    <h3>CUET UG</h3>
+    <p>Under NTA's rules since 2025, you choose up to five subjects in all, languages and the General Aptitude Test included, and they need not match your class 12 subjects. Each university decides which subjects it accepts. Delhi University counts only subjects studied in class 12, so the plan starts from your class 12 subjects.</p>
+    <p class="src">Source: <a href="https://cuet.nta.nic.in/" target="_blank" rel="noopener">CUET UG at NTA</a></p>
+
+    <h3>Skill courses</h3>
+    <p>The 16 skill courses follow the National Skills Qualifications Framework (NSQF), which NCVET oversees. Four are ITI trades, certified by NCVT or a state council (SCVT). Twelve are short job-role courses built on a qualification pack from the relevant Sector Skill Council.</p>
+    <p class="src">Source: <a href="https://ncvet.gov.in/" target="_blank" rel="noopener">NCVET</a></p>
+
+    <h3>School subjects and study links</h3>
+    <p>Class 12 subject combinations follow common CBSE patterns, and state boards and schools may differ. For class 10, class 12 and the entrance exams, study links go to NCERT, Khan Academy and YouTube, because NPTEL and SWAYAM carry university courses.</p>
+    <p class="src">Sources: <a href="https://ncert.nic.in/" target="_blank" rel="noopener">NCERT</a>,
+      <a href="https://www.cbse.gov.in/" target="_blank" rel="noopener">CBSE</a></p>
+
+    <h3>What this site never states</h3>
+    <p>No exam date, cut-off or rank appears anywhere on the site. Those change every year and come only from the body that conducts the exam. Eligibility shown is the common national pattern, and each institution's own admission rules come first.</p>
+
+    <h3>Your personal data</h3>
+    <p>Personal data is covered by the Digital Personal Data Protection Act, 2023. The <a href="#/privacy" data-go="privacy">privacy policy</a> says what is stored and what that law asks of this site.</p>
   </div>
 </div>
 
@@ -1290,7 +1355,7 @@
     <h3>The weekly path</h3>
     <p>The model predicts the chance of completing each week successfully, which is driven substantially by engagement rather than by understanding. It learned from historical data at one university and may be wrong for any given student. It is not academic advice and is no substitute for a teacher or adviser.</p>
     <h3>The Course Finder and entrance exams</h3>
-    <p>The Course Finder is rule-based, not the model. It describes common eligibility patterns, which vary by institution and change from year to year. Exam pages give the published outline of each syllabus and a revision plan; they state no dates, cut-offs or ranks, and the official notice from the conducting body always takes precedence. Self-check questions are written for revision and are not past papers.</p>
+    <p>The Course Finder is rule-based, not the model. It describes common eligibility patterns, which vary by institution and change from year to year. Exam pages give the published outline of each syllabus and a revision plan; they state no dates, cut-offs or ranks, and the official notice from the conducting body always takes precedence. The rules they follow, and where each comes from, are listed under <a href="#/policies" data-go="policies">Education policies</a>. Self-check questions are written for revision and are not past papers.</p>
     <h3>Availability and warranty</h3>
     <p>The site is provided as is, without warranty of any kind. It may be taken offline, reset or changed at any time, and stored accounts and study history may be cleared without notice.</p>
     <h3>Licensing and attribution</h3>
@@ -1304,17 +1369,18 @@
 <footer class="site">
   <div class="in">
     <div>
-      <a href="#/home" class="brand" data-go="home">Learning Path Recommender</a>
+      <a href="#/home" class="brand" data-go="home">GyanGraph</a>
       <p>An independent project for students in India. Every recommendation is free to use
         and comes with a clear explanation.</p>
     </div>
     <div class="cols">
       <div><h4>Product</h4><a href="#/finder" data-go="finder">Course Finder</a><a href="#/explore" data-go="explore">Explore courses</a><a href="#/signup" data-go="signup" class="guest-only">Get started</a><a href="#/dashboard" data-go="dashboard" class="auth-only">My learning</a></div>
       <div><h4>Legal</h4><a href="#/privacy" data-go="privacy">Privacy</a><a href="#/terms" data-go="terms">Terms</a>
+        <a href="#/policies" data-go="policies">Education policies</a>
         <a href="https://github.com/abhay27singh/explainable-learning-path-recommender/issues" target="_blank" rel="noopener">Contact</a></div>
     </div>
   </div>
-  <div class="in foot-note"><span>&copy; <span id="foot-year">2026</span> Learning Path Recommender. An independent student project.</span></div>
+  <div class="in foot-note"><span>&copy; <span id="foot-year">2026</span> GyanGraph. An independent student project.</span></div>
 </footer>
 
 <script>
@@ -1387,13 +1453,13 @@ window.matchMedia("(prefers-color-scheme: dark)")
   .addEventListener("change", () => { if(!readTheme()) applyTheme(null); });
 
 /* ---------------- routing ---------------- */
-const PUBLIC = new Set(["home","login","signup","finder","privacy","terms","notfound"]);
+const PUBLIC = new Set(["home","login","signup","finder","privacy","terms","policies","notfound"]);
 // The tab title names the page, so a student with several tabs open can tell them apart.
 const PAGE_TITLES = {home: "", login: "Sign in", signup: "Create your account", finder: "Course Finder",
   explore: "Explore courses", dashboard: "My learning", details: "My details", progress: "Progress",
   record: "Record of study", research: "Research results", admin: "Accounts", privacy: "Privacy policy",
-  terms: "Terms and conditions", notfound: "Page not found"};
-const SITE_NAME = "Learning Path Recommender";
+  terms: "Terms and conditions", policies: "Education policies", notfound: "Page not found"};
+const SITE_NAME = "GyanGraph";
 function nav(name){
   if(location.hash === "#/" + name) show(name); else location.hash = "/" + name;
 }
@@ -2318,7 +2384,7 @@ async function showLadder(){
       ${plan.now.optional.length ? `<details class="working" style="margin-top:10px">
         <summary>Optional subjects schools also offer</summary>${subjectList(plan.now.optional)}</details>` : ""}
     </div>` : ""}
-    <p class="caption" style="margin:14px 0 0">${esc(finderOptions.method)}. ${esc(finderOptions.note)}</p>
+    <p class="caption" style="margin:14px 0 0">${esc(finderOptions.method)}. ${esc(finderOptions.note)} <a href="#/policies" data-go="policies">The rules it follows</a>.</p>
     ${signupCta() ? `<div style="margin-top:12px">${signupCta()}</div>` : ""}`;
   for(const box of [el2, $("#finder-match")]){
     bindSave(box);
@@ -2455,7 +2521,7 @@ async function showExplore(level){
     <div class="ex-active" id="ex-active"></div>
     <p class="caption" id="ex-count" style="margin:0 0 10px"></p>
     <div id="ex-list"></div>
-    <p class="caption" style="margin:14px 0 0">${esc(x.method)}. ${esc(x.note)}</p>
+    <p class="caption" style="margin:14px 0 0">${esc(x.method)}. ${esc(x.note)} <a href="#/policies" data-go="policies">The rules it follows</a>.</p>
     <div style="margin-top:12px">${signupCta()}</div>
     <div class="cmp-tray" id="cmp-tray" hidden></div>`;
   $("#ex-filter").oninput = e => { exploreState.q = e.target.value; exploreState.detail = null; exploreState.view = "list"; drawExplore(); };

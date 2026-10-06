@@ -1,7 +1,7 @@
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: venv install data graph sequences test clean stage0 api serve
+.PHONY: venv install data graph sequences test clean stage0 api serve stop
 
 venv:
 	/opt/homebrew/bin/python3.11 -m venv .venv || /usr/local/bin/python3.11 -m venv .venv
@@ -33,8 +33,16 @@ clean:
 	rm -rf data/oulad.duckdb data/processed/* artifacts/graph/* results/*.json
 
 ## Demo ------------------------------------------------------------------
+PORT ?= 8420
+
 api:
-	$(PY) -m uvicorn api.main:app --port 8420 --reload
+	$(PY) -m uvicorn api.main:app --port $(PORT) --reload
+
+# Stops whatever is serving on the port, for when the terminal that started it is gone.
+stop:
+	@pids=$$(lsof -ti tcp:$(PORT) -sTCP:LISTEN); \
+	if [ -n "$$pids" ]; then kill $$pids && echo "Stopped the server on port $(PORT)."; \
+	else echo "Nothing is running on port $(PORT)."; fi
 
 # Production: no auto-reload, behind a reverse proxy that terminates HTTPS on this
 # machine. Set ELPR_SITE_URL to the public address first, for example

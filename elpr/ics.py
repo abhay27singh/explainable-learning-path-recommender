@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 
-PRODID = "-//Learning Path Recommender//Study plan//EN"
+PRODID = "-//GyanGraph//Study plan//EN"
 # RFC 5545 counts a line as at most 75 octets; longer ones are folded with CRLF + space.
 LINE_LIMIT = 75
 

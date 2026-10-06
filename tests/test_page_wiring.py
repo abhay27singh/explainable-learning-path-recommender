@@ -64,3 +64,25 @@ def test_an_open_tab_can_tell_the_page_has_changed():
     first = main.page_version(Response())["version"]
     assert first and first == main.page_version(Response())["version"]
     assert "pageChanged()" in SCRIPT and "location.reload()" in SCRIPT
+
+
+def media_block_holding(css: str, needle: str) -> str:
+    """The whole @media block that contains needle, found by matching braces."""
+    at = css.index(needle)
+    start = css.rindex("@media", 0, at)
+    depth, i = 0, css.index("{", start)
+    while True:
+        depth += {"{": 1, "}": -1}.get(css[i], 0)
+        if depth == 0:
+            return css[start:i + 1]
+        i += 1
+
+
+def test_the_tab_bar_is_styled_at_every_width_it_shows():
+    """Regression: the bar showed up to 860px but its button and icon styles sat in the
+    520px block, so between the two (a tablet, a narrow laptop window) every icon drew
+    unsized and filled black, as wide as a quarter of the screen."""
+    css = re.search(r"<style>(.*?)</style>", PAGE, re.S).group(1)
+    shown = media_block_holding(css, ".tabbar:not([hidden]){display:grid")
+    for rule in (".tab{", ".tab svg{", ".tab.on{"):
+        assert rule in shown, f"{rule} must apply wherever the tab bar shows"

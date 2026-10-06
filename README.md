@@ -125,7 +125,7 @@ for an intervention system, but it is not the same claim as measuring understand
 
 ## Quick start
 
-The website runs from a fresh clone without retraining: the one trained model it loads,
+The website, GyanGraph, runs from a fresh clone without retraining: the one trained model it loads,
 `artifacts/models/kgdkt_proposed_fold0.pt` (1.9 MB), is committed. The dataset is not,
 so the first run downloads it and rebuilds the processed data once.
 
@@ -142,9 +142,12 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 240 tests
+make test                                       # 248 tests
 make api                                        # http://localhost:8420
+make stop                                       # stops it from any terminal
 ```
+
+[`HOW_TO_RUN.txt`](HOW_TO_RUN.txt) has the start and stop steps in plain words.
 
 Accounts live in `data/app.db`, which is created on first start and never committed, so
 every copy starts with no accounts. Students and advisers sign up on the site. An admin

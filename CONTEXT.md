@@ -15,7 +15,7 @@ Two things in one repository, deliberately kept apart:
 1. **The research.** An explainable learning-path recommender over the Open University
    Learning Analytics Dataset (OULAD): knowledge tracing plus a prerequisite-aware
    planner, built for an IEEE paper.
-2. **The product.** A web application for real students who sign up: study levels from
+2. **The product.** GyanGraph, a web application for real students who sign up: study levels from
    class 10 to postgraduate, a week-by-week path through a course, and a rule-based
    Course Finder for Indian diploma, undergraduate and postgraduate courses.
 
@@ -44,7 +44,8 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 240 tests. `make api` serves http://localhost:8420.
+`make test` runs 248 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
+`HOW_TO_RUN.txt` has the start and stop steps in plain words.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -55,7 +56,9 @@ and work is on `main`.
 
 Single FastAPI service (`api/main.py`) plus one page, `web/index.html`, a vanilla-JS
 single-page app with hash routing (`#/home`, `#/login`, `#/signup`, `#/dashboard`,
-`#/progress`, `#/record`, `#/finder`, `#/research`, `#/admin`, `#/privacy`, `#/terms`).
+`#/progress`, `#/record`, `#/finder`, `#/research`, `#/admin`, `#/privacy`, `#/terms`,
+`#/policies`). The site is called GyanGraph (`SITE_NAME`); the repository and the paper keep
+their own names.
 No build step, no framework.
 
 **Roles.** `student`, `adviser`, `admin`. Admins are a superset of advisers. An admin can
@@ -129,7 +132,14 @@ B.Ed states NCTE's one-year option from 2026-27; the B.El.Ed, closed to new stud
 syllabus for 2026 (20, 20 and 10 units, Biology as one subject), JEE Main the unchanged
 NTA syllabus (20, 20, 14), CUET UG the 2025 rules (up to five subjects, chosen freely,
 universities setting their own; the paper is the General Aptitude Test). Check these each
-academic year: NMC, NTA, UGC and NCTE all revise them.
+academic year: NMC, NTA, UGC and NCTE all revise them. The public Education policies page
+(`#/policies`) states each of these with its official source, and
+`tests/test_policies_page.py` fails if its numbers drift from `course_finder.py` or
+`exams.py`, so a syllabus change means editing the page too. NCTE's one-year B.Ed and the
+end of the B.El.Ed come from its Regulations 2025, published as a draft; the page says so.
+The privacy page names the DPDP Act 2023 and states that the DPDP Rules 2025 require a
+parent's verifiable consent for under-18 users from 13 May 2027, which the site does not
+have yet.
 
 **Security and launch hygiene.** `guard` middleware in `api/main.py` applies rate limits
 (`RATE_LIMITS`, in memory, per client address) before the work and security headers
@@ -436,7 +446,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         240 tests
+tests/         248 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability
@@ -484,7 +494,8 @@ Rules the owner has set. They are not negotiable, and they apply to anything use
   ids, and put technical detail behind a "show the working" toggle.
 - **Never commit `data/app.db`**, and never put a real password in a file or a command.
 - **Before launch:** custom domain, favicon (done), no "made with AI" badge, privacy
-  policy (done) and terms page (done).
+  policy (done) and terms page (done). Parent consent for under-18 accounts before
+  13 May 2027 (DPDP Rules 2025).
 - **No custom cursors, and no hiding the real one.**
 - Keep product features clearly separated from the paper: anything not evaluated in the
   paper is labelled on the site and never added to it.

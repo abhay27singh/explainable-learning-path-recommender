@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "web" / "icons"
-NAME = "Learning Path Recommender"
+NAME = "GyanGraph"
 LINE = "Your next week of study, and why it comes next."
 SUB = "For students in India, from class 10 to postgraduate. Free."
 ACCENT, INK, SOFT, GROUND = "#0369A1", "#0F243D", "#536B85", "#F3F9FE"

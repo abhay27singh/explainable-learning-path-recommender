@@ -55,7 +55,7 @@ SITE_URL = os.environ.get("ELPR_SITE_URL", "").rstrip("/")
 API_DOCS = os.environ.get("ELPR_API_DOCS") == "1"
 TRUST_PROXY = os.environ.get("ELPR_TRUST_PROXY") == "1"
 
-app = FastAPI(title="Explainable Learning Path Recommender", version="1.0.0",
+app = FastAPI(title="GyanGraph", version="1.0.0",
               docs_url="/docs" if API_DOCS else None, redoc_url="/redoc" if API_DOCS else None,
               openapi_url="/openapi.json" if API_DOCS else None)
 # The course list is 112 KB of JSON and the page itself 98 KB; both compress to about
@@ -1090,7 +1090,7 @@ def site_base(request: Request) -> str:
 
 
 NOT_FOUND_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found · Learning Path Recommender</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found · GyanGraph</title>
 <meta name="robots" content="noindex"><link rel="icon" href="/favicon.ico">
 <style>:root{color-scheme:light dark;--bg:#F3F9FE;--ink:#0F243D;--soft:#536B85;--accent:#0369A1}
 @media (prefers-color-scheme: dark){:root{--bg:#0A1526;--ink:#F0F6FC;--soft:#C7E3F8;--accent:#38BDF8}}
