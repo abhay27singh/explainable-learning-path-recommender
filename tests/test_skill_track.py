@@ -51,12 +51,23 @@ def test_each_skill_course_says_what_it_is_and_who_awards_it():
         assert d["exits"] == [], "exit points belong to degrees, not skill courses"
 
 
-def test_degrees_carry_the_nep_exit_points():
-    degree = cf.course("btech_cse")
+def test_degrees_on_the_four_year_programme_carry_the_nep_exit_points():
+    degree = cf.course("bsc_maths")
     assert degree["exits"] == list(cf.NEP_UG_EXITS)
     assert "certificate" in degree["exits"][0] and "research" in degree["exits"][-1]
     for other in ("dip_cs", "mba", "iti_fitter"):
         assert cf.course(other)["exits"] == []
+
+
+def test_professional_degrees_do_not_claim_the_nep_exits():
+    """Regression: every undergraduate course listed "Leave after 3 years: bachelor's
+    degree", so the MBBS page told students they could walk away with a degree after
+    three years of a five and a half year course. Only UGC's four-year programme works
+    that way."""
+    for key in ("btech_cse", "mbbs", "barch", "bpharm", "ba_llb", "beled", "bsc_hha"):
+        assert cf.course(key)["exits"] == [], key
+    for key in cf.NEP_EXIT_DEGREES:
+        assert "4 with honours under NEP 2020" in cf.course(key)["duration"], key
 
 
 def test_the_skill_path_is_labelled_as_nsqf_and_not_a_replacement_for_school():

@@ -207,3 +207,50 @@ def test_courses_open_to_any_engineer_stay_open_to_every_branch():
     for key in ("mca", "msc_ds"):
         assert cf.OTHER_ENGINEERING <= cf._BY_KEY[key].degrees, key
     assert not cf._BY_KEY["mtech_mech"].eligible([], "btech_civil"), "a branch is not interchangeable"
+
+
+def test_every_undergraduate_course_says_which_degree_it_grants():
+    """"Where this leads" on a course page depends on it. A course missing from GRANTS
+    would silently lead nowhere; a degree that does not exist would match nothing."""
+    ug = {c.key for c in cf.COURSES if c.level == "ug"}
+    assert set(cf.GRANTS) == ug
+    assert all(d is None or d in cf.DEGREES for d in cf.GRANTS.values())
+
+
+def test_a_degree_leads_to_the_postgraduate_courses_its_rules_allow():
+    cse = {x["key"] for x in cf.leads_to("btech_cse")}
+    assert {"mtech_cse", "mca", "msc_ds", "mba"} <= cse
+    assert "mtech_mech" not in cse and "msc_biotech" not in cse
+    bcom = {x["key"] for x in cf.leads_to("bcom")}
+    assert {"mcom", "ma_econ", "mca", "mba"} <= bcom and "mtech_cse" not in bcom
+    # with no rule naming the degree, only the courses open to any graduate remain
+    assert all(x["open_to_any"] for x in cf.leads_to("barch"))
+    assert cf.leads_to("mba") == [] and cf.leads_to("skill_retail") == []
+
+
+def test_a_bed_needs_the_degrees_ncte_names():
+    """Regression: B.Ed was open to any degree, so the MBBS and B.Arch pages offered it
+    as a next step. NCTE names science, social science, humanities and engineering."""
+    bed = cf._BY_KEY["bed"]
+    assert bed.degrees is not None
+    assert {"bsc_maths", "ba_english", "btech_mech"} <= bed.degrees
+    assert not {"bpharm", "bba", "bca"} & bed.degrees
+    assert "bed" not in {x["key"] for x in cf.leads_to("mbbs")}
+    assert "bed" in {x["key"] for x in cf.leads_to("ba_econ")}
+
+
+def test_every_course_length_falls_in_a_band():
+    for c in cf.COURSES:
+        assert cf.duration_band(c.duration) in cf.DURATION_BANDS, (c.key, c.duration)
+    assert cf.duration_band("3 to 6 months") == "under_1"
+    assert cf.duration_band("1 to 3 years, depending on the institute") == "1_2"
+    assert cf.duration_band("3 years (4 with honours under NEP 2020)") == "3"
+    assert cf.duration_band("5.5 years including a one-year internship") == "4_plus"
+
+
+def test_explore_carries_the_bands_and_the_routes():
+    out = cf.explore()
+    courses = [c for lv in out["levels"] for cat in lv["categories"] for c in cat["courses"]]
+    assert all("duration_band" in c for c in courses)
+    assert all("leads_to" in c for c in courses if c["level"] == "ug")
+    assert [b["value"] for b in out["duration_bands"]] == list(cf.DURATION_BANDS)

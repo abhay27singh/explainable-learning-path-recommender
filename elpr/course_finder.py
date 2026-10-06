@@ -61,6 +61,13 @@ NEP_UG_EXITS: tuple[str, ...] = (
     "Leave after 3 years: bachelor's degree",
     "Finish 4 years: bachelor's degree with research",
 )
+# Only the degrees on UGC's four-year undergraduate programme carry those exits. A B.Tech,
+# MBBS, B.Arch, B.Pharm or law degree answers to its own council, and none of them hands
+# out a bachelor's degree after three years.
+NEP_EXIT_DEGREES: frozenset[str] = frozenset({
+    "bca", "bsc_cs", "bsc_maths", "bsc_physics", "bsc_biotech", "bcom", "bba",
+    "ba_psych", "ba_econ", "ba_english",
+})
 
 # Where a student is now. Students at a course stage are enrolled on a course and get a
 # week-by-week path; school students get Course Finder suggestions for the next level.
@@ -253,7 +260,7 @@ class Course:
             "eligibility": self.eligibility, "track": self.track,
             "track_label": TRACKS[self.track],
             # NEP 2020 lets a degree student leave with a qualification at each year
-            "exits": list(NEP_UG_EXITS) if self.level == "ug" else [],
+            "exits": list(NEP_UG_EXITS) if self.key in NEP_EXIT_DEGREES else [],
             "years": [{"year": label,
                        "subjects": [{"name": s, "links": study_links(s, track=self.track)}
                                     for s in subjects]}
@@ -817,11 +824,16 @@ COURSES: tuple[Course, ...] = (
             ("Year 3", ("Civil Procedure", "Law of Evidence", "Company Law",
              "Moot Court and Internship")))),
     Course("bed", "B.Ed (Bachelor of Education)", "pg", "Education", "2 years", "NCTE norms",
-           "Any bachelor's degree, usually with a minimum percentage", {"teaching": 3, "people": 1},
+           "A bachelor's degree in science, social science or humanities with at least 50 "
+           "percent, or a B.Tech or B.E. with at least 55 percent, under NCTE rules. Many "
+           "states also accept commerce", {"teaching": 3, "people": 1},
            (("Year 1", ("Childhood and Growing Up", "Learning and Teaching",
              "Pedagogy of a School Subject", "Assessment for Learning")),
             ("Year 2", ("Gender, School and Society", "Creating an Inclusive School",
-             "School Internship")))),
+             "School Internship"))),
+           degrees=frozenset({"btech_cs", "bsc_cs", "bsc_maths", "bsc_life", "bcom",
+                              "ba_econ", "ba_psych", "ba_english", "ba_other"})
+           | OTHER_ENGINEERING),
 )
 
 MAX_RESULTS = 6
@@ -980,6 +992,50 @@ def recommend(level: str = "ug", interests: list[str] | None = None, stream: str
     }
 
 
+# The bachelor's degree each undergraduate course leads to, as the postgraduate rules
+# name it. None means the catalogue's postgraduate courses have no rule naming this
+# degree, so only those open to any graduate apply (an MBBS leads to MD and MS, which
+# this catalogue does not carry, and saying otherwise would be inventing a route).
+GRANTS: dict[str, str | None] = {
+    "btech_cse": "btech_cs", "btech_ece": "btech_ece", "btech_mech": "btech_mech",
+    "bca": "bca", "bsc_cs": "bsc_cs", "bsc_maths": "bsc_maths", "bsc_physics": "bsc_maths",
+    "bsc_biotech": "bsc_life", "bpharm": "bpharm", "bcom": "bcom", "bba": "bba",
+    "ba_psych": "ba_psych", "ba_econ": "ba_econ", "ba_english": "ba_english",
+    "barch": None, "mbbs": None, "bjmc": None, "ba_llb": None, "bdes": None,
+    "bsc_hha": None, "beled": None,
+}
+
+
+def leads_to(key: str) -> list[dict]:
+    """Postgraduate courses this undergraduate course qualifies a graduate for, by the
+    same degree rules the Finder applies. Empty for every other level."""
+    course = _BY_KEY.get(key)
+    if course is None:
+        raise KeyError(key)
+    if course.level != "ug":
+        return []
+    degree = GRANTS.get(key)
+    return [{"key": c.key, "name": c.name, "level_label": LEVELS[c.level], "open_to_any": c.degrees is None}
+            for c in COURSES if c.level == "pg" and (c.degrees is None or (degree and degree in c.degrees))]
+
+
+def duration_band(text: str) -> str:
+    """Group a course's stated length for filtering: months only, one to two years,
+    three years, or four and more. Ranges go by their shortest end."""
+    t = (text or "").lower()
+    if "month" in t and "year" not in t:
+        return "under_1"
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:to\s*\d+\s*)?year", t)
+    if not m:
+        return "unknown"
+    n = float(m.group(1))
+    return "1_2" if n < 3 else "3" if n < 4 else "4_plus"
+
+
+DURATION_BANDS = {"under_1": "Under 1 year", "1_2": "1 to 2 years", "3": "3 years",
+                  "4_plus": "4 years or more"}
+
+
 def explore(level: str | None = None) -> dict:
     """Every course, grouped by level and category, with no eligibility filtering.
 
@@ -991,8 +1047,11 @@ def explore(level: str | None = None) -> dict:
     for course in COURSES:
         if level and course.level != level:
             continue
-        groups.setdefault(course.level, {}).setdefault(course.category, []).append(
-            course.to_dict())
+        d = course.to_dict()
+        d["duration_band"] = duration_band(course.duration)
+        if course.level == "ug":
+            d["leads_to"] = leads_to(course.key)
+        groups.setdefault(course.level, {}).setdefault(course.category, []).append(d)
     return {
         "method": METHOD,
         "note": NOTE,
@@ -1001,6 +1060,7 @@ def explore(level: str | None = None) -> dict:
                                    for cat, cs in sorted(groups[lv].items())]}
                    for lv in LEVELS if lv in groups],
         "count": sum(len(cs) for g in groups.values() for cs in g.values()),
+        "duration_bands": [{"value": k, "label": v} for k, v in DURATION_BANDS.items()],
     }
 
 

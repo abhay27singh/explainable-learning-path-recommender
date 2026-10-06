@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 199 tests
+make test                                       # 205 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -206,8 +206,10 @@ of the window, and on a phone the main places sit in a tab bar at the bottom.
 - **Course Finder as a planning form**: where you are (down to the engineering branch or
   degree subject) and what you want next, then what you enjoy. Every match is listed
   beside the questions, closest first; when nothing fits at one level, the matches at
-  the others are offered. Explore is a catalogue with level and subject filters and a page
-  per course.
+  the others are offered. Explore is a catalogue with level, length and subject filters,
+  a "For you" switch for signed-in students, a page per course with where the degree
+  leads and the entrance exam's own revision plan, and a side by side comparison of up to
+  three courses.
 
 *Demonstration-grade authentication: an 8 character password minimum and sign-in
 throttling, but no TLS and no account recovery. Do not reuse a real password.*

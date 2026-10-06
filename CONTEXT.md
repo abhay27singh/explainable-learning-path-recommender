@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 199 tests. `make api` serves http://localhost:8420.
+`make test` runs 205 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -122,12 +122,22 @@ every week plan carries its own length choice. The best-ranked course leads as t
 covers and Strong or Partial, never a percentage. A trip to Explore and back keeps the
 answers; a new rung or signing out clears them.
 
-**Explore.** `#/explore` is a catalogue with its own address: level and subject-area
-filters with real counts, a search across course names and subjects, the six largest
-subject areas as quick filters, removable filter chips, and a page per course (duration,
-how many subjects over how many years, the NEP exit points or the entrance exam named in
-its eligibility, the syllabus with study links, a plan, and other courses in the same
-subject area). Linked from the header, every student rail and both Finder buttons.
+**Explore.** `#/explore` is a catalogue with its own address. The header gives the
+course count and how many are on the skill path. Level, length (`duration_band`) and
+subject-area filters carry real counts; a search card filters course names and subjects,
+with a clear button and the `/` key to jump to it; the skill path and the six largest
+subject areas are quick filters with a tick when on; every filter is a removable chip. A
+signed-in student also gets a "For you" box naming the levels they can go on to (from
+`next_levels`), a switch to show only those, and a "Next for you" flag on those courses.
+A page per course: duration, how many subjects over how many parts, the NEP exit points
+(only for the degrees in `NEP_EXIT_DEGREES`), every entrance exam named in its eligibility,
+the syllabus with study links, a plan, "Where this leads" (`leads_to`: the postgraduate
+courses its degree qualifies for by the Finder's own rules, split into those for this
+degree and those open to any graduate), and other courses in the same area. When the
+named exam is JEE Main or NEET UG, or the degree is one central universities fill through
+CUET UG, the exam's own card sits on the page with its syllabus, plan and self-checks.
+Up to three courses go into a comparison tray and open side by side, every row a field the
+catalogue holds. Linked from the header, every student rail and both Finder buttons.
 
 **Phone.** Below 860px a signed-in user gets a tab bar at the bottom (by role: My
 learning, Progress, Finder, Explore for students; Learners, Finder, and for admins
@@ -159,7 +169,8 @@ and tests all still use the dataset's numbering.
 **Course Finder.** Rule-based, not the model, and labelled as such everywhere it appears.
 64 courses in `elpr/course_finder.py`: 48 academic and 16 NSQF skill courses, which NEP
 2020 treats as an equal track alongside the academic one. Eligibility by class 12 subjects
-or bachelor's degree, interest ranking, an explore-everything view, a saved shortlist, and
+or bachelor's degree (B.Ed follows NCTE: science, social science, humanities, commerce or
+engineering), interest ranking, an explore-everything view, a saved shortlist, and
 a week by week plan (`weekly_plan`) with dates and an iCalendar download. Study links are
 chosen by level: NCERT, Khan Academy and YouTube for school, NPTEL, SWAYAM and YouTube for
 college, Skill India and NSDC for the skill track.
@@ -351,7 +362,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         199 tests
+tests/         205 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

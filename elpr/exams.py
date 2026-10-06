@@ -149,8 +149,8 @@ CUET_UG = Exam(
     leads_to="undergraduate admission at central, state and participating private "
              "universities, including Delhi University, BHU and JNU",
     source="https://exams.nta.ac.in/CUET-UG/",
-    note="Domain papers follow the subjects taken in class 12, so this plan is built from "
-         "the stream chosen above. Universities differ in which papers they ask for, so "
+    note="Domain papers follow the subjects taken in class 12, so they are added once the "
+         "class 12 stream is known. Universities differ in which papers they ask for, so "
          "check the ones being applied to.",
     sections=CUET_COMMON,
 )
