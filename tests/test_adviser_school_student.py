@@ -46,7 +46,9 @@ def test_an_adviser_is_told_a_school_student_has_no_course_path(main):
 def test_a_student_on_a_course_still_gets_their_path(main):
     adviser = _token(main, "meera")
     asha = main.service.store.user_by_username("asha").student_id
-    assert main.mastery(asha, None, 1.0, None, adviser)["module"] == "CCC"
+    record = main.mastery(asha, None, 1.0, None, adviser)
+    assert record["module"] == "CCC"
+    assert record["display_name"] == "Asha", "the adviser page is titled with the name, not the id"
     assert main.learner_path(asha, 5, None, adviser)["steps"]
 
 

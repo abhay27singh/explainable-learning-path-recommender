@@ -851,6 +851,30 @@
     .cmp-tray > *{white-space:nowrap}
     .cmp-tray .caption{display:none}
     .cmp-tray .primary{flex:1;padding:8px 10px;font-size:13px}}
+  /* ---------------- explore filters on a phone ---------------- */
+  .facets-toggle{display:none}
+  @media(max-width:860px){
+    .facets-toggle{display:flex;width:100%;justify-content:space-between;align-items:center;font-weight:600;
+      padding:2px 0;border:0;background:none;box-shadow:none;color:var(--ink)}
+    .facets-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+    .facets-toggle small::after{content:"";display:inline-block;width:7px;height:7px;margin:0 2px 2px 10px;
+      border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+    .facets-wrap.open .facets-toggle small::after{transform:rotate(225deg);margin-bottom:-2px}
+    .facets-toggle small{color:var(--ink-faint);font-weight:500}
+    .facets-wrap:not(.open) .facets{display:none}
+    .facets-wrap.open .facets-toggle{margin-bottom:12px}
+  }
+  /* ---------------- progress from self-checks ---------------- */
+  .sp-head,.sp-sechead{display:flex;justify-content:space-between;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
+  .sp-head h3{margin:0}
+  .sp-bar{display:flex;margin:10px 0 4px}
+  .sp-bar > span{border-radius:0}
+  .sp-bar > span.low{background:var(--warn)}
+  .sp-sec{margin-top:16px}
+  .sp-sechead h4{margin:0;font-size:14px}
+  .sp-list li{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;padding:6px 0}
+  .sp-unit{flex:1 1 180px;min-width:0}
+  .chip.low{background:var(--warn-soft);color:var(--warn)}
 </style>
 </head>
 <body>
@@ -1345,7 +1369,7 @@ function tabsFor(user){
   if(!user) return [];
   if(user.role === "student") return [
     ["dashboard", "My learning", "learning"],
-    ...(user.module ? [["progress", "Progress", "progress"]] : []),
+    ["progress", "Progress", "progress"],
     ["finder", "Finder", "finder"],
     ["explore", "Explore", "explore"],
   ];
@@ -1386,7 +1410,7 @@ function enter(){
   $("#nav-dashboard").textContent = me.role === "student" ? "My learning" : "Learners";
   $("#nav-admin").style.display = me.role === "admin" ? "" : "none";
   $("#nav-research").style.display = me.role === "admin" ? "" : "none";
-  $("#nav-progress").style.display = me.role === "student" && me.module ? "" : "none";
+  $("#nav-progress").style.display = me.role === "student" ? "" : "none";
   renderTabbar();
   fitHeader();
 }
@@ -1817,6 +1841,7 @@ function showMarking(sheet, out, exam, section, unit){
       ${out.saved ? "" : `<button class="small" data-go="signup">Create an account</button>`}
     </div>`;
   sheet.querySelector(".sheet-card").scrollTop = 0;
+  if(out.saved) sheet.dataset.refresh = "progress";
   $("#check-again").onclick = () => openCheck(exam, section, unit);
   if(out.saved){
     loadMyChecks(true).then(() => document.querySelectorAll(".check-btn").forEach(b => {
@@ -2101,7 +2126,8 @@ function finderCourses(out){
    what the catalogue knows: filters with real counts, a search across course names and
    subjects, quick filters, a page per course, and a side-by-side comparison. */
 const freshExplore = () => ({levels: new Set(), cats: new Set(), durs: new Set(), q: "",
-                             detail: null, view: "list", compare: [], forMe: false});
+                             detail: null, view: "list", compare: [], forMe: false, facetsOpen: false});
+const filtersOn = st => st.levels.size + st.cats.size + st.durs.size + (st.forMe ? 1 : 0);
 let exploreState = freshExplore();
 let examAllCache = null;
 const TICK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg>`;
@@ -2182,7 +2208,13 @@ function exploreFacets(x){
   const next = nextLevelsForMe();
   const box = (name, value, text, n, on) => `<label class="facet"><input type="checkbox" name="${name}" value="${esc(value)}"${
     on ? " checked" : ""}><span>${esc(text)}</span><small>${n}</small></label>`;
-  $("#finder-form-wrap").innerHTML = `<div class="facets">
+  // On a phone the filters sit above the courses, so they fold behind one button and the
+  // list starts on the first screen. The chips above the list still show what is on.
+  const nOn = filtersOn(st);
+  $("#finder-form-wrap").innerHTML = `<div class="facets-wrap${st.facetsOpen ? " open" : ""}">
+    <button type="button" class="facets-toggle" id="facets-toggle" aria-expanded="${st.facetsOpen}" aria-controls="facets-body">
+      <span>Filters</span><small>${nOn ? `${nOn} on` : "None on"}</small></button>
+    <div class="facets" id="facets-body">
     ${next.length ? `<div class="foryou"><div class="eyebrow">For you</div>
       <p>You are at <b>${esc(stageLabel(me.stage))}</b>. You can go on to ${joinOr(next.map(l => `<b>${esc(label.get(l) || l)}</b>`))}.</p>
       <label class="switch"><input type="checkbox" id="ex-forme"${st.forMe ? " checked" : ""}>
@@ -2198,8 +2230,13 @@ function exploreFacets(x){
     <h4>Subject area</h4>
     ${[...cats].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([c, n]) =>
       box("cat", c, c, n, st.cats.has(c))).join("")}
-  </div>`;
+  </div></div>`;
   const wrap = $("#finder-form-wrap");
+  $("#facets-toggle").onclick = () => {
+    st.facetsOpen = !st.facetsOpen;
+    wrap.querySelector(".facets-wrap").classList.toggle("open", st.facetsOpen);
+    $("#facets-toggle").setAttribute("aria-expanded", String(st.facetsOpen));
+  };
   const toList = () => { st.detail = null; st.view = "list"; drawExplore(); };
   wrap.querySelectorAll(".facet input").forEach(i => i.onchange = () => {
     const set = i.name === "lvl" ? st.levels : st.cats;
@@ -2215,7 +2252,7 @@ function exploreFacets(x){
   const forme = $("#ex-forme");
   if(forme) forme.onchange = () => { st.forMe = forme.checked; toList(); };
   $("#ex-clear").onclick = () => {
-    exploreState = {...freshExplore(), compare: st.compare};
+    exploreState = {...freshExplore(), compare: st.compare, facetsOpen: st.facetsOpen};
     exploreFacets(x);
     const f = $("#ex-filter"); if(f) f.value = "";
     drawExplore();
@@ -2334,6 +2371,7 @@ function drawExplore(){
   const x = exploreCache, st = exploreState, q = st.q.trim().toLowerCase(), all = allCourses();
   const list = $("#ex-list");
   const x0 = $("#ex-x"); if(x0) x0.hidden = !st.q;
+  const ft = $("#facets-toggle small"); if(ft){ const n = filtersOn(st); ft.textContent = n ? `${n} on` : "None on"; }
   drawTray(all);
   const bindAll = () => {
     list.querySelectorAll(".ex-view").forEach(b => b.onclick = () => { st.detail = b.dataset.key; st.view = "list"; drawExplore(); window.scrollTo(0, 0); });
@@ -2746,7 +2784,12 @@ function weekSheet(step, t, forStudent, position){
 }
 function closeSheet(){
   const sheet = document.getElementById("sheet");
-  if(sheet) sheet.hidden = true;
+  if(!sheet) return;
+  sheet.hidden = true;
+  if(sheet.dataset.refresh === "progress" && location.hash === "#/progress"){
+    delete sheet.dataset.refresh;
+    renderProgress();
+  }
 }
 function bindActions(root){
   root.querySelectorAll(".score-form").forEach(form => form.onsubmit = async e => {
@@ -2917,6 +2960,7 @@ function nextStepsBlock(plan, examList = null){
 function schoolRail(plan, where){
   return railShell(
     `<button class="railitem on" aria-current="page">${RAIL_ICON.learning}<span>My learning</span></button>
+     ${railGo("progress", "Progress", "progress")}
      ${railGo("finder", "Course Finder", "finder")}
      ${railGo("explore", "Explore all courses", "explore")}`,
     `<div>
@@ -3454,15 +3498,89 @@ function scoreChart(history, names){
 }
 
 /* ---------------- progress: its own page, not a tab ---------------- */
+/* A student still at school has no course for the model to follow, so their progress
+   is what they have shown on the self-check questions: the latest result on each unit,
+   counted against the units that have questions. Every figure is a check they took. */
+async function renderSchoolProgress(root){
+  root.innerHTML = `<div class="page">${skeleton()}</div>`;
+  let mine, all, ours;
+  try{
+    [mine, all, ours] = await Promise.all([api("/api/me/selfchecks"), api("/api/exams"),
+      api("/api/exams" + (me.stream ? `?stream=${encodeURIComponent(me.stream)}` : ""))]);
+  }catch(e){ root.innerHTML = `<div class="page"><div class="err">${esc(e.message || e)}</div></div>`; return; }
+  const pass = mine.pass_mark, open = new Set(ours.exams.map(e => e.key));
+  const taken = c => c.score >= pass;
+  // The exams with questions that this student can sit, plus any they checked anyway.
+  const exams = all.exams.filter(e => e.n_checks
+    && (open.has(e.key) || mine.checks.some(c => c.exam === e.key)));
+  const syllabi = await Promise.all(exams.map(e => api(`/api/exams/${encodeURIComponent(e.key)}`).catch(() => null)));
+  const checks = mine.checks.filter(c => exams.some(e => e.key === c.exam));
+  const passing = checks.filter(taken).length;
+  const units = exams.reduce((n, e) => n + e.n_checks, 0);
+  const when = at => new Date(at * 1000).toLocaleDateString(undefined, {day: "numeric", month: "short"});
+  const again = (c, label) => `<button class="small check-btn" type="button" data-exam="${esc(c.exam)}"
+      data-section="${esc(c.section)}" data-unit="${esc(c.unit)}">${label}</button>`;
+  const examBlock = (e, syl) => {
+    const mineHere = checks.filter(c => c.exam === e.key);
+    const got = new Map(mineHere.map(c => [`${c.section}|${c.unit}`, c]));
+    const ok = mineHere.filter(taken).length, low = mineHere.length - ok;
+    const sections = (syl ? syl.sections : []).map(sec => {
+      const withQ = sec.units.filter(u => u.check);
+      const done = withQ.filter(u => got.has(`${sec.name}|${u.name}`));
+      const todo = withQ.filter(u => !got.has(`${sec.name}|${u.name}`));
+      if(!withQ.length) return "";
+      return `<div class="sp-sec">
+        <div class="sp-sechead"><h4>${esc(sec.name)}</h4><span class="caption">${done.length} of ${withQ.length} units checked</span></div>
+        ${done.length ? `<ul class="plain sp-list">${done.map(u => {
+          const c = got.get(`${sec.name}|${u.name}`);
+          return `<li><span class="sp-unit">${esc(u.name)}</span>
+            <span class="chip ${taken(c) ? "on" : "low"}">${c.n_correct} of ${c.n}, ${taken(c) ? "passed" : `below ${pass}`}</span>
+            <span class="caption">${c.tries} ${c.tries === 1 ? "try" : "tries"}, last ${when(c.at)}</span>
+            ${again(c, "Check again")}</li>`;
+        }).join("")}</ul>` : ""}
+        ${todo.length ? `<details class="working"><summary>${todo.length} ${todo.length === 1 ? "unit" : "units"} not checked yet</summary>
+          <ul class="plain sp-list">${todo.map(u => `<li><span class="sp-unit">${esc(u.name)}</span>
+            ${again({exam: e.key, section: sec.name, unit: u.name}, "Check yourself")}</li>`).join("")}</ul></details>` : ""}
+      </div>`;
+    }).join("");
+    return `<div class="block">
+      <div class="sp-head"><h3>${esc(e.name)}</h3>
+        <span class="caption">${mineHere.length} of ${e.n_checks} units checked, ${ok} passed</span></div>
+      <div class="bar sp-bar" role="img" aria-label="${ok} passed and ${low} below the pass mark, of ${e.n_checks} units">
+        <span style="width:${ok / e.n_checks * 100}%"></span><span class="low" style="width:${low / e.n_checks * 100}%"></span></div>
+      ${sections || `<p class="muted small">Could not load the syllabus for this exam.</p>`}
+    </div>`;
+  };
+  const sub = [stageLabel(me.stage), me.stream ? (finderOptions.streams.find(x => x.value === me.stream) || {}).label : ""]
+    .filter(Boolean).join(" · ");
+  root.innerHTML = `<div class="page wide">
+    <div class="workspace two narrow">
+      ${railShell(`${railGo("learning", "My learning", "dashboard")}${railHere("progress", "Progress")}
+          ${railGo("finder", "Course Finder", "finder")}${railGo("explore", "Explore all courses", "explore")}`,
+        `<div><div class="grouphead">Where you are</div><div class="railcourse"><div>${esc(sub || "Level not set")}</div>
+          <div class="caption">${checks.length} of ${units} units checked</div></div></div>`,
+        "", railMe(me.display_name, sub || "Level not set"))}
+      <div class="wsmain">
+        ${pageHead("Progress", sub, "", "Progress · from your self-checks")}
+        ${exams.length ? (checks.length ? `<div class="tiles">
+            <div class="tile"><span class="ico">${TILE_ICON.done}</span><div class="v">${checks.length} of ${units}</div><div class="k">units checked</div></div>
+            <div class="tile"><span class="ico">${TILE_ICON.score}</span><div class="v">${passing}</div><div class="k">passed, ${pass} or more on the latest try</div></div>
+            <div class="tile"><span class="ico">${TILE_ICON.next}</span><div class="v">${checks.length - passing}</div><div class="k">need another look</div></div>
+          </div>`
+          : `<div class="callout">Nothing checked yet. Every unit below has a few questions, marked as soon as you answer.
+              Start with a unit you have just studied.</div>`)
+          + exams.map((e, i) => examBlock(e, syllabi[i])).join("")
+          : `<div class="block"><p class="muted small">None of the exams open to your stream has self-check questions yet.</p></div>`}
+        <p class="caption" style="margin:14px 0 0">${esc(mine.note)} A unit counts as passed when its latest try scores ${pass} or more out of 100.
+          These results stay out of the data the model reads.</p>
+      </div>
+    </div>
+  </div>`;
+}
 async function renderProgress(){
   const root = $("#view-progress");
   if(!me || me.role !== "student"){ nav("dashboard"); return; }
-  if(!me.module){
-    root.innerHTML = `<div class="page">${pageHead("Progress", "Your progress starts once you join a diploma or degree course.")}
-      <div class="block"><p class="muted small">Until then, the Course Finder is where to look.</p>
-      <button class="small" data-go="finder">Find a course</button></div></div>`;
-    return;
-  }
+  if(!me.module){ renderSchoolProgress(root); return; }
   root.innerHTML = `<div class="page">${skeleton()}</div>`;
   let state, progress, path;
   try{
@@ -3722,8 +3840,9 @@ async function showLearner(){
 
   detail.innerHTML = `
     <div class="dash-head">
-      <div><h1 style="font-size:24px">${rec.registered ? "Registered student" : "Learner"} ${rec.student}</h1>
-        <p class="muted">${esc(modName(rec.module))}</p></div>
+      <div><h1 style="font-size:24px">${rec.registered
+          ? esc(mastery.display_name || `Registered student ${rec.student}`) : `Learner ${rec.student}`}</h1>
+        <p class="muted">${rec.registered ? `Registered student, id ${rec.student} · ` : ""}${esc(modName(rec.module))}</p></div>
       <div class="row">${segButtons(tabs, learnerTab, "ltab")}<button class="small" id="back">Back to overview</button></div>
     </div>
     <div data-tabpanel="path" ${learnerTab === "path" ? "" : "hidden"}>

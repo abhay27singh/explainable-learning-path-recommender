@@ -188,7 +188,9 @@ One file, `web/index.html`, no build step.
 - **Progress and record.** A year of activity with the active days and both streaks
   above it, the way a contribution graph reads, plus milestones, quiz marks against the
   pass line, and a printable record of study. Every figure comes from what the
-  student recorded. It says plainly that it is not a certificate.
+  student recorded. It says plainly that it is not a certificate. A student still at
+  school sees their self-check results instead: units checked, passed on the latest try,
+  and the units still to check.
 - **Advisers** search all 25,101 dataset learners plus registered students, inspect any
   record, keep notes per learner, mark weeks a learner already knows, and compare planning
   strategies.

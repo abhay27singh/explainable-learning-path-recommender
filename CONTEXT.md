@@ -202,6 +202,14 @@ student's first week makes no comparison claims, because there is nothing real t
 with. The record says plainly that it is not a certificate and is not issued by any
 institution.
 
+A student still at school has no course for the model, so their Progress page
+(`renderSchoolProgress`) is built from self-checks alone: units checked out of the units
+that have questions, how many pass on the latest try, and per exam and section the units
+checked (with tries and the date) and the ones not checked yet, each with its button.
+Advisers who open a school student are told there is no course path (409 from
+`_course_student`) instead of being shown the model's fallback course. On a phone,
+Explore's filters fold behind one Filters button that counts what is on.
+
 **Research page.** Admin only, in the page and in `/api/metrics`. It reads `results/*.json`
 directly so it cannot drift from the paper.
 

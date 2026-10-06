@@ -843,6 +843,7 @@ def mastery(student: int, module: str | None = None, upto: float = 1.0,
         scope = state.scope()
         return {
             "student": student, "module": mod, "registered": True,
+            "display_name": target.display_name,
             "n_events": len(s.store.events(target.id)),
             "thresholds": {"mastered": round(state.thresholds.mastered, 4),
                            "prerequisite": round(state.thresholds.prerequisite, 4)},
