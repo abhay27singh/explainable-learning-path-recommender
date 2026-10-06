@@ -287,13 +287,6 @@
   .path-step .t{font-weight:600}
   .path-step .s{font-size:13px;color:var(--ink-soft)}
   .path-detail{margin:8px 0 12px;padding:12px 14px;background:var(--ground);border-radius:8px;font-size:14px;color:var(--ink-soft)}
-  /* 35 weeks at 18px each is wider than a phone, so the strip scrolls inside itself
-     rather than dragging the whole page sideways. */
-  .strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(18px,1fr);gap:3px;
-    margin:6px 0 10px;overflow-x:auto;padding-bottom:3px}
-  .strip span{height:30px;border-radius:5px;display:block}
-  .strip span.known{outline:2px solid var(--ink);outline-offset:-2px}
-  .strip .hit[data-concept]{cursor:pointer}
 
   /* ---------- shared, charts, finder, admin ---------- */
   /* The Course Finder and the adviser view already had a left pane doing the rail's
@@ -999,6 +992,35 @@
     .wk-prog > .wsmain{order:1} .wk-prog > .wsmid{order:2} .wk-prog > .wsfull{order:3} .wk-prog > .railside{order:4}
     .workspace.wk-prog{grid-template-rows:none}
   }
+  /* ---------------- path steps and the hard-or-easy strip ---------------- */
+  .path-step .t{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .path-step .s{margin-top:3px;font-size:13px;color:var(--ink-soft)}
+  .strip-said{margin:0 0 12px;font-size:14px}
+  /* 35 weeks is wider than a phone, so the strip scrolls inside itself rather than
+     dragging the whole page sideways. */
+  .strip2{overflow-x:auto;padding:4px 4px 4px}
+  .strip2-in{display:flex;gap:12px}
+  .spart{min-width:0}
+  .sp-lab{font-size:11px;color:var(--ink-faint);margin-bottom:6px;white-space:nowrap}
+  .sp-lab b{color:var(--ink-soft);margin-right:4px}
+  .sp-cells{display:grid;gap:3px}
+  .sc{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .sc .sw{display:block;width:100%;height:30px;border-radius:5px}
+  .sc .sw.known{outline:2px solid var(--ink);outline-offset:-2px}
+  .sc.is-next .sw{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+  .sc.is-next .wn{color:var(--ink);font-weight:700}
+  .sc .wn{font-size:10px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+  .sc .wd{height:12px;color:var(--good)}
+  .sc .wd svg,.strip-legend .tk svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;display:block}
+  .strip-legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;margin:10px 0 0;font-size:12px;color:var(--ink-soft)}
+  .strip-legend .scale{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .strip-legend .cap{color:var(--ink-faint)}
+  .strip-legend .step{display:inline-flex;align-items:center;gap:5px}
+  .strip-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}
+  .strip-legend .key{display:inline-flex;align-items:center;gap:6px}
+  .strip-legend .tk{color:var(--good)}
+  .strip-legend i.k-out{background:none;box-shadow:inset 0 0 0 2px var(--ink);border-radius:3px}
+  .sp-cells .hit[data-concept]{cursor:pointer}
 </style>
 </head>
 <body>
@@ -3019,20 +3041,32 @@ function todoFor(r, forStudent){
 }
 function pathList(steps, t, forStudent){
   if(!steps.length) return "";
-  const items = steps.map((r, i) => `<li class="${i === 0 ? "now" : ""}">
+  const you = forStudent ? "you" : "they";
+  const names = xs => xs.map(x => weekOf(x.label));
+  const list = xs => xs.length <= 2 ? xs.join(" and ") : `${xs.slice(0, 2).join(", ")} and ${xs.length - 2} more`;
+  // Each line says, in words, what the step needs and what it leads to. The old second
+  // line read "Once the steps above are done" on every step after the first.
+  const items = steps.map((r, i) => {
+    const needs = [...names(r.satisfied), ...names(r.gaps)];
+    const opens = names(r.unlocks);
+    const when = i === 0 ? (r.gaps.length ? `Revise ${list(names(r.gaps))} first` : "Ready to start")
+      : `After ${weekOf(steps[i - 1].label)}`;
+    const detail = [
+      needs.length ? `Builds on ${list(needs)}` : "Needs nothing earlier",
+      opens.length ? `opens up ${list(opens)}` : "nothing later builds on it",
+    ].join("; ");
+    return `<li class="${i === 0 ? "now" : ""}">
       <span class="path-num" aria-hidden="true">${i + 1}</span>
       <button class="path-step" data-i="${i}">
-        <div class="t">${esc(weekOf(r.label))}${i === 0 ? ` <span class="pill-lvl">Now</span>` : ""}</div>
-        <div class="s">${i === 0 ? `${!r.gaps.length ? "Ready now" : "Revise earlier weeks first"} · level now ${LEVEL(r.mastery, t).toLowerCase()}` : "Once the steps above are done"}</div>
+        <div class="t">${esc(weekOf(r.label))}<span class="gchip ${i === 0 ? (r.gaps.length ? "locked" : "now") : "ready"}">${esc(when)}</span></div>
+        <div class="s">${esc(detail)}.</div>
       </button>
-
-    </li>`).join("");
+    </li>`;
+  }).join("");
   return `<div class="block">
-    <div class="row" style="justify-content:space-between;align-items:baseline">
-      <h3 style="margin:0">${forStudent ? "Your path" : "Their path"}</h3>
-
-    </div>
-    <p class="muted small">Open a step to see why it comes next, what to revise and what it opens up. Each step after the first assumes the ones before it are finished.</p>
+    <h3 style="margin:0">${forStudent ? "Your path" : "Their path"}</h3>
+    <p class="muted small">The next ${steps.length} weeks in course order. Each one assumes the one before it is done.
+      Open a week to see why it comes next and what ${you} should revise first.</p>
     <ol class="path">${items}</ol></div>`;
 }
 /* One week, on its own, with everything known about it. Opened from the path list or
@@ -3145,25 +3179,52 @@ function bindPath(root, steps, t, forStudent){
     if(step) weekSheet(step, t, forStudent, `Step ${+b.dataset.i + 1} of ${steps.length}`);
   });
 }
-function courseStrip(concepts, t, forStudent, clickable){
+/* How hard each week looks to the model, for this learner. The levels rank a learner's
+   weeks against each other, so the strip answers "which weeks will be harder for me",
+   not "how much have I done"; the page says so in a sentence before the blocks. For a
+   student, done weeks get a tick and the next week an outline, so the two questions
+   never get mixed up. */
+function courseStrip(concepts, t, forStudent, clickable, mine = null){
   const pts = concepts.filter(c => c.in_scope !== false).slice().sort((a, b) => a.week - b.week);
   if(!pts.length) return "";
-  const cells = pts.map(c => {
-    const l = LEVEL(c.mastery, t), isKnown = known.has(c.concept);
-    const tip = {v: `Week ${c.week}`, l: [l, ...(isKnown ? ["Marked as already known"] : []), ...(clickable ? [isKnown ? "Click to unmark" : "Click if they already know it"] : [])]};
-    return `<span class="hit${isKnown ? " known" : ""}" tabindex="0" role="${clickable ? "button" : "img"}" aria-label="Week ${c.week}: ${l}"
-      style="background:${LEVEL_VAR[l]}" data-tip="${esc(JSON.stringify(tip))}" ${clickable ? `data-concept="${c.concept}"` : ""}></span>`;
-  }).join("");
-  // No counts in the legend: levels are ranked within the learner's own weeks, so roughly
-  // a third always land in each, whoever the learner is. A count would read as progress.
-  return `<div class="block"><h3>The course at a glance</h3>
-    <p class="muted small">Each block is one week, from the first to the last, shaded by the model's level. Levels compare
-      each week with ${forStudent ? "your" : "the learner's"} other weeks, so they show where ${forStudent ? "you are" : "they are"} strongest
-      and weakest, not how much is done.${clickable ? " Click a week the learner already knows and the path updates." : ""}</p>
-    <div class="strip">${cells}</div>
-    <div class="viz-legend">${LEVELS.slice().reverse().map(l => `<span><i style="background:${LEVEL_VAR[l]}"></i>${l}</span>`).join("")}
-      ${known.size ? `<span>${known.size} marked as known</span>` : ""}</div>
-    ${vizTable(["Week", "Level"], pts.map(c => [c.week, LEVEL(c.mastery, t)]))}
+  const done = mine ? mine.done : new Set(), now = mine ? mine.now : null;
+  const parts = courseParts(pts), who = forStudent ? "you" : "them";
+  const cell = c => {
+    const l = LEVEL(c.mastery, t), isKnown = known.has(c.concept), isDone = done.has(c.concept);
+    const lines = [l === "Strong" ? `Looks easier for ${who}` : l === "Needs work" ? `Looks harder for ${who}` : "In between", ...(isDone ? ["Done"] : []),
+      ...(c.concept === now ? ["Your next week"] : []), ...(isKnown ? ["Marked as already known"] : []),
+      ...(clickable ? [isKnown ? "Click to unmark" : "Click if they already know it"] : [])];
+    const tip = {v: `Week ${c.week}: ${l}`, l: lines};
+    return `<span class="sc${c.concept === now ? " is-next" : ""}">
+      <span class="sw hit${isKnown ? " known" : ""}" tabindex="0" role="${clickable ? "button" : "img"}"
+        aria-label="Week ${c.week}: ${l}${isDone ? ", done" : ""}${c.concept === now ? ", your next week" : ""}"
+        style="background:${LEVEL_VAR[l]}" data-tip="${esc(JSON.stringify(tip))}" ${clickable ? `data-concept="${c.concept}"` : ""}></span>
+      <span class="wn">${c.week}</span><span class="wd">${isDone ? TICK : ""}</span></span>`;
+  };
+  // The sentence a student reads first: of the weeks still ahead, which look hardest
+  // and which easiest, by the same ranking as the colours.
+  let said = "";
+  if(forStudent){
+    const ahead = pts.filter(c => !done.has(c.concept)).sort((a, b) => a.mastery - b.mastery);
+    const wk = xs => { const n = xs.map(c => `Week ${c.week}`); return `${n.slice(0, -1).join(", ")} and ${n[n.length - 1]}`; };
+    if(ahead.length >= 6) said = `<p class="prose strip-said">Of the weeks still ahead, the model expects
+      <b>${wk(ahead.slice(0, 3).sort((a, b) => a.week - b.week))}</b> to be hardest for you and
+      <b>${wk(ahead.slice(-3).sort((a, b) => a.week - b.week))}</b> to be easiest. Give the hard ones extra time when you reach them.</p>`;
+  }
+  return `<div class="block strip-block"><h3>${forStudent ? "Which weeks look hard for you" : "The course at a glance"}</h3>
+    <p class="muted small">Each block is one week of the course. Its colour is the model's level for ${forStudent ? "you" : "this learner"},
+      compared with ${forStudent ? "your" : "their"} other weeks: it shows which weeks look harder or easier, not how much is done.${
+      clickable ? " Click a week the learner already knows and the path updates." : ""}</p>
+    ${said}
+    <div class="strip2"><div class="strip2-in" style="min-width:${pts.length * 26}px">${parts.map(pt => `<div class="spart" style="flex:${pt.nodes.length} 1 0">
+      <div class="sp-lab"><b>${pt.name}</b> weeks ${pt.from} to ${pt.to}</div>
+      <div class="sp-cells" style="grid-template-columns:repeat(${pt.nodes.length},minmax(0,1fr))">${pt.nodes.map(cell).join("")}</div></div>`).join("")}</div></div>
+    <div class="strip-legend">
+      <span class="scale"><span class="cap">Harder for ${who}</span>${LEVELS.map(l => `<span class="step"><i style="background:${LEVEL_VAR[l]}"></i>${l}</span>`).join("")}<span class="cap">Easier for ${who}</span></span>
+      ${mine ? `<span class="key"><span class="tk">${TICK}</span>Done</span><span class="key"><i class="k-out"></i>Your next week</span>` : ""}
+      ${known.size ? `<span class="key">${known.size} marked as known</span>` : ""}
+    </div>
+    ${vizTable(["Week", "Level", ...(mine ? ["Done"] : [])], pts.map(c => [c.week, LEVEL(c.mastery, t), ...(mine ? [done.has(c.concept) ? "Yes" : ""] : [])]))}
   </div>`;
 }
 const segButtons = (tabs, active, cls) => `<div class="seg" role="tablist">${tabs.map(([v, lab]) =>
@@ -3965,7 +4026,7 @@ async function renderStudent(){
         <div id="path-view">${pathView === "timeline" ? pathList(path.steps, t, true) : ""}</div>
       </div>
       <div class="wsfull" data-tabpanel="path" ${studentTab === "path" ? "" : "hidden"}>
-        ${courseStrip(state.concepts, t, true, false)}
+        ${courseStrip(state.concepts, t, true, false, {done: doneSet, now: step ? step.concept : null})}
       </div>
     </div>
   </div>`;

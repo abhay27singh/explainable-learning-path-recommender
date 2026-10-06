@@ -104,6 +104,14 @@ one the most later weeks build on directly. A week whose earlier weeks are unfin
 "Not ready", never "Locked". The control band says "Prerequisites in order", or names
 the first finished week that builds on an unfinished one (`orderClashes`).
 
+**Your path** (the timeline view) says in words what each of the next five weeks builds on
+and opens up, with "Ready to start" or "After Week N" beside it. **Which weeks look hard
+for you** (`courseStrip`) is the course in its four parts, one block per week, shaded by
+the model's relative level, with week numbers, a tick under done weeks and the next week
+outlined. A sentence names the three hardest and three easiest weeks still ahead, and the
+legend runs from "Harder for you" to "Easier for you". For advisers it keeps its old title
+and stays clickable for "already knows this".
+
 **Board** shows the four parts as columns, each marked Complete, In progress, Not
 started or Current, with every week as a card. **What if** (`/api/me/what-if`,
 `Service.what_if`) adds the weeks a student picks (up to six) to a copy of their history
