@@ -77,7 +77,7 @@ def test_the_order_is_the_same_every_time():
 
 
 def test_the_questions_go_out_without_their_answers():
-    out = sc.questions_for("neet_ug", "Biology: Botany", "Ecology and Environment")
+    out = sc.questions_for("neet_ug", "Biology", "Ecology and Environment")
     assert out["n"] == 3
     for q in out["questions"]:
         assert set(q) == {"id", "prompt", "options"}
@@ -89,11 +89,23 @@ def test_a_unit_covering_two_topics_gets_both_sets():
     assert out["n"] == 6
 
 
-def test_the_same_unit_name_in_two_sections_is_two_different_checks():
-    """NEET has a Thermodynamics unit in Physics and another in Chemistry."""
+def test_thermodynamics_in_physics_and_in_chemistry_are_different_checks():
+    """Both papers have a thermodynamics unit; a check is keyed by section and unit, so
+    the physics questions never answer for the chemistry unit."""
     physics = sc.questions_for("neet_ug", "Physics", "Thermodynamics")
-    chemistry = sc.questions_for("neet_ug", "Chemistry", "Thermodynamics")
+    chemistry = sc.questions_for("neet_ug", "Chemistry", "Chemical Thermodynamics")
     assert physics["questions"][0]["prompt"] != chemistry["questions"][0]["prompt"]
+
+
+def test_neet_follows_the_nmc_syllabus_for_2026():
+    """Regression: NEET used the unit names from before NMC's 2024 revision ("Motion of
+    System of Particles and Rigid Body", "Haloalkanes and Haloarenes") and had no
+    Experimental Skills or Practical Chemistry unit. NMC lists 20, 20 and 10."""
+    sections = dict(exams.sections_for("neet_ug"))
+    assert [len(sections[k]) for k in ("Physics", "Chemistry", "Biology")] == [20, 20, 10]
+    assert "Experimental Skills" in sections["Physics"]
+    assert "Principles Related to Practical Chemistry" in sections["Chemistry"]
+    assert "Reproduction" in sections["Biology"]
 
 
 def test_all_right_scores_100_and_all_wrong_scores_0():
@@ -107,12 +119,13 @@ def test_all_right_scores_100_and_all_wrong_scores_0():
 
 
 def test_two_of_three_passes_and_one_of_three_does_not():
-    key = answer_key("neet_ug", "Chemistry", "Amines")
+    unit = "Organic Compounds Containing Nitrogen"
+    key = answer_key("neet_ug", "Chemistry", unit)
     ids = list(key)
     two = {**key, ids[0]: (key[ids[0]] + 1) % 4}
     one = {**two, ids[1]: (key[ids[1]] + 1) % 4}
-    assert sc.grade("neet_ug", "Chemistry", "Amines", two)["passed"] is True
-    assert sc.grade("neet_ug", "Chemistry", "Amines", one)["passed"] is False
+    assert sc.grade("neet_ug", "Chemistry", unit, two)["passed"] is True
+    assert sc.grade("neet_ug", "Chemistry", unit, one)["passed"] is False
 
 
 def test_every_question_must_be_answered():
@@ -131,9 +144,9 @@ def test_an_answer_outside_the_four_options_is_refused():
 
 def test_a_unit_must_belong_to_the_exam_it_is_checked_under():
     with pytest.raises(KeyError):
-        sc.questions_for("jee_main", "Biology: Botany", "Ecology and Environment")
+        sc.questions_for("jee_main", "Biology", "Ecology and Environment")
     with pytest.raises(KeyError):
-        sc.questions_for("cuet_ug", "General Test", "Numerical Ability")
+        sc.questions_for("cuet_ug", "General Aptitude Test", "Numerical Ability")
     with pytest.raises(KeyError):
         sc.questions_for("no_such_exam", "Physics", "Optics")
 

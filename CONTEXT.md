@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 235 tests. `make api` serves http://localhost:8420.
+`make test` runs 240 tests. `make api` serves http://localhost:8420.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
 and work is on `main`.
@@ -119,6 +119,17 @@ as passed tests and runs the model again. It writes nothing and logs nothing. Th
 shows weeks done, weeks ready and the model's average before and after, which weeks would
 open, where the path would go on from, and a before and after dot per part. It says the
 model lifts most weeks for a pass, which is the engagement signal the paper describes.
+
+**Indian education policy, checked October 2026.** NEP 2020 as UGC applies it: the
+four-year undergraduate exits carry UGC's credits (40, 80, 120, 160) and the fourth year
+is honours, or honours with research above 75 percent (`NEP_UG_EXITS`, `NEP_EXIT_NOTE`);
+UGC master's degrees are two years, or one after a four-year honours degree (`UGC_PG`);
+B.Ed states NCTE's one-year option from 2026-27; the B.El.Ed, closed to new students from
+2026-27, is replaced by NCTE's four-year ITEP through NCET. NEET UG follows the NMC
+syllabus for 2026 (20, 20 and 10 units, Biology as one subject), JEE Main the unchanged
+NTA syllabus (20, 20, 14), CUET UG the 2025 rules (up to five subjects, chosen freely,
+universities setting their own; the paper is the General Aptitude Test). Check these each
+academic year: NMC, NTA, UGC and NCTE all revise them.
 
 **Security and launch hygiene.** `guard` middleware in `api/main.py` applies rate limits
 (`RATE_LIMITS`, in memory, per client address) before the work and security headers
@@ -227,7 +238,7 @@ is assembled from the student's own class 12 subjects rather than a fixed list. 
 date, cut-off or rank is stated anywhere: those change yearly, and a test enforces it.
 
 **Self-checks.** `elpr/selfcheck.py`: three questions per topic, 68 topics, 204
-questions, covering all 105 JEE Main and NEET UG units. Units map to topics by
+questions, covering all 104 JEE Main and NEET UG units. Units map to topics by
 (section, unit), because NEET has a Thermodynamics unit in both Physics and Chemistry.
 Options are stored right-answer-first and shuffled on the way out by a crc32 seed, so the
 right answer lands evenly across the four places and never moves on reload. Marking
@@ -425,7 +436,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         235 tests
+tests/         240 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

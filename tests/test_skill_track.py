@@ -64,7 +64,7 @@ def test_professional_degrees_do_not_claim_the_nep_exits():
     degree", so the MBBS page told students they could walk away with a degree after
     three years of a five and a half year course. Only UGC's four-year programme works
     that way."""
-    for key in ("btech_cse", "mbbs", "barch", "bpharm", "ba_llb", "beled", "bsc_hha"):
+    for key in ("btech_cse", "mbbs", "barch", "bpharm", "ba_llb", "itep", "bsc_hha"):
         assert cf.course(key)["exits"] == [], key
     for key in cf.NEP_EXIT_DEGREES:
         assert "4 with honours under NEP 2020" in cf.course(key)["duration"], key

@@ -91,38 +91,36 @@ NEET_UG = Exam(
     streams=("pcb", "pcmb"),
     leads_to="MBBS, BDS, BAMS, BHMS, veterinary and allied medical degrees across India",
     source="https://neet.nta.nic.in/",
-    note="Biology counts for half the paper, so Botany and Zoology are listed separately "
-         "in the plan.",
+    # The NMC syllabus for NEET (UG) 2026 (finalised 22 December 2025, unchanged since
+    # the 2024 revision). Physics and Chemistry now share their unit names with JEE Main.
+    note="Biology is half the paper and is set as two sections, Botany and Zoology. The "
+         "units follow the NMC syllabus, which lists Biology as one subject.",
     sections=(
         ("Physics", (
             "Physics and Measurement", "Kinematics", "Laws of Motion",
-            "Work, Energy and Power", "Motion of System of Particles and Rigid Body",
-            "Gravitation", "Properties of Bulk Matter", "Thermodynamics",
-            "Behaviour of Perfect Gas and Kinetic Theory", "Oscillations and Waves",
-            "Electrostatics", "Current Electricity",
+            "Work, Energy and Power", "Rotational Motion", "Gravitation",
+            "Properties of Solids and Liquids", "Thermodynamics", "Kinetic Theory of Gases",
+            "Oscillations and Waves", "Electrostatics", "Current Electricity",
             "Magnetic Effects of Current and Magnetism",
             "Electromagnetic Induction and Alternating Currents", "Electromagnetic Waves",
             "Optics", "Dual Nature of Matter and Radiation", "Atoms and Nuclei",
-            "Electronic Devices")),
+            "Electronic Devices", "Experimental Skills")),
         ("Chemistry", (
-            "Some Basic Concepts of Chemistry", "Structure of Atom",
-            "Classification of Elements and Periodicity in Properties",
-            "Chemical Bonding and Molecular Structure", "Thermodynamics", "Equilibrium",
-            "Redox Reactions", "p-Block Elements",
-            "Organic Chemistry: Some Basic Principles and Techniques", "Hydrocarbons",
-            "Solutions", "Electrochemistry", "Chemical Kinetics",
-            "d- and f-Block Elements", "Coordination Compounds",
-            "Haloalkanes and Haloarenes", "Alcohols, Phenols and Ethers",
-            "Aldehydes, Ketones and Carboxylic Acids", "Amines", "Biomolecules")),
-        ("Biology: Botany", (
-            "Diversity in the Living World", "Structural Organisation in Plants",
-            "Cell Structure and Function", "Plant Physiology", "Plant Reproduction",
-            "Ecology and Environment")),
-        ("Biology: Zoology", (
-            "Structural Organisation in Animals", "Human Physiology",
-            "Human Reproduction and Reproductive Health",
-            "Genetics and Evolution", "Biology and Human Welfare",
-            "Biotechnology and its Applications")),
+            "Some Basic Concepts in Chemistry", "Atomic Structure",
+            "Chemical Bonding and Molecular Structure", "Chemical Thermodynamics",
+            "Solutions", "Equilibrium", "Redox Reactions and Electrochemistry",
+            "Chemical Kinetics", "Classification of Elements and Periodicity in Properties",
+            "p-Block Elements", "d- and f-Block Elements", "Coordination Compounds",
+            "Purification and Characterisation of Organic Compounds",
+            "Some Basic Principles of Organic Chemistry", "Hydrocarbons",
+            "Organic Compounds Containing Halogens", "Organic Compounds Containing Oxygen",
+            "Organic Compounds Containing Nitrogen", "Biomolecules",
+            "Principles Related to Practical Chemistry")),
+        ("Biology", (
+            "Diversity in Living World", "Structural Organisation in Animals and Plants",
+            "Cell Structure and Function", "Plant Physiology", "Human Physiology",
+            "Reproduction", "Genetics and Evolution", "Biology and Human Welfare",
+            "Biotechnology and Its Applications", "Ecology and Environment")),
     ),
 )
 
@@ -134,7 +132,7 @@ CUET_COMMON = (
         "Reading Comprehension: narrative passages", "Verbal Ability",
         "Rearranging the Parts", "Choosing the Correct Word", "Synonyms and Antonyms",
         "Vocabulary in Context")),
-    ("General Test", (
+    ("General Aptitude Test", (
         "General Knowledge", "Current Affairs", "General Mental Ability",
         "Numerical Ability", "Quantitative Reasoning",
         "Logical and Analytical Reasoning")),
@@ -150,9 +148,13 @@ CUET_UG = Exam(
              "universities, including Delhi University, BHU and JNU",
     # NTA moved CUET UG to its own site; the old exams.nta.ac.in/CUET-UG/ page now 404s.
     source="https://cuet.nta.nic.in/",
-    note="Domain papers follow the subjects taken in class 12, so they are added once the "
-         "class 12 stream is known. Universities differ in which papers they ask for, so "
-         "check the ones being applied to.",
+    # Since 2025: 37 subjects (13 languages, 23 domain subjects and the General Aptitude
+    # Test), at most five per candidate, chosen freely. Universities still set their own
+    # subject rules, Delhi University counting only subjects studied in class 12.
+    note="Choose up to five subjects in all, languages and the General Aptitude Test "
+         "included. Since 2025 they need not match your class 12 subjects, but each "
+         "university sets which subjects it accepts, and Delhi University counts only "
+         "subjects studied in class 12, so this plan starts from your class 12 subjects.",
     sections=CUET_COMMON,
 )
 

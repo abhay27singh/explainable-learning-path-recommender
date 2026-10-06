@@ -55,12 +55,21 @@ SKILL_NOTE = ("Skill courses under the National Skills Qualifications Framework 
               "these can be taken alongside school or a degree, not instead of one.")
 # What a degree is worth if a student leaves part way, under NEP 2020's multiple entry
 # and exit rules. Institutions apply these through the Academic Bank of Credits.
+# The credits are UGC's Curriculum and Credit Framework for Undergraduate Programmes.
 NEP_UG_EXITS: tuple[str, ...] = (
-    "Leave after 1 year: certificate",
-    "Leave after 2 years: diploma",
-    "Leave after 3 years: bachelor's degree",
-    "Finish 4 years: bachelor's degree with research",
+    "Leave after 1 year (40 credits): UG certificate",
+    "Leave after 2 years (80 credits): UG diploma",
+    "Leave after 3 years (120 credits): bachelor's degree",
+    "Finish 4 years (160 credits): bachelor's degree with honours, or honours with research "
+    "for students with 75 percent or more in the first six semesters",
 )
+NEP_EXIT_NOTE = ("Leaving after the first or second year also needs a short vocational course "
+                 "in the summer. A student who leaves can come back within three years and "
+                 "must finish within seven. Universities apply these rules in their own ways.")
+# UGC's postgraduate framework under NEP 2020: a two-year master's after a three-year
+# degree, one year after a four-year honours degree. AICTE, BCI and NCTE courses keep
+# their own lengths.
+UGC_PG = "2 years, or 1 year after a four-year honours degree"
 # Only the degrees on UGC's four-year undergraduate programme carry those exits. A B.Tech,
 # MBBS, B.Arch, B.Pharm or law degree answers to its own council, and none of them hands
 # out a bachelor's degree after three years.
@@ -261,6 +270,7 @@ class Course:
             "track_label": TRACKS[self.track],
             # NEP 2020 lets a degree student leave with a qualification at each year
             "exits": list(NEP_UG_EXITS) if self.key in NEP_EXIT_DEGREES else [],
+            "exit_note": NEP_EXIT_NOTE if self.key in NEP_EXIT_DEGREES else "",
             "years": [{"year": label,
                        "subjects": [{"name": s, "links": study_links(s, track=self.track)}
                                     for s in subjects]}
@@ -670,15 +680,21 @@ COURSES: tuple[Course, ...] = (
             ("Year 2", ("Hotel Accountancy", "Nutrition", "Industrial Training")),
             ("Year 3", ("Hospitality Marketing", "Facility Planning",
              "Human Resource Management")))),
-    Course("beled", "Bachelor of Elementary Education (B.El.Ed)", "ug", "Education", "4 years",
-           "University syllabi", "Any stream", {"teaching": 3, "people": 2},
-           (("Year 1", ("Child Development", "Contemporary India", "Nature of Language",
-             "Core Mathematics")),
-            ("Year 2", ("Cognition and Learning", "Human Relations and Communication",
-             "Core Natural Science")),
-            ("Year 3", ("Pedagogy of Language", "Pedagogy of Mathematics",
-             "School Planning and Management")),
-            ("Year 4", ("Curriculum Studies", "School Internship")))),
+    # NCTE's four-year Integrated Teacher Education Programme replaces the B.El.Ed and the
+    # older integrated B.A. B.Ed and B.Sc. B.Ed, which take no new students from 2026-27.
+    # The years follow the programme's published parts, not one university's timetable.
+    Course("itep", "Integrated Teacher Education Programme (ITEP): B.A., B.Sc. or B.Com. with B.Ed",
+           "ug", "Education", "4 years", "NCTE Integrated Teacher Education Programme",
+           "Class 12 pass, through NCET, the National Common Entrance Test run by NTA. "
+           "Institutes set the class 12 subjects needed for the B.A., B.Sc. or B.Com. side",
+           {"teaching": 3, "people": 2},
+           (("Year 1", ("Foundations of Education", "Discipline course in the chosen subject",
+             "Ability enhancement course: language and communication")),
+            ("Year 2", ("Foundations of Education: learner and learning",
+             "Discipline course in the chosen subject", "Skill enhancement course")),
+            ("Year 3", ("Stage-specific content and pedagogy",
+             "Discipline course in the chosen subject", "School experience")),
+            ("Year 4", ("Stage-specific content and pedagogy", "School internship")))),
 
     # ------------------------------------------------------------- postgraduate
     Course("mtech_cse", "M.Tech Computer Science and Engineering", "pg",
@@ -745,7 +761,7 @@ COURSES: tuple[Course, ...] = (
             ("Year 2", ("Software Engineering", "Computer Networks", "Cloud Computing",
              "Major Project"))),
            degrees=frozenset({"bca", "bsc_cs", "bsc_maths", "btech_cs", "bcom"}) | OTHER_ENGINEERING),
-    Course("msc_ds", "M.Sc Data Science", "pg", "Computing", "2 years", "University syllabi",
+    Course("msc_ds", "M.Sc Data Science", "pg", "Computing", UGC_PG, "University syllabi",
            "A degree with Mathematics or Statistics, such as B.Sc, BCA or B.Tech",
            {"data": 3, "coding": 2, "maths": 2},
            (("Year 1", ("Probability and Statistics", "Programming for Data Science",
@@ -753,7 +769,7 @@ COURSES: tuple[Course, ...] = (
             ("Year 2", ("Deep Learning", "Big Data Analytics", "Data Visualisation",
              "Capstone Project"))),
            degrees=frozenset({"bsc_maths", "bsc_cs", "bca", "btech_cs"}) | OTHER_ENGINEERING),
-    Course("msc_maths", "M.Sc Mathematics", "pg", "Sciences", "2 years", "UGC framework",
+    Course("msc_maths", "M.Sc Mathematics", "pg", "Sciences", UGC_PG, "UGC framework",
            "A B.Sc with Mathematics, usually through IIT JAM or CUET-PG",
            {"maths": 3, "data": 2},
            (("Year 1", ("Real Analysis", "Abstract Algebra", "Linear Algebra",
@@ -761,7 +777,7 @@ COURSES: tuple[Course, ...] = (
             ("Year 2", ("Topology", "Functional Analysis", "Partial Differential Equations",
              "Project"))),
            degrees=frozenset({"bsc_maths"})),
-    Course("msc_biotech", "M.Sc Biotechnology", "pg", "Sciences", "2 years", "University syllabi",
+    Course("msc_biotech", "M.Sc Biotechnology", "pg", "Sciences", UGC_PG, "University syllabi",
            "A degree in life sciences, biotechnology or pharmacy, usually through GAT-B or "
            "CUET-PG", {"biology": 3, "health": 2},
            (("Year 1", ("Cell and Molecular Biology", "Genetic Engineering", "Immunology",
@@ -777,7 +793,7 @@ COURSES: tuple[Course, ...] = (
              "Organisational Behaviour", "Business Statistics", "Operations Management")),
             ("Year 2", ("Strategic Management", "Summer Internship",
              "Electives in Finance, Marketing, HR or Analytics", "Capstone Project")))),
-    Course("mcom", "M.Com", "pg", "Commerce and management", "2 years", "UGC framework",
+    Course("mcom", "M.Com", "pg", "Commerce and management", UGC_PG, "UGC framework",
            "A B.Com, and at some universities a BBA or B.A. Economics, usually through CUET-PG",
            {"finance": 3, "business": 2},
            (("Year 1", ("Advanced Financial Accounting", "Corporate Finance",
@@ -785,7 +801,7 @@ COURSES: tuple[Course, ...] = (
             ("Year 2", ("International Business", "Advanced Taxation", "Financial Markets",
              "Dissertation"))),
            degrees=frozenset({"bcom", "bba", "ba_econ"})),
-    Course("ma_econ", "M.A. Economics", "pg", "Humanities and social sciences", "2 years",
+    Course("ma_econ", "M.A. Economics", "pg", "Humanities and social sciences", UGC_PG,
            "UGC framework",
            "Usually a B.A. or B.Sc in Economics; some universities accept any degree with "
            "Mathematics, through CUET-PG", {"society": 3, "data": 2, "maths": 2},
@@ -793,7 +809,7 @@ COURSES: tuple[Course, ...] = (
              "Mathematical Economics")),
             ("Year 2", ("Development Economics", "International Trade", "Public Economics"))),
            degrees=frozenset({"ba_econ", "bsc_maths", "bcom"})),
-    Course("ma_psych", "M.A. Psychology", "pg", "Humanities and social sciences", "2 years",
+    Course("ma_psych", "M.A. Psychology", "pg", "Humanities and social sciences", UGC_PG,
            "UGC framework", "Usually a B.A. or B.Sc with Psychology",
            {"people": 3, "health": 2},
            (("Year 1", ("Cognitive Psychology", "Research Methods and Statistics",
@@ -801,13 +817,13 @@ COURSES: tuple[Course, ...] = (
             ("Year 2", ("Counselling Psychology", "Organisational Psychology", "Practicum",
              "Dissertation"))),
            degrees=frozenset({"ba_psych"})),
-    Course("ma_english", "M.A. English", "pg", "Humanities and social sciences", "2 years",
+    Course("ma_english", "M.A. English", "pg", "Humanities and social sciences", UGC_PG,
            "UGC framework",
            "Usually a B.A. in English; many universities accept any degree, through CUET-PG",
            {"media": 2, "teaching": 2, "people": 1},
            (("Year 1", ("Literary Theory", "British Literature", "Indian Writing in English")),
             ("Year 2", ("Postcolonial Studies", "Linguistics", "Dissertation")))),
-    Course("mjmc", "M.A. Journalism and Mass Communication", "pg", "Media", "2 years",
+    Course("mjmc", "M.A. Journalism and Mass Communication", "pg", "Media", UGC_PG,
            "University syllabi", "Any bachelor's degree, usually through a university test",
            {"media": 3, "society": 1},
            (("Year 1", ("Communication Theory", "Reporting and Editing",
@@ -823,7 +839,8 @@ COURSES: tuple[Course, ...] = (
              "Administrative Law")),
             ("Year 3", ("Civil Procedure", "Law of Evidence", "Company Law",
              "Moot Court and Internship")))),
-    Course("bed", "B.Ed (Bachelor of Education)", "pg", "Education", "2 years", "NCTE norms",
+    Course("bed", "B.Ed (Bachelor of Education)", "pg", "Education",
+           "2 years, or 1 year after a four-year bachelor's or a master's from 2026-27", "NCTE norms",
            "A bachelor's degree in science, social science or humanities with at least 50 "
            "percent, or a B.Tech or B.E. with at least 55 percent, under NCTE rules. Many "
            "states also accept commerce", {"teaching": 3, "people": 1},
@@ -1002,7 +1019,7 @@ GRANTS: dict[str, str | None] = {
     "bsc_biotech": "bsc_life", "bpharm": "bpharm", "bcom": "bcom", "bba": "bba",
     "ba_psych": "ba_psych", "ba_econ": "ba_econ", "ba_english": "ba_english",
     "barch": None, "mbbs": None, "bjmc": None, "ba_llb": None, "bdes": None,
-    "bsc_hha": None, "beled": None,
+    "bsc_hha": None, "itep": None,
 }
 
 

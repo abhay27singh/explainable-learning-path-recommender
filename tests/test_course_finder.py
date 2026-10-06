@@ -254,3 +254,36 @@ def test_explore_carries_the_bands_and_the_routes():
     assert all("duration_band" in c for c in courses)
     assert all("leads_to" in c for c in courses if c["level"] == "ug")
     assert [b["value"] for b in out["duration_bands"]] == list(cf.DURATION_BANDS)
+
+
+def test_the_four_year_degree_is_named_as_ugc_names_it():
+    """Regression: the fourth year read "bachelor's degree with research". UGC's framework
+    awards honours, or honours with research above 75 percent in the first six semesters."""
+    last = cf.NEP_UG_EXITS[-1]
+    assert "honours" in last and "honours with research" in last and "75 percent" in last
+    assert [x.split("(")[1].split(")")[0] for x in cf.NEP_UG_EXITS] == [
+        "40 credits", "80 credits", "120 credits", "160 credits"]
+    assert cf.course("ba_econ")["exit_note"] and cf.course("btech_cse")["exit_note"] == ""
+
+
+def test_a_ugc_masters_is_one_year_after_a_four_year_honours_degree():
+    """NEP 2020's 4+1: UGC master's degrees take one year after an honours degree. AICTE
+    and BCI courses keep their own lengths."""
+    for key in ("msc_maths", "ma_econ", "mcom", "ma_english"):
+        assert cf._BY_KEY[key].duration == cf.UGC_PG, key
+    for key in ("mba", "mtech_cse", "mca"):
+        assert cf._BY_KEY[key].duration == "2 years", key
+    assert cf._BY_KEY["llb"].duration == "3 years"
+
+
+def test_the_bed_states_ncte_s_one_year_option():
+    assert "1 year" in cf._BY_KEY["bed"].duration and "2026-27" in cf._BY_KEY["bed"].duration
+
+
+
+def test_teacher_training_after_class_12_is_itep_not_the_b_el_ed():
+    """Regression: the catalogue offered the B.El.Ed, which NCTE closes to new students
+    from 2026-27 in favour of the four-year ITEP, admitted through NTA's NCET."""
+    assert "beled" not in cf._BY_KEY
+    itep = cf._BY_KEY["itep"]
+    assert itep.level == "ug" and itep.duration == "4 years" and "NCET" in itep.eligibility

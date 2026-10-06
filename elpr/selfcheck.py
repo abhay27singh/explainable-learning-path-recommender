@@ -798,13 +798,10 @@ UNIT_TOPICS: dict[tuple[str, str], tuple[str, ...]] = {
     ("Physics", "Laws of Motion"): ("laws_of_motion",),
     ("Physics", "Work, Energy and Power"): ("work_energy",),
     ("Physics", "Rotational Motion"): ("rotation",),
-    ("Physics", "Motion of System of Particles and Rigid Body"): ("rotation",),
     ("Physics", "Gravitation"): ("gravitation",),
     ("Physics", "Properties of Solids and Liquids"): ("bulk_matter",),
-    ("Physics", "Properties of Bulk Matter"): ("bulk_matter",),
     ("Physics", "Thermodynamics"): ("phys_thermo",),
     ("Physics", "Kinetic Theory of Gases"): ("kinetic_theory",),
-    ("Physics", "Behaviour of Perfect Gas and Kinetic Theory"): ("kinetic_theory",),
     ("Physics", "Oscillations and Waves"): ("oscillations_waves",),
     ("Physics", "Electrostatics"): ("electrostatics",),
     ("Physics", "Current Electricity"): ("current_electricity",),
@@ -818,17 +815,12 @@ UNIT_TOPICS: dict[tuple[str, str], tuple[str, ...]] = {
     ("Physics", "Experimental Skills"): ("experimental",),
     # chemistry
     ("Chemistry", "Some Basic Concepts in Chemistry"): ("basic_concepts",),
-    ("Chemistry", "Some Basic Concepts of Chemistry"): ("basic_concepts",),
     ("Chemistry", "Atomic Structure"): ("atomic_structure",),
-    ("Chemistry", "Structure of Atom"): ("atomic_structure",),
     ("Chemistry", "Chemical Bonding and Molecular Structure"): ("bonding",),
     ("Chemistry", "Chemical Thermodynamics"): ("chem_thermo",),
-    ("Chemistry", "Thermodynamics"): ("chem_thermo",),
     ("Chemistry", "Solutions"): ("solutions",),
     ("Chemistry", "Equilibrium"): ("equilibrium",),
     ("Chemistry", "Redox Reactions and Electrochemistry"): ("redox", "electrochem"),
-    ("Chemistry", "Redox Reactions"): ("redox",),
-    ("Chemistry", "Electrochemistry"): ("electrochem",),
     ("Chemistry", "Chemical Kinetics"): ("kinetics",),
     ("Chemistry", "Classification of Elements and Periodicity in Properties"):
         ("periodicity",),
@@ -839,15 +831,10 @@ UNIT_TOPICS: dict[tuple[str, str], tuple[str, ...]] = {
     ("Chemistry", "Purification and Characterisation of Organic Compounds"):
         ("purification",),
     ("Chemistry", "Some Basic Principles of Organic Chemistry"): ("goc",),
-    ("Chemistry", "Organic Chemistry: Some Basic Principles and Techniques"): ("goc",),
     ("Chemistry", "Hydrocarbons"): ("hydrocarbons",),
     ("Chemistry", "Organic Compounds Containing Halogens"): ("halogens",),
-    ("Chemistry", "Haloalkanes and Haloarenes"): ("halogens",),
     ("Chemistry", "Organic Compounds Containing Oxygen"): ("alcohols", "carbonyls"),
-    ("Chemistry", "Alcohols, Phenols and Ethers"): ("alcohols",),
-    ("Chemistry", "Aldehydes, Ketones and Carboxylic Acids"): ("carbonyls",),
     ("Chemistry", "Organic Compounds Containing Nitrogen"): ("amines",),
-    ("Chemistry", "Amines"): ("amines",),
     ("Chemistry", "Biomolecules"): ("biomolecules",),
     ("Chemistry", "Principles Related to Practical Chemistry"): ("practical",),
     # JEE Main mathematics
@@ -865,24 +852,23 @@ UNIT_TOPICS: dict[tuple[str, str], tuple[str, ...]] = {
     ("Mathematics", "Vector Algebra"): ("vectors",),
     ("Mathematics", "Statistics and Probability"): ("stats_prob",),
     ("Mathematics", "Trigonometry"): ("trigonometry",),
-    # NEET UG biology
-    ("Biology: Botany", "Diversity in the Living World"): ("diversity",),
-    ("Biology: Botany", "Structural Organisation in Plants"): ("plant_structure",),
-    ("Biology: Botany", "Cell Structure and Function"): ("cell",),
-    ("Biology: Botany", "Plant Physiology"): ("plant_physiology",),
-    ("Biology: Botany", "Plant Reproduction"): ("plant_reproduction",),
-    ("Biology: Botany", "Ecology and Environment"): ("ecology",),
-    ("Biology: Zoology", "Structural Organisation in Animals"): ("animal_structure",),
-    ("Biology: Zoology", "Human Physiology"): ("human_physiology",),
-    ("Biology: Zoology", "Human Reproduction and Reproductive Health"):
-        ("human_reproduction",),
-    ("Biology: Zoology", "Genetics and Evolution"): ("genetics",),
-    ("Biology: Zoology", "Biology and Human Welfare"): ("human_welfare",),
-    ("Biology: Zoology", "Biotechnology and its Applications"): ("biotech",),
+    # NEET UG biology, the ten units of the NMC syllabus. Two of them span both halves
+    # of the paper, so they carry both sets of questions.
+    ("Biology", "Diversity in Living World"): ("diversity",),
+    ("Biology", "Structural Organisation in Animals and Plants"): ("plant_structure", "animal_structure"),
+    ("Biology", "Cell Structure and Function"): ("cell",),
+    ("Biology", "Plant Physiology"): ("plant_physiology",),
+    ("Biology", "Human Physiology"): ("human_physiology",),
+    ("Biology", "Reproduction"): ("plant_reproduction", "human_reproduction"),
+    ("Biology", "Genetics and Evolution"): ("genetics",),
+    ("Biology", "Biology and Human Welfare"): ("human_welfare",),
+    ("Biology", "Biotechnology and Its Applications"): ("biotech",),
+    ("Biology", "Ecology and Environment"): ("ecology",),
 }
 
 COVERAGE_NOTE = ("Self-check questions cover every JEE Main and NEET UG unit. CUET's "
-                 "language, general test and humanities and commerce papers have none yet.")
+                 "language, General Aptitude Test and humanities and commerce papers have "
+                 "none yet.")
 
 
 def has_check(section: str, unit: str) -> bool:

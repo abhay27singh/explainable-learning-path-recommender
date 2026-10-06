@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 235 tests
+make test                                       # 240 tests
 make api                                        # http://localhost:8420
 ```
 
@@ -205,7 +205,7 @@ One file, `web/index.html`, no build step.
   outline, the official NTA link and a week by week revision plan. An exam only appears for
   a class 12 stream that can sit it. CUET's domain papers are built from the student's own
   subjects. No dates, cut-offs or ranks are stated anywhere.
-- **Self-check questions.** 204 questions across all 105 JEE Main and NEET UG units, each
+- **Self-check questions.** 204 questions across all 104 JEE Main and NEET UG units, each
   with one right answer and the reason, marked on the server so the answers never reach
   the page first. Results are kept per student and never mixed into the data the model
   reads. The weekly course path has none, on purpose: its weeks come from an anonymised
