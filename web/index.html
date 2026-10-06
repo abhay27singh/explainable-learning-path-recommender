@@ -1088,6 +1088,9 @@
   button.railme:hover{background:var(--surface-alt)}
   button.railme .who,button.railme .nm,button.railme .sub{display:block}
   .acct{display:grid;gap:8px;margin:8px 0 0}
+  .signup-nudge{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--rule);
+    border-radius:var(--radius);background:var(--surface)}
+  .signup-nudge p{margin:0;flex:1 1 280px}
   .replay-block{margin-bottom:14px}
   .replay-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:6px 0 0}
   .rp-btns{display:inline-flex;gap:4px}
@@ -1635,7 +1638,12 @@ $("#form-login").onsubmit = async e => {
   e.preventDefault();
   e.target.dataset.busy = "1";
   const f = Object.fromEntries(new FormData(e.target));
-  try { me = await post("/api/auth/login", f); enter(); nav(returnTo || "dashboard"); returnTo = null; }
+  try {
+    me = await post("/api/auth/login", f); enter();
+    const kept = await keepPendingSave();
+    nav(returnTo || "dashboard"); returnTo = null;
+    if(kept) toast(`${kept} is saved to your list`);
+  }
   catch(err){ showErr(e.target, err.message); }
   finally { e.target.dataset.busy = ""; }
 };
@@ -1648,9 +1656,11 @@ $("#form-register").onsubmit = async e => {
     if(!courseStage(f.stage)) delete f.module;
     if(f.stage !== "class_12") delete f.stream;
   }
-  try { me = await post("/api/auth/register", f); enter(); nav("dashboard");
+  try { me = await post("/api/auth/register", f); enter();
+    const kept = await keepPendingSave();
+    nav("dashboard");
     toast(me.approved === false ? "Account created. An admin will approve it before you can see students"
-      : "Welcome, your account is ready"); }
+      : kept ? `Welcome. ${kept} is saved to your list` : "Welcome, your account is ready"); }
   catch(err){ showErr(e.target, err.message); }
   finally { e.target.dataset.busy = ""; }
 };
@@ -1868,7 +1878,9 @@ const linkRow = l => {
 };
 const yearList = years => years.map(y => `<p class="prose" style="margin:10px 0 2px"><b>${esc(y.year)}</b></p>
   <ul class="plain" style="margin-top:2px">${y.subjects.map(x => `<li>${esc(x.name)}${linkRow(x.links)}</li>`).join("")}</ul>`).join("");
-const signupCta = () => me ? "" : `<button class="small" data-go="signup">Create an account to track your learning</button>`;
+const signupCta = () => me ? "" : `<div class="signup-nudge"><p class="muted small">A free account keeps the courses you like,
+  plans them week by week, and gives you a weekly path once you are on a course.</p>
+  <button class="small primary" data-go="signup">Create a free account</button></div>`;
 const chip = t => `<span class="chip">${esc(t)}</span>`;
 const pageHead = (title, sub, action = "", eyebrow = "") => `<div class="page-head">
   <div>${eyebrow ? `<div class="eyebrow">${esc(eyebrow)}</div>` : ""}<h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ""}</div>${action}</div>`;
@@ -1979,8 +1991,24 @@ async function loadSaved(){
 }
 const saveBtn = key => me && me.role === "student"
   ? `<button class="small save${saved.has(key) ? " on" : ""}" data-key="${esc(key)}">${saved.has(key) ? "Saved" : "Save to my list"}</button>`
-  : `<button class="small" data-go="signup">Save this course</button>`;
+  : me ? "" : `<button class="small save-later" data-key="${esc(key)}">Save this course</button>`;
+/* A visitor who taps "Save this course" is sent to sign up. Regression: the course was
+   then forgotten, at the very moment they chose to join. It is remembered in this tab
+   and saved as soon as they have an account, whether they sign up or sign in. */
+const PENDING_SAVE = "gg-pending-save";
+async function keepPendingSave(){
+  let key = null;
+  try{ key = sessionStorage.getItem(PENDING_SAVE); sessionStorage.removeItem(PENDING_SAVE); }catch{}
+  if(!key || !me || me.role !== "student") return null;
+  try{ await post("/api/me/courses", {key}); }catch{ return null; }
+  const c = exploreCache ? allCourses().find(x => x.key === key) : null;
+  return c ? c.name : "The course you picked";
+}
 function bindSave(root){
+  root.querySelectorAll(".save-later").forEach(b => b.onclick = () => {
+    try{ sessionStorage.setItem(PENDING_SAVE, b.dataset.key); }catch{}
+    nav("signup");
+  });
   root.querySelectorAll(".save").forEach(b => b.onclick = async () => {
     const key = b.dataset.key, had = saved.has(key);
     b.disabled = true;
@@ -2240,7 +2268,8 @@ function showMarking(sheet, out, exam, section, unit){
       <b>${out.n_correct} of ${out.n} right.</b> ${out.passed
         ? "That counts as a pass on this unit."
         : "Below the pass mark of 40, so this unit needs another look."}
-      ${out.saved ? "Saved to your account." : "Sign in as a student to keep your results."}
+      ${out.saved ? "Saved to your account." : `<a href="#/signup" data-go="signup">Create a free account</a> to keep
+        your results and see which units need another look.`}
     </div>
     <div class="row" style="margin-top:10px">
       <button class="small" id="check-again">Try again</button>

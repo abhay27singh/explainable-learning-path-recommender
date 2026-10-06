@@ -217,3 +217,15 @@ def test_long_pages_use_a_wide_screen_without_overlong_lines():
     # Regression: the marker waited for an animation frame, which a hidden tab never
     # draws, and stopped following after one scroll in the background.
     assert 'addEventListener("scroll", markSection' in SCRIPT
+
+
+def test_a_course_a_visitor_saves_is_kept_when_they_join():
+    """Regression: "Save this course" sent a visitor to sign up and then forgot the
+    course, at the moment they chose to join. Both sign-up and sign-in now keep it."""
+    fns = functions()
+    assert "save-later" in fns["bindSave"] and "PENDING_SAVE" in fns["bindSave"]
+    login = re.search(r'\$\("#form-login"\)\.onsubmit = async e => \{(.*?)\n\};', SCRIPT, re.S).group(1)
+    register = re.search(r'\$\("#form-register"\)\.onsubmit = async e => \{(.*?)\n\};', SCRIPT, re.S).group(1)
+    for name, body in (("sign in", login), ("sign up", register)):
+        assert "keepPendingSave()" in body, name
+        assert body.index("keepPendingSave()") < body.index("nav("), f"{name}: save before the page loads"

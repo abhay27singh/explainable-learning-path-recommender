@@ -44,7 +44,7 @@ unreachable as stated.
 | 7 · Public deployment | **Not started**: see the launch checklist below |
 | 8 · Product work for Indian students | Ongoing: ladder, skill path, exams, planner |
 
-`make test` runs 298 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
+`make test` runs 299 tests. `make api` serves http://localhost:8420 and `make stop` stops it;
 `HOW_TO_RUN.txt` has the start and stop steps in plain words.
 
 The git remote is `https://github.com/abhay27singh/explainable-learning-path-recommender`
@@ -224,6 +224,13 @@ numbers any more (`railcourse` is gone).
   marks the one being read.
 Not taken: hover-only content (phones have no hover), scroll-triggered panels (against the
 house rules), developer-style `// LABELS`, "coming soon" badges.
+
+**Visitors keep the Course Finder and Explore.** Gating them was considered and rejected:
+a student signs up for something they have seen work, results get shared with friends and
+parents, and the privacy page promises they work without an account. What an account adds
+is said where it is earned (`signupCta`, the self-check result), and a course a visitor
+taps "Save this course" on is remembered in the tab (`PENDING_SAVE`) and saved as soon as
+they sign up or sign in (`keepPendingSave`).
 
 **Updates reach open tabs.** Moving between pages never reloads `index.html`, so a tab
 left open kept running its first copy after an update. `/api/version` reports when the
@@ -519,7 +526,7 @@ scripts/       01 prepare · 02 graph · 03 sequences · 05 train · 06 table1
 api/           service.py (model, paths, progress) · main.py (routes, access rules)
 web/index.html one page: home, auth, dashboard, progress, record, finder,
                research, admin, legal
-tests/         298 tests
+tests/         299 tests
 paper/         paper-revised.tex (8 pages) · paper-6page.tex + PDF · figures
 docs/          architecture · build-plan · what-we-found · paper-corrections
                claimed-vs-measured · portability

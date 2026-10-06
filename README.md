@@ -142,7 +142,7 @@ unzip oulad.zip && cd ../..
 .venv/bin/python scripts/03_build_sequences.py
 .venv/bin/python scripts/07_concept_labels.py
 
-make test                                       # 298 tests
+make test                                       # 299 tests
 make api                                        # http://localhost:8420
 make stop                                       # stops it from any terminal
 ```
