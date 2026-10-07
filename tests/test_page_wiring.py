@@ -229,3 +229,11 @@ def test_a_course_a_visitor_saves_is_kept_when_they_join():
     for name, body in (("sign in", login), ("sign up", register)):
         assert "keepPendingSave()" in body, name
         assert body.index("keepPendingSave()") < body.index("nav("), f"{name}: save before the page loads"
+
+
+def test_a_subject_name_does_not_run_into_its_study_links():
+    """Regression: the links kept a gap between each other but none before the first,
+    so a class 12 student's subjects read "EnglishNCERT" and "PhysicsNCERT"."""
+    css = re.search(r"<style>(.*?)</style>", PAGE, re.S).group(1)
+    rule = re.search(r"\.study-links\{([^}]*)\}", css).group(1)
+    assert re.search(r"margin-left:\s*[1-9]", rule)
